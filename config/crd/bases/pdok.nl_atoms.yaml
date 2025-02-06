@@ -1,0 +1,248 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.1
+  name: atoms.pdok.nl
+spec:
+  group: pdok.nl
+  names:
+    kind: Atom
+    listKind: AtomList
+    plural: atoms
+    singular: atom
+  scope: Namespaced
+  versions:
+  - name: v3
+    schema:
+      openAPIV3Schema:
+        description: Atom is the Schema for the atoms API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AtomSpec defines the desired state of Atom.
+            properties:
+              datasetFeeds:
+                items:
+                  description: DatasetFeed represents individual dataset feeds within
+                    the Atom service
+                  properties:
+                    author:
+                      description: |-
+                        Author todo: move to higher level
+                        Author specifies the author or owner information
+                      properties:
+                        email:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - email
+                      - name
+                      type: object
+                    entries:
+                      items:
+                        description: Entry represents an entry within a dataset feed,
+                          typically for downloads
+                        properties:
+                          content:
+                            type: string
+                          downloadlinks:
+                            items:
+                              description: DownloadLink specifies download information
+                                for entries
+                              properties:
+                                bbox:
+                                  description: BBox defines a bounding box with coordinates
+                                  properties:
+                                    maxx: {}
+                                    maxy: {}
+                                    minx: {}
+                                    miny: {}
+                                  required:
+                                  - maxx
+                                  - maxy
+                                  - minx
+                                  - miny
+                                  type: object
+                                data:
+                                  type: string
+                                rel:
+                                  type: string
+                                time:
+                                  type: string
+                                version:
+                                  type: string
+                              required:
+                              - data
+                              type: object
+                            type: array
+                          polygon:
+                            description: Polygon describes the bounding box of an
+                              entry or download
+                            properties:
+                              bbox:
+                                description: BBox defines a bounding box with coordinates
+                                properties:
+                                  maxx: {}
+                                  maxy: {}
+                                  minx: {}
+                                  miny: {}
+                                required:
+                                - maxx
+                                - maxy
+                                - minx
+                                - miny
+                                type: object
+                            required:
+                            - bbox
+                            type: object
+                          srs:
+                            description: SRS describes the Spatial Reference System
+                              for an entry
+                            properties:
+                              name:
+                                type: string
+                              uri:
+                                type: string
+                            required:
+                            - name
+                            - uri
+                            type: object
+                          technicalName:
+                            type: string
+                          title:
+                            type: string
+                          updated:
+                            format: date-time
+                            type: string
+                        required:
+                        - technicalName
+                        type: object
+                      type: array
+                    links:
+                      items:
+                        description: Link represents a link in the service or dataset
+                          feed
+                        properties:
+                          category:
+                            type: string
+                          href:
+                            type: string
+                          hreflang:
+                            type: string
+                          rel:
+                            type: string
+                          title:
+                            type: string
+                          type:
+                            type: string
+                        required:
+                        - href
+                        type: object
+                      type: array
+                    spatial_dataset_identifier_code:
+                      type: string
+                    spatial_dataset_identifier_namespace:
+                      type: string
+                    subtitle:
+                      type: string
+                    technicalName:
+                      type: string
+                    title:
+                      type: string
+                  required:
+                  - technicalName
+                  - title
+                  type: object
+                type: array
+              lifecycle:
+                description: 'todo: move to higher level (operator-support repo)'
+                properties:
+                  ttlInDays:
+                    format: int32
+                    type: integer
+                type: object
+              service:
+                description: Service defines the service configuration for the Atom
+                  feed
+                properties:
+                  author:
+                    description: |-
+                      Author todo: move to higher level
+                      Author specifies the author or owner information
+                    properties:
+                      email:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - email
+                    - name
+                    type: object
+                  baseUrl:
+                    type: string
+                  lang:
+                    type: string
+                  links:
+                    items:
+                      description: Link represents a link in the service or dataset
+                        feed
+                      properties:
+                        category:
+                          type: string
+                        href:
+                          type: string
+                        hreflang:
+                          type: string
+                        rel:
+                          type: string
+                        title:
+                          type: string
+                        type:
+                          type: string
+                      required:
+                      - href
+                      type: object
+                    type: array
+                  rights:
+                    type: string
+                  stylesheet:
+                    type: string
+                  subtitle:
+                    type: string
+                  title:
+                    type: string
+                required:
+                - author
+                - baseUrl
+                - title
+                type: object
+            required:
+            - service
+            type: object
+          status:
+            description: AtomStatus defines the observed state of Atom.
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

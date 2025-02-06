@@ -1,0 +1,9 @@
+apiVersion: pdok.nl/v3
+kind: Atom
+metadata:
+  labels:
+    app.kubernetes.io/name: atom-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: atom-sample
+spec:
+  # TODO(user): Add fields here
