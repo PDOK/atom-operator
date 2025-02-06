@@ -108,10 +108,10 @@ type Polygon struct {
 
 // BBox defines a bounding box with coordinates
 type BBox struct {
-	MinX float64 `json:"minx"`
-	MaxX float64 `json:"maxx"`
-	MinY float64 `json:"miny"`
-	MaxY float64 `json:"maxy"`
+	MinX string `json:"minx"`
+	MaxX string `json:"maxx"`
+	MinY string `json:"miny"`
+	MaxY string `json:"maxy"`
 }
 
 // SRS describes the Spatial Reference System for an entry

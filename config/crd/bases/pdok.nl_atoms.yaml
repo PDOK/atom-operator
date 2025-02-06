@@ -72,10 +72,14 @@ spec:
                                 bbox:
                                   description: BBox defines a bounding box with coordinates
                                   properties:
-                                    maxx: {}
-                                    maxy: {}
-                                    minx: {}
-                                    miny: {}
+                                    maxx:
+                                      type: string
+                                    maxy:
+                                      type: string
+                                    minx:
+                                      type: string
+                                    miny:
+                                      type: string
                                   required:
                                   - maxx
                                   - maxy
@@ -101,10 +105,14 @@ spec:
                               bbox:
                                 description: BBox defines a bounding box with coordinates
                                 properties:
-                                  maxx: {}
-                                  maxy: {}
-                                  minx: {}
-                                  miny: {}
+                                  maxx:
+                                    type: string
+                                  maxy:
+                                    type: string
+                                  minx:
+                                    type: string
+                                  miny:
+                                    type: string
                                 required:
                                 - maxx
                                 - maxy
