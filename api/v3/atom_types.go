@@ -128,7 +128,10 @@ type AtomStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:conversion:hub
 // +kubebuilder:subresource:status
+// versionName=v3
+// +kubebuilder:storageversion
 
 // Atom is the Schema for the atoms API.
 type Atom struct {

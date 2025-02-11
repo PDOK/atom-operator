@@ -16,4 +16,16 @@ resources:
   kind: Atom
   path: github.com/pdok/atom-operator/api/v3
   version: v3
+  webhooks:
+    conversion: true
+    spoke:
+    - v2beta1
+    webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: pdok.nl
+  kind: Atom
+  path: github.com/pdok/atom-operator/api/v2beta1
+  version: v2beta1
 version: "3"
