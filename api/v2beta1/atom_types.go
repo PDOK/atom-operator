@@ -86,7 +86,7 @@ type Dataset struct {
 	SourceIdentifier   string      `json:"sourceIdentifier"`
 	Links              []OtherLink `json:"links,omitempty"`
 	Downloads          []Download  `json:"downloads"`
-	//Bbox               Bbox        `json:"bbox"`
+	// Bbox               Bbox        `json:"bbox"`
 }
 
 // Bbox is the struct for the bounding box extent of an atom
@@ -112,7 +112,7 @@ type Link struct {
 	BlobKey *string `json:"BlobKey"`
 	Updated *string `json:"updated,omitempty"`
 	Version *string `json:"version,omitempty"`
-	//Bbox    *Bbox   `json:"bbox,omitempty"`
+	// Bbox    *Bbox   `json:"bbox,omitempty"`
 	Rel *string `json:"rel,omitempty"`
 }
 

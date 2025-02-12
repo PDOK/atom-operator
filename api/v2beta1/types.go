@@ -73,12 +73,12 @@ type ConditionType string
 // ConditionStatus specifies a string for field ConditionType
 type ConditionStatus string
 
-//// This const specifies allowed fields for Status
-//const (
-//	ConditionTrue    ConditionStatus = "True"
-//	ConditionFalse   ConditionStatus = "False"
-//	ConditionUnknown ConditionStatus = "Unknown"
-//)
+// // This const specifies allowed fields for Status
+// const (
+// 	ConditionTrue    ConditionStatus = "True"
+// 	ConditionFalse   ConditionStatus = "False"
+// 	ConditionUnknown ConditionStatus = "Unknown"
+// )
 
 // ResultAnsible - encapsulation of the ansible result. 'AnsibleResult' is turned around in struct to comply with linting
 type ResultAnsible struct {

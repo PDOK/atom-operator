@@ -26,9 +26,9 @@ package v2beta1
 
 import (
 	"log"
-	"sigs.k8s.io/controller-runtime/pkg/conversion"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
+	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
 // ConvertTo converts this Atom (v2beta1) to the Hub version (v3).
@@ -103,16 +103,16 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				TechnicalName: srcDownload.Name, // TechnicalName vs Name?
 				Title:         *srcDownload.Title,
 				Content:       *srcDownload.Content,
-				Updated:       nil, //TODO Convert from srcDownload.Updated
+				Updated:       nil, // TODO Convert from srcDownload.Updated
 				// TODO fix polygon float dangerousTypes
-				//Polygon: pdoknlv3.Polygon{
-				//	BBox: pdoknlv3.BBox{
-				//		MinX: strconv.FormatFloat(srcDataset.Bbox.Minx, 'f', -1, 32),
-				//		MinY: strconv.FormatFloat(srcDataset.Bbox.Miny, 'f', -1, 32),
-				//		MaxX: strconv.FormatFloat(srcDataset.Bbox.Maxx, 'f', -1, 32),
-				//		MaxY: strconv.FormatFloat(srcDataset.Bbox.Maxy, 'f', -1, 32),
-				//	},
-				//},
+				// Polygon: pdoknlv3.Polygon{
+				// 	BBox: pdoknlv3.BBox{
+				// 		MinX: strconv.FormatFloat(srcDataset.Bbox.Minx, 'f', -1, 32),
+				// 		MinY: strconv.FormatFloat(srcDataset.Bbox.Miny, 'f', -1, 32),
+				// 		MaxX: strconv.FormatFloat(srcDataset.Bbox.Maxx, 'f', -1, 32),
+				// 		MaxY: strconv.FormatFloat(srcDataset.Bbox.Maxy, 'f', -1, 32),
+				// 	},
+				// },
 				SRS: &pdoknlv3.SRS{
 					URI:  srcDownload.Srs.URI,
 					Name: srcDownload.Srs.Code,
@@ -159,7 +159,7 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.Spec.Service = AtomService{
 		Title:    src.Spec.Service.Title,
 		Subtitle: src.Spec.Service.Subtitle,
-		//MetadataIdentifier: Todo take from service.links?
+		// MetadataIdentifier: Todo take from service.links?
 		Rights: src.Spec.Service.Rights,
 		Author: Author{
 			Name:  src.Spec.Service.Author.Name,
