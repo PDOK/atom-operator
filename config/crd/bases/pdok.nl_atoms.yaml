@@ -170,6 +170,24 @@ spec:
                     items:
                       description: Dataset is the struct for all dataset level fields
                       properties:
+                        bbox:
+                          description: Bbox is the struct for the bounding box extent
+                            of an atom
+                          properties:
+                            maxx:
+                              type: number
+                            maxy:
+                              type: number
+                            minx:
+                              type: number
+                            miny:
+                              type: number
+                          required:
+                          - maxx
+                          - maxy
+                          - minx
+                          - miny
+                          type: object
                         downloads:
                           items:
                             description: Download is the struct for the download level
@@ -184,8 +202,25 @@ spec:
                                   properties:
                                     BlobKey:
                                       type: string
+                                    bbox:
+                                      description: Bbox is the struct for the bounding
+                                        box extent of an atom
+                                      properties:
+                                        maxx:
+                                          type: number
+                                        maxy:
+                                          type: number
+                                        minx:
+                                          type: number
+                                        miny:
+                                          type: number
+                                      required:
+                                      - maxx
+                                      - maxy
+                                      - minx
+                                      - miny
+                                      type: object
                                     rel:
-                                      description: Bbox    *Bbox   `json:"bbox,omitempty"`
                                       type: string
                                     updated:
                                       type: string
@@ -247,6 +282,7 @@ spec:
                         title:
                           type: string
                       required:
+                      - bbox
                       - downloads
                       - metadataIdentifier
                       - name
