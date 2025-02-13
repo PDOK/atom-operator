@@ -276,7 +276,7 @@ var _ = Describe("Manager", Ordered, func() {
 			verifyCAInjection := func(g Gomega) {
 				cmd := exec.Command("kubectl", "get",
 					"customresourcedefinitions.apiextensions.k8s.io",
-					"atoms..pdok.nl",
+					"atoms.pdok.nl",
 					"-o", "go-template={{ .spec.conversion.webhook.clientConfig.caBundle }}")
 				vwhOutput, err := utils.Run(cmd)
 				g.Expect(err).NotTo(HaveOccurred())
