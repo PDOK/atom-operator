@@ -40,6 +40,7 @@ import (
 	pdoknlv2beta1 "github.com/pdok/atom-operator/api/v2beta1"
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	"github.com/pdok/atom-operator/internal/controller"
+	webhookpdoknlv2beta1 "github.com/pdok/atom-operator/internal/webhook/v2beta1"
 	webhookpdoknlv3 "github.com/pdok/atom-operator/internal/webhook/v3"
 	// +kubebuilder:scaffold:imports
 )
@@ -212,6 +213,15 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Atom")
 		os.Exit(1)
 	}
+
+	// nolint:goconst
+	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
+		if err = webhookpdoknlv2beta1.SetupAtomWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")
+			os.Exit(1)
+		}
+	}
+
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookpdoknlv3.SetupAtomWebhookWithManager(mgr); err != nil {
