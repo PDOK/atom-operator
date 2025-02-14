@@ -31,7 +31,7 @@ import (
 )
 
 // namespace where the project is deployed in
-const namespace = "atom-operator-system"
+const namespace = "services"
 
 // serviceAccountName created for the project
 const serviceAccountName = "atom-operator-controller-manager"
