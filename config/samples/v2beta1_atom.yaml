@@ -32,11 +32,11 @@ spec:
             uri: https://www.eionet.europa.eu/reportnet/docs/noise/guidelines/geopackage-encoding-rule-end.pdf
             contentType: application/pdf
             language: en
-#        bbox:
-#          minx: 3.31
-#          maxx: 7.241
-#          miny: 50.731
-#          maxy: 53.61
+        bbox:
+          minx: 3.31
+          maxx: 7.241
+          miny: 50.731
+          maxy: 53.61
         downloads:
           - name: "dataset_1_id_1"
             updated: "2012-03-31T13:45:03Z"
@@ -45,11 +45,11 @@ spec:
             links:
               - BlobKey: "http://localazurite.blob.azurite/bucket/key1/dataset_1.gpkg"
                 updated: "2022-12-02T14:02:14Z"
-#                bbox:
-#                  minx: 3.31
-#                  maxx: 7.241
-#                  miny: 50.731
-#                  maxy: 53.61
+                bbox:
+                  minx: 3.31
+                  maxx: 7.241
+                  miny: 50.731
+                  maxy: 53.61
                 version: "v1"
             srs:
               uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
