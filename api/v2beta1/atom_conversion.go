@@ -240,10 +240,10 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 				Title:   &srcEntry.Title,
 			}
 
-			if srcEntry.Updated != nil {
-				// Todo convert
-				//dstDownload.Updated = srcEntry.Updated
-			}
+			// if srcEntry.Updated != nil {
+			// Todo convert
+			// dstDownload.Updated = srcEntry.Updated
+			// }
 
 			// Polygon
 			if srcEntry.SRS != nil {
