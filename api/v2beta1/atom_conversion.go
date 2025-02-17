@@ -37,12 +37,13 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
 		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
 
-	// TODO(user): Implement conversion logic from v2beta1 to v3
-
 	// Lifecycle
+	log.Printf("Start mapping the Lifecycle specs...")
 	dst.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*src.Spec.Kubernetes.Lifecycle.TTLInDays))
+	log.Printf("Done mapping the Lifecycle specs...")
 
 	// Service
+	log.Printf("Start mapping the Service...")
 	dst.Spec.Service = pdoknlv3.Service{
 		// Todo BaseURL opbouwen
 		BaseURL:    "http://localhost/owner/dataset",
@@ -72,8 +73,10 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			Email: "beheerPDOK@kadaster.nl",
 		},
 	}
+	log.Printf("Done mapping the Service...")
 
 	dst.Spec.DatasetFeeds = []pdoknlv3.DatasetFeed{}
+	log.Printf("Start mapping the Datasets...")
 	for _, srcDataset := range src.Spec.Service.Datasets {
 		dstDatasetFeed := pdoknlv3.DatasetFeed{
 			TechnicalName: "<id>.xml",
@@ -88,22 +91,32 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 		}
 
 		// Map the links
+		log.Printf("Start mapping the Links...")
 		for _, srcLink := range srcDataset.Links {
-			dstDatasetFeed.Links = append(dstDatasetFeed.Links, pdoknlv3.Link{
-				Title:    srcLink.Type,
-				Href:     srcLink.URI,
-				Type:     *srcLink.ContentType,
-				Hreflang: *srcLink.Language,
-			})
+			dstLink := pdoknlv3.Link{
+				Title: srcLink.Type,
+				Href:  srcLink.URI,
+			}
+			if srcLink.ContentType != nil {
+				dstLink.Type = *srcLink.ContentType
+			}
+			if srcLink.Language != nil {
+				dstLink.Href = *srcLink.Language
+			}
+
+			dstDatasetFeed.Links = append(dstDatasetFeed.Links, dstLink)
 		}
+		log.Printf("Done mapping the Links...")
 
 		// Map the entries
+		log.Printf("Start mapping the Entries...")
 		for _, srcDownload := range srcDataset.Downloads {
 			dstEntry := pdoknlv3.Entry{
-				TechnicalName: srcDownload.Name, // TechnicalName vs Name?
-				Title:         *srcDownload.Title,
-				Content:       *srcDownload.Content,
-				Updated:       nil, // TODO Convert from srcDownload.Updated
+				TechnicalName: srcDownload.Name,
+				SRS: &pdoknlv3.SRS{
+					URI:  srcDownload.Srs.URI,
+					Name: srcDownload.Srs.Code,
+				},
 				// TODO fix polygon float dangerousTypes
 				// Polygon: pdoknlv3.Polygon{
 				// 	BBox: pdoknlv3.BBox{
@@ -113,27 +126,50 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				// 		MaxY: strconv.FormatFloat(srcDataset.Bbox.Maxy, 'f', -1, 32),
 				// 	},
 				// },
-				SRS: &pdoknlv3.SRS{
-					URI:  srcDownload.Srs.URI,
-					Name: srcDownload.Srs.Code,
-				},
+			}
+
+			if srcDownload.Title != nil {
+				dstEntry.Title = *srcDownload.Title
+			}
+			if srcDownload.Content != nil {
+				dstEntry.Content = *srcDownload.Content
+			}
+			if srcDownload.Updated != nil {
+				dstEntry.Updated = nil // TODO Convert from srcDownload.Updated
 			}
 
 			// Map the links
+			log.Printf("Start mapping the DownloadLinks...")
 			for _, srcLink := range srcDownload.Links {
-				dstEntry.DownloadLinks = append(dstEntry.DownloadLinks, pdoknlv3.DownloadLink{
-					Data:    *srcLink.BlobKey,
-					Time:    srcLink.Updated,
-					Rel:     *srcLink.Rel,
-					Version: srcLink.Version,
-					// Todo bbox
-				})
+				dstDownloadLink := pdoknlv3.DownloadLink{}
+
+				if srcLink.BlobKey != nil {
+					dstDownloadLink.Data = *srcLink.BlobKey
+				}
+				if srcLink.Updated != nil {
+					dstDownloadLink.Time = srcLink.Updated
+				}
+				if srcLink.Version != nil {
+					dstDownloadLink.Version = srcLink.Version
+				}
+
+				// Todo bbox
+
+				if srcLink.Rel != nil {
+					dstDownloadLink.Rel = *srcLink.Rel
+				}
+
+				dstEntry.DownloadLinks = append(dstEntry.DownloadLinks, dstDownloadLink)
 			}
+			log.Printf("Done mapping the DownloadLinks...")
+
 			dstDatasetFeed.Entries = append(dstDatasetFeed.Entries, dstEntry)
 		}
+		log.Printf("Done mapping the Entries...")
 
 		dst.Spec.DatasetFeeds = append(dst.Spec.DatasetFeeds, dstDatasetFeed)
 	}
+	log.Printf("Done mapping the Datasets...")
 
 	return nil
 }
@@ -144,9 +180,8 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	log.Printf("ConvertFrom: Converting Atom from Hub version v3 to Spoke version v2beta1;"+
 		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
 
-	// TODO(user): Implement conversion logic from v3 to v2beta1
-
 	// General
+	log.Printf("Start mapping the General specs...")
 	dst.Spec.General = General{ // Todo waar halen we deze info vandaan
 		Dataset:        "",
 		DatasetOwner:   "",
@@ -154,8 +189,10 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		ServiceVersion: new(string),
 		Theme:          new(string),
 	}
+	log.Printf("Done mapping the General specs...")
 
 	// Service
+	log.Printf("Start mapping the Service...")
 	dst.Spec.Service = AtomService{
 		Title:    src.Spec.Service.Title,
 		Subtitle: src.Spec.Service.Subtitle,
@@ -166,8 +203,10 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			Email: src.Spec.Service.Author.Email,
 		},
 	}
+	log.Printf("Done mapping the Service...")
 
 	// Datasets
+	log.Printf("Start mapping the Datasets...")
 	dst.Spec.Service.Datasets = []Dataset{}
 	for _, srcDatasetFeed := range src.Spec.DatasetFeeds {
 		dstDataset := Dataset{
@@ -179,6 +218,7 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		}
 
 		// Map the links
+		log.Printf("Start mapping the Links...")
 		for _, srcLink := range srcDatasetFeed.Links {
 			dstDataset.Links = append(dstDataset.Links, OtherLink{
 				Type:        srcLink.Title,
@@ -187,44 +227,68 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 				Language:    &srcLink.Hreflang,
 			})
 		}
+		log.Printf("Done mapping the Links...")
 
 		// TODO Bbox
 
 		// Map the downloads
+		log.Printf("Start mapping the Entries...")
 		for _, srcEntry := range srcDatasetFeed.Entries {
 			dstDownload := Download{
 				Name:    srcEntry.TechnicalName,
-				Updated: nil,
 				Content: &srcEntry.Content,
 				Title:   &srcEntry.Title,
-				// Todo links
-				Srs: Srs{
+			}
+
+			if srcEntry.Updated != nil {
+				// Todo convert
+				//dstDownload.Updated = srcEntry.Updated
+			}
+
+			// Polygon
+			if srcEntry.SRS != nil {
+				dstDownload.Srs = Srs{
 					URI:  srcEntry.SRS.URI,
 					Code: srcEntry.SRS.Name,
-				},
+				}
 			}
+
 			// Map the links
+			log.Printf("Start mapping the DownloadLinks...")
 			for _, srcDownloadLink := range srcEntry.DownloadLinks {
-				dstDownload.Links = append(dstDownload.Links, Link{
+
+				dstLink := Link{
 					BlobKey: &srcDownloadLink.Data,
-					Updated: srcDownloadLink.Time,
 					Rel:     &srcDownloadLink.Rel,
-					Version: srcDownloadLink.Version,
-					// Todo bbox
-				})
+				}
+
+				if srcDownloadLink.Time != nil {
+					dstLink.Updated = srcDownloadLink.Time
+				}
+				if srcDownloadLink.Version != nil {
+					dstLink.Version = srcDownloadLink.Version
+				}
+				// Todo bbox
+
 			}
+
+			log.Printf("Done mapping the DownloadLinks...")
 			dstDataset.Downloads = append(dstDataset.Downloads, dstDownload)
 		}
-
+		log.Printf("Done mapping the Entries...")
 		dst.Spec.Service.Datasets = append(dst.Spec.Service.Datasets, dstDataset)
 	}
+	log.Printf("Start mapping the Datasets...")
 
 	// Kubernetes
+	log.Printf("Start mapping the Kubernetes Specs...")
 	dst.Spec.Kubernetes = &Kubernetes{
-		Lifecycle: &Lifecycle{
-			TTLInDays: GetIntPointer(int(*src.Spec.Lifecycle.TTLInDays)),
-		},
+		Lifecycle: &Lifecycle{},
 	}
+	if src.Spec.Lifecycle.TTLInDays != nil {
+		dst.Spec.Kubernetes.Lifecycle.TTLInDays = GetIntPointer(int(*src.Spec.Lifecycle.TTLInDays))
+	}
+	log.Printf("Done mapping the Kubernetes Specs...")
 
 	return nil
 }
