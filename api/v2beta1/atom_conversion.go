@@ -37,9 +37,14 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
 		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
 
+	// ObjectMeta
+	dst.ObjectMeta = src.ObjectMeta
+
 	// Lifecycle
 	log.Printf("Start mapping the Lifecycle specs...")
-	dst.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*src.Spec.Kubernetes.Lifecycle.TTLInDays))
+	if src.Spec.Kubernetes != nil && src.Spec.Kubernetes.Lifecycle != nil && src.Spec.Kubernetes.Lifecycle.TTLInDays != nil {
+		dst.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*src.Spec.Kubernetes.Lifecycle.TTLInDays))
+	}
 	log.Printf("Done mapping the Lifecycle specs...")
 
 	// Service
@@ -179,6 +184,9 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertFrom: Converting Atom from Hub version v3 to Spoke version v2beta1;"+
 		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
+
+	// ObjectMeta
+	dst.ObjectMeta = src.ObjectMeta
 
 	// General
 	log.Printf("Start mapping the General specs...")
