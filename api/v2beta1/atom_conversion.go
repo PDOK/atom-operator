@@ -25,7 +25,9 @@ SOFTWARE.
 package v2beta1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
+	"time"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
@@ -140,7 +142,13 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				dstEntry.Content = *srcDownload.Content
 			}
 			if srcDownload.Updated != nil {
-				dstEntry.Updated = nil // TODO Convert from srcDownload.Updated
+				parsedUpdatedTime, err := time.Parse(time.RFC3339, *srcDownload.Updated)
+				if err != nil {
+					log.Printf("Error parsing updated time: %v", err)
+					dstEntry.Updated = nil
+				}
+				updatedTime := metav1.NewTime(parsedUpdatedTime)
+				dstEntry.Updated = &updatedTime
 			}
 
 			// Map the links
@@ -248,10 +256,10 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 				Title:   &srcEntry.Title,
 			}
 
-			// if srcEntry.Updated != nil {
-			// Todo convert
-			// dstDownload.Updated = srcEntry.Updated
-			// }
+			if srcEntry.Updated != nil {
+				updatedString := srcEntry.Updated.Format(time.RFC3339)
+				dstDownload.Updated = &updatedString
+			}
 
 			// Polygon
 			if srcEntry.SRS != nil {
