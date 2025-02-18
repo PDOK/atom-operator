@@ -238,7 +238,7 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		}
 		log.Printf("Done mapping the Links...")
 
-		if srcDatasetFeed.Entries != nil && len(srcDatasetFeed.Entries) > 0 {
+		if len(srcDatasetFeed.Entries) > 0 {
 			// We can assume all entries have the same bbox, so we take the first one
 			firstBbox := srcDatasetFeed.Entries[0].Polygon.BBox
 			dstDataset.Bbox = Bbox{
