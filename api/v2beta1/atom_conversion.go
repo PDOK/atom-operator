@@ -25,7 +25,9 @@ SOFTWARE.
 package v2beta1
 
 import (
+	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,6 +42,8 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
 		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
 
+	host := "https://service.dok.nl/" // Todo read from flag
+
 	// ObjectMeta
 	dst.ObjectMeta = src.ObjectMeta
 
@@ -53,33 +57,14 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	// Service
 	log.Printf("Start mapping the Service...")
 	dst.Spec.Service = pdoknlv3.Service{
-		// Todo BaseURL opbouwen
-		BaseURL:    "http://localhost/owner/dataset",
-		Lang:       "nl",
-		Stylesheet: "https://service.pdok.nl/atom/style/style.xsl",
-		Title:      src.Spec.Service.Title,
-		Subtitle:   src.Spec.Service.Subtitle,
-		// Todo metadata-id invullen in links
-		Links: []pdoknlv3.Link{
-			{
-				Href:     "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=<id>",
-				Category: "metadataXml",
-			},
-			{
-				Href:     "https://www.ngr.nl/geonetwork/opensearch/dut/<id>>/OpenSearchDescription.xml",
-				Category: "opensearch",
-			},
-			{
-				Href:     "https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/<id>",
-				Category: "metadataHtml",
-				Rel:      "describedBy",
-			},
-		},
-		Rights: src.Spec.Service.Rights,
-		Author: pdoknlv3.Author{
-			Name:  "PDOK Beheer",
-			Email: "beheerPDOK@kadaster.nl",
-		},
+		BaseURL:      createBaseURL(host, src.Spec.General),
+		Lang:         "nl",
+		Stylesheet:   "https://service.pdok.nl/atom/style/style.xsl",
+		Title:        src.Spec.Service.Title,
+		Subtitle:     src.Spec.Service.Subtitle,
+		OwnerInfoRef: "pdok",
+		Links:        []pdoknlv3.Link{},
+		Rights:       src.Spec.Service.Rights,
 	}
 	log.Printf("Done mapping the Service...")
 
@@ -87,15 +72,11 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	log.Printf("Start mapping the Datasets...")
 	for _, srcDataset := range src.Spec.Service.Datasets {
 		dstDatasetFeed := pdoknlv3.DatasetFeed{
-			TechnicalName: "<id>.xml",
-			Title:         srcDataset.Title,
-			Subtitle:      srcDataset.Subtitle,
-			Author: pdoknlv3.Author{
-				Name:  "",
-				Email: "",
-			},
+			TechnicalName:                     srcDataset.Name,
+			Title:                             srcDataset.Title,
+			Subtitle:                          srcDataset.Subtitle,
 			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
-			SpatialDatasetIdentifierNamespace: "",
+			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
 		}
 
 		// Map the links
@@ -125,15 +106,14 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 					URI:  srcDownload.Srs.URI,
 					Name: srcDownload.Srs.Code,
 				},
-				// TODO fix polygon float dangerousTypes
-				// Polygon: pdoknlv3.Polygon{
-				// 	BBox: pdoknlv3.BBox{
-				// 		MinX: strconv.FormatFloat(srcDataset.Bbox.Minx, 'f', -1, 32),
-				// 		MinY: strconv.FormatFloat(srcDataset.Bbox.Miny, 'f', -1, 32),
-				// 		MaxX: strconv.FormatFloat(srcDataset.Bbox.Maxx, 'f', -1, 32),
-				// 		MaxY: strconv.FormatFloat(srcDataset.Bbox.Maxy, 'f', -1, 32),
-				// 	},
-				// },
+				Polygon: &pdoknlv3.Polygon{
+					BBox: pdoknlv3.BBox{
+						MinX: GetFloat32AsString(srcDataset.Bbox.Minx),
+						MinY: GetFloat32AsString(srcDataset.Bbox.Miny),
+						MaxX: GetFloat32AsString(srcDataset.Bbox.Maxx),
+						MaxY: GetFloat32AsString(srcDataset.Bbox.Maxy),
+					},
+				},
 			}
 
 			if srcDownload.Title != nil {
@@ -166,9 +146,14 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				if srcLink.Version != nil {
 					dstDownloadLink.Version = srcLink.Version
 				}
-
-				// Todo bbox
-
+				if srcLink.Bbox != nil {
+					dstDownloadLink.BBox = &pdoknlv3.BBox{
+						MinX: GetFloat32AsString(srcLink.Bbox.Minx),
+						MinY: GetFloat32AsString(srcLink.Bbox.Miny),
+						MaxX: GetFloat32AsString(srcLink.Bbox.Maxx),
+						MaxY: GetFloat32AsString(srcLink.Bbox.Maxy),
+					}
+				}
 				if srcLink.Rel != nil {
 					dstDownloadLink.Rel = *srcLink.Rel
 				}
@@ -199,13 +184,22 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 
 	// General
 	log.Printf("Start mapping the General specs...")
-	dst.Spec.General = General{ // Todo waar halen we deze info vandaan
-		Dataset:        "",
-		DatasetOwner:   "",
-		DataVersion:    new(string),
-		ServiceVersion: new(string),
-		Theme:          new(string),
+	dst.Spec.General = General{
+		Dataset:      src.ObjectMeta.Labels["dataset"],
+		DatasetOwner: src.ObjectMeta.Labels["dataset-owner"],
+		DataVersion:  nil,
 	}
+
+	serviceVersion, ok := src.ObjectMeta.Labels["service-version"]
+	if ok {
+		dst.Spec.General.ServiceVersion = &serviceVersion
+	}
+
+	theme, ok := src.ObjectMeta.Labels["theme"]
+	if ok {
+		dst.Spec.General.Theme = &theme
+	}
+
 	log.Printf("Done mapping the General specs...")
 
 	// Service
@@ -213,11 +207,10 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.Spec.Service = AtomService{
 		Title:    src.Spec.Service.Title,
 		Subtitle: src.Spec.Service.Subtitle,
-		// MetadataIdentifier: Todo take from service.links?
-		Rights: src.Spec.Service.Rights,
+		Rights:   src.Spec.Service.Rights,
 		Author: Author{
-			Name:  src.Spec.Service.Author.Name,
-			Email: src.Spec.Service.Author.Email,
+			Name:  "PDOK Beheer",
+			Email: "beheerPDOK@kadaster.nl",
 		},
 	}
 	log.Printf("Done mapping the Service...")
@@ -227,11 +220,10 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.Spec.Service.Datasets = []Dataset{}
 	for _, srcDatasetFeed := range src.Spec.DatasetFeeds {
 		dstDataset := Dataset{
-			Name:               srcDatasetFeed.TechnicalName,
-			Title:              srcDatasetFeed.Title,
-			Subtitle:           srcDatasetFeed.Subtitle,
-			MetadataIdentifier: "", // Todo take from Links?
-			SourceIdentifier:   srcDatasetFeed.SpatialDatasetIdentifierCode,
+			Name:             srcDatasetFeed.TechnicalName,
+			Title:            srcDatasetFeed.Title,
+			Subtitle:         srcDatasetFeed.Subtitle,
+			SourceIdentifier: srcDatasetFeed.SpatialDatasetIdentifierCode,
 		}
 
 		// Map the links
@@ -246,7 +238,16 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		}
 		log.Printf("Done mapping the Links...")
 
-		// TODO Bbox
+		if srcDatasetFeed.Entries != nil && len(srcDatasetFeed.Entries) > 0 {
+			// We can assume all entries have the same bbox, so we take the first one
+			firstBbox := srcDatasetFeed.Entries[0].Polygon.BBox
+			dstDataset.Bbox = Bbox{
+				Minx: GetStringAsFloat32(firstBbox.MinX),
+				Miny: GetStringAsFloat32(firstBbox.MinY),
+				Maxx: GetStringAsFloat32(firstBbox.MaxX),
+				Maxy: GetStringAsFloat32(firstBbox.MaxY),
+			}
+		}
 
 		// Map the downloads
 		log.Printf("Start mapping the Entries...")
@@ -262,7 +263,6 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 				dstDownload.Updated = &updatedString
 			}
 
-			// Polygon
 			if srcEntry.SRS != nil {
 				dstDownload.Srs = Srs{
 					URI:  srcEntry.SRS.URI,
@@ -285,8 +285,14 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 				if srcDownloadLink.Version != nil {
 					dstLink.Version = srcDownloadLink.Version
 				}
-				// Todo bbox
-
+				if srcDownloadLink.BBox != nil {
+					dstLink.Bbox = &Bbox{
+						Minx: GetStringAsFloat32(srcDownloadLink.BBox.MinX),
+						Miny: GetStringAsFloat32(srcDownloadLink.BBox.MinY),
+						Maxx: GetStringAsFloat32(srcDownloadLink.BBox.MaxX),
+						Maxy: GetStringAsFloat32(srcDownloadLink.BBox.MaxY),
+					}
+				}
 			}
 
 			log.Printf("Done mapping the DownloadLinks...")
@@ -310,10 +316,35 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	return nil
 }
 
+func createBaseURL(host string, general General) (baseURL string) {
+
+	atomURI := fmt.Sprintf("%s/%s", general.DatasetOwner, general.Dataset)
+	if general.Theme != nil {
+		atomURI += fmt.Sprintf("/%s", *general.Theme)
+	}
+	atomURI += "/atom"
+
+	if general.ServiceVersion != nil {
+		atomURI += fmt.Sprintf("/%s", *general.ServiceVersion)
+	}
+
+	baseURL = fmt.Sprintf("%s/%s/index.xml", host, atomURI)
+	return
+}
+
 func GetInt32Pointer(value int32) *int32 {
 	return &value
 }
 
 func GetIntPointer(value int) *int {
 	return &value
+}
+
+func GetFloat32AsString(value float32) string {
+	return strconv.FormatFloat(float64(value), 'f', 0, 32)
+}
+
+func GetStringAsFloat32(value string) float32 {
+	float, _ := strconv.ParseFloat(value, 32)
+	return float32(float)
 }

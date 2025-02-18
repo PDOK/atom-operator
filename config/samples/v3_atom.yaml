@@ -17,14 +17,13 @@ spec:
     stylesheet: "http://localhost/atom/style/style.xsl"
     title: Test Dataset ATOM
     subtitle: Test Dataset ATOM
-    links:
-      - href: "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=9615cd15-631b-45f8-a22a-d9d9c48cf211"
-        category: metadataXml
-      - href: "https://www.ngr.nl/geonetwork/opensearch/dut/9615cd15-631b-45f8-a22a-d9d9c48cf211/OpenSearchDescription.xml"
-        category: opensearch
-      - href: "https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/9615cd15-631b-45f8-a22a-d9d9c48cf211"
-        category: metadataHtml
-        rel: describedBy #zie https://kadaster.atlassian.net/browse/PDOK-15321
+    ownerInfoRef: pdok
+    serviceMetadataLinks:
+      metadataIdentifier: 9615cd15-631b-45f8-a22a-d9d9c48cf211
+      templates:
+        - csv
+        - opensearch
+        - html
     rights: https://creativecommons.org/publicdomain/zero/1.0/deed.nl
     author:
       name: "PDOK Beheer"
@@ -33,9 +32,11 @@ spec:
     - technicalName: dataset-1-name
       title: "dataset-1-title \"1\""
       subtitle: "dataset-1-subtitle \"1\""
-      links:
-        - href: "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=9615cd15-631b-45f8-a22a-d9d9c48cf211"
-          category: metadataXml
+      datasetMetadataLinks:
+        metadataIdentifier: 9615cd15-631b-45f8-a22a-d9d9c48cf211
+        templates:
+          - csv
+          - html
       author:
         name: owner
         email: info@test.nl
@@ -58,9 +59,12 @@ spec:
     - technicalName: dataset-2-name
       title: "dataset-2-title \"2\""
       subtitle: "dataset-2-subtitle \"2\""
+      datasetMetadataLinks:
+        metadataIdentifier: 9615cd15-631b-45f8-a22a-d9d9c48cf211
+        templates:
+          - csv
+          - html
       links:
-        - href: "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=9615cd15-631b-45f8-a22a-d9d9c48cf211"
-          category: metadataXml
         - href: https://www.eionet.europa.eu/reportnet/docs/noise/guidelines/geopackage-encoding-rule-end.pdf
           title: encodingRule
           type: application/pdf

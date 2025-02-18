@@ -42,14 +42,14 @@ type Lifecycle struct {
 
 // Service defines the service configuration for the Atom feed
 type Service struct {
-	BaseURL    string `json:"baseUrl"`
-	Lang       string `json:"lang,omitempty"`
-	Stylesheet string `json:"stylesheet,omitempty"`
-	Title      string `json:"title"`
-	Subtitle   string `json:"subtitle,omitempty"`
-	Links      []Link `json:"links,omitempty"`
-	Rights     string `json:"rights,omitempty"`
-	Author     Author `json:"author"`
+	BaseURL      string `json:"baseUrl"`
+	Lang         string `json:"lang,omitempty"`
+	Stylesheet   string `json:"stylesheet,omitempty"`
+	Title        string `json:"title"`
+	Subtitle     string `json:"subtitle,omitempty"`
+	OwnerInfoRef string `json:"ownerInfoRef"`
+	Links        []Link `json:"links,omitempty"`
+	Rights       string `json:"rights,omitempty"`
 }
 
 // Link represents a link in the service or dataset feed
