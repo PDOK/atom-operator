@@ -4,7 +4,10 @@ metadata:
   labels:
     app.kubernetes.io/name: atom-operator
     app.kubernetes.io/managed-by: kustomize
-  name: atom-sample
+    dataset: dataset
+    dataset-owner: owner
+    service-type: atom
+  name: v2-sample
 spec:
   general:
     dataset: dataset

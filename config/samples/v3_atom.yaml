@@ -4,7 +4,10 @@ metadata:
   labels:
     app.kubernetes.io/name: atom-operator
     app.kubernetes.io/managed-by: kustomize
-  name: atom-sample
+    dataset: dataset
+    dataset-owner: owner
+    service-type: atom
+  name: v3-sample
 spec:
   lifecycle:
     ttlInDays:
@@ -45,10 +48,10 @@ spec:
           updated: "2012-03-31T13:45:03Z"
           polygon:
             bbox:
-              minx: 3.31
-              maxx: 7.241
-              miny: 50.731
-              maxy: 53.61
+              minx: "3.31"
+              maxx: "7.241"
+              miny: "50.731"
+              maxy: "53.61"
           srs:
             name: "Amersfoort / RD New"
             uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
@@ -79,10 +82,10 @@ spec:
           updated: "2012-03-31T13:45:03Z"
           polygon:
             bbox:
-              minx: 3.32
-              maxx: 7.242
-              miny: 50.732
-              maxy: 53.62
+              minx: "3.32"
+              maxx: "7.242"
+              miny: "50.732"
+              maxy: "53.62"
           srs:
             name: "Amersfoort / RD New"
             uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
@@ -93,24 +96,24 @@ spec:
             - data: "http://localazurite.blob.azurite/bucket/key2/dataset_2_1.gml"
               time: "2022-12-03T15:03:15Z"
               bbox:
-                minx: 1
-                miny: 2
-                maxx: 3
-                maxy: 4
+                minx: "1"
+                miny: "2"
+                maxx: "3"
+                maxy: "4"
             - data: "http://localazurite.blob.azurite/bucket/key2/dataset_2_2.gml"
               time: "2022-12-04T16:04:16Z"
               bbox:
-                minx: 5
-                miny: 6
-                maxx: 7
-                maxy: 8
+                minx: "5"
+                miny: "6"
+                maxx: "7"
+                maxy: "8"
           updated: "2012-03-31T13:45:03Z"
           polygon:
             bbox:
-              minx: 3.32
-              maxx: 7.242
-              miny: 50.732
-              maxy: 53.62
+              minx: "3.32"
+              maxx: "7.242"
+              miny: "50.732"
+              maxy: "53.62"
           srs:
             name: "Amersfoort / RD New"
             uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
@@ -121,10 +124,10 @@ spec:
           updated: "2012-03-31T13:45:03Z"
           polygon:
             bbox:
-              minx: 3.32
-              maxx: 7.242
-              miny: 50.732
-              maxy: 53.62
+              minx: "3.32"
+              maxx: "7.242"
+              miny: "50.732"
+              maxy: "53.62"
           srs:
             name: "Amersfoort / RD New"
             uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
@@ -137,24 +140,24 @@ spec:
             - data: "http://localazurite.blob.azurite/bucket/key2/00.tif"
               time: "2022-12-03T15:03:15Z"
               bbox:
-                minx: 1
-                miny: 2
-                maxx: 3
-                maxy: 4
+                minx: "1"
+                miny: "2"
+                maxx: "3"
+                maxy: "4"
             - data: "http://localazurite.blob.azurite/bucket/key2/01.tif"
               time: "2022-12-04T16:04:16Z"
               bbox:
-                minx: 5
-                miny: 6
-                maxx: 7
-                maxy: 8
+                minx: "5"
+                miny: "6"
+                maxx: "7"
+                maxy: "8"
           updated: "2012-03-31T13:45:03Z"
           polygon:
             bbox:
-              minx: 3.32
-              maxx: 7.242
-              miny: 50.732
-              maxy: 53.62
+              minx: "3.32"
+              maxx: "7.242"
+              miny: "50.732"
+              maxy: "53.62"
           srs:
             name: "Amersfoort / RD New"
             uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
