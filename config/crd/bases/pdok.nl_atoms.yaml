@@ -499,19 +499,6 @@ spec:
                 description: Service defines the service configuration for the Atom
                   feed
                 properties:
-                  author:
-                    description: |-
-                      Author todo: move to higher level
-                      Author specifies the author or owner information
-                    properties:
-                      email:
-                        type: string
-                      name:
-                        type: string
-                    required:
-                    - email
-                    - name
-                    type: object
                   baseUrl:
                     type: string
                   lang:
@@ -537,6 +524,8 @@ spec:
                       - href
                       type: object
                     type: array
+                  ownerInfoRef:
+                    type: string
                   rights:
                     type: string
                   stylesheet:
@@ -546,8 +535,8 @@ spec:
                   title:
                     type: string
                 required:
-                - author
                 - baseUrl
+                - ownerInfoRef
                 - title
                 type: object
             required:
