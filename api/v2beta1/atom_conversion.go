@@ -25,9 +25,10 @@ SOFTWARE.
 package v2beta1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"log"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
