@@ -57,15 +57,17 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	// Service
 	log.Printf("Start mapping the Service...")
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:              createBaseURL(host, src.Spec.General),
-		Lang:                 "nl",
-		Stylesheet:           "https://service.pdok.nl/atom/style/style.xsl",
-		Title:                src.Spec.Service.Title,
-		Subtitle:             src.Spec.Service.Subtitle,
-		OwnerInfoRef:         "pdok",
-		Links:                []pdoknlv3.Link{},
-		ServiceMetadataLinks: []pdoknlv3.MetadataLink{}, // Todo
-		Rights:               src.Spec.Service.Rights,
+		BaseURL:      createBaseURL(host, src.Spec.General),
+		Lang:         "nl",
+		Stylesheet:   "https://service.pdok.nl/atom/style/style.xsl",
+		Title:        src.Spec.Service.Title,
+		Subtitle:     src.Spec.Service.Subtitle,
+		OwnerInfoRef: "pdok",
+		ServiceMetadataLinks: pdoknlv3.MetadataLink{
+			MetadataIdentifier: src.Spec.Service.MetadataIdentifier,
+			Templates:          []string{"csv", "opensearch", "html"},
+		},
+		Rights: src.Spec.Service.Rights,
 	}
 	log.Printf("Done mapping the Service...")
 
@@ -73,10 +75,13 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	log.Printf("Start mapping the Datasets...")
 	for _, srcDataset := range src.Spec.Service.Datasets {
 		dstDatasetFeed := pdoknlv3.DatasetFeed{
-			TechnicalName:                     srcDataset.Name,
-			Title:                             srcDataset.Title,
-			Subtitle:                          srcDataset.Subtitle,
-			DatasetMetadataLinks:              []pdoknlv3.MetadataLink{}, // Todo
+			TechnicalName: srcDataset.Name,
+			Title:         srcDataset.Title,
+			Subtitle:      srcDataset.Subtitle,
+			DatasetMetadataLinks: pdoknlv3.MetadataLink{
+				MetadataIdentifier: srcDataset.MetadataIdentifier,
+				Templates:          []string{"csv", "html"},
+			},
 			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
 			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
 		}
@@ -214,6 +219,7 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			Name:  "PDOK Beheer",
 			Email: "beheerPDOK@kadaster.nl",
 		},
+		MetadataIdentifier: src.Spec.Service.ServiceMetadataLinks.MetadataIdentifier,
 	}
 	log.Printf("Done mapping the Service...")
 

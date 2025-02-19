@@ -42,15 +42,15 @@ type Lifecycle struct {
 
 // Service defines the service configuration for the Atom feed
 type Service struct {
-	BaseURL              string         `json:"baseUrl"`
-	Lang                 string         `json:"lang,omitempty"`
-	Stylesheet           string         `json:"stylesheet,omitempty"`
-	Title                string         `json:"title"`
-	Subtitle             string         `json:"subtitle,omitempty"`
-	OwnerInfoRef         string         `json:"ownerInfoRef"`
-	ServiceMetadataLinks []MetadataLink `json:"serviceMetadataLinks,omitempty"`
-	Links                []Link         `json:"links,omitempty"` // Todo kan weg?
-	Rights               string         `json:"rights,omitempty"`
+	BaseURL              string       `json:"baseUrl"`
+	Lang                 string       `json:"lang,omitempty"`
+	Stylesheet           string       `json:"stylesheet,omitempty"`
+	Title                string       `json:"title"`
+	Subtitle             string       `json:"subtitle,omitempty"`
+	OwnerInfoRef         string       `json:"ownerInfoRef"`
+	ServiceMetadataLinks MetadataLink `json:"serviceMetadataLinks,omitempty"`
+	//Links                []Link       `json:"links,omitempty"` // Todo kan weg?
+	Rights string `json:"rights,omitempty"`
 }
 
 // Link represents a link in the service or dataset feed
@@ -72,15 +72,15 @@ type Author struct {
 
 // DatasetFeed represents individual dataset feeds within the Atom service
 type DatasetFeed struct {
-	TechnicalName                     string         `json:"technicalName"`
-	Title                             string         `json:"title"`
-	Subtitle                          string         `json:"subtitle,omitempty"`
-	Links                             []Link         `json:"links,omitempty"` // Todo kan weg?
-	DatasetMetadataLinks              []MetadataLink `json:"datasetMetadataLinks,omitempty"`
-	Author                            Author         `json:"author,omitempty"`
-	SpatialDatasetIdentifierCode      string         `json:"spatial_dataset_identifier_code,omitempty"`
-	SpatialDatasetIdentifierNamespace string         `json:"spatial_dataset_identifier_namespace,omitempty"`
-	Entries                           []Entry        `json:"entries,omitempty"`
+	TechnicalName                     string       `json:"technicalName"`
+	Title                             string       `json:"title"`
+	Subtitle                          string       `json:"subtitle,omitempty"`
+	Links                             []Link       `json:"links,omitempty"` // Todo kan weg?
+	DatasetMetadataLinks              MetadataLink `json:"datasetMetadataLinks,omitempty"`
+	Author                            Author       `json:"author,omitempty"`
+	SpatialDatasetIdentifierCode      string       `json:"spatial_dataset_identifier_code,omitempty"`
+	SpatialDatasetIdentifierNamespace string       `json:"spatial_dataset_identifier_namespace,omitempty"`
+	Entries                           []Entry      `json:"entries,omitempty"`
 }
 
 // Metadatalink represents a link in the service or dataset feed
