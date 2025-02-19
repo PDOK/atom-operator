@@ -42,7 +42,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
 		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
 
-	host := "https://service.dok.nl/" // Todo read from flag
+	host := "https://service.pdok.nl/" // Todo read from flag
 
 	// ObjectMeta
 	dst.ObjectMeta = src.ObjectMeta
@@ -57,14 +57,15 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	// Service
 	log.Printf("Start mapping the Service...")
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(host, src.Spec.General),
-		Lang:         "nl",
-		Stylesheet:   "https://service.pdok.nl/atom/style/style.xsl",
-		Title:        src.Spec.Service.Title,
-		Subtitle:     src.Spec.Service.Subtitle,
-		OwnerInfoRef: "pdok",
-		Links:        []pdoknlv3.Link{},
-		Rights:       src.Spec.Service.Rights,
+		BaseURL:              createBaseURL(host, src.Spec.General),
+		Lang:                 "nl",
+		Stylesheet:           "https://service.pdok.nl/atom/style/style.xsl",
+		Title:                src.Spec.Service.Title,
+		Subtitle:             src.Spec.Service.Subtitle,
+		OwnerInfoRef:         "pdok",
+		Links:                []pdoknlv3.Link{},
+		ServiceMetadataLinks: []pdoknlv3.MetadataLink{}, // Todo
+		Rights:               src.Spec.Service.Rights,
 	}
 	log.Printf("Done mapping the Service...")
 
@@ -75,6 +76,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			TechnicalName:                     srcDataset.Name,
 			Title:                             srcDataset.Title,
 			Subtitle:                          srcDataset.Subtitle,
+			DatasetMetadataLinks:              []pdoknlv3.MetadataLink{}, // Todo
 			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
 			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
 		}
@@ -238,7 +240,7 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		}
 		log.Printf("Done mapping the Links...")
 
-		if len(srcDatasetFeed.Entries) > 0 {
+		if len(srcDatasetFeed.Entries) > 0 && srcDatasetFeed.Entries[0].Polygon != nil {
 			// We can assume all entries have the same bbox, so we take the first one
 			firstBbox := srcDatasetFeed.Entries[0].Polygon.BBox
 			dstDataset.Bbox = Bbox{

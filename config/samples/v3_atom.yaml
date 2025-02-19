@@ -12,9 +12,9 @@ spec:
   lifecycle:
     ttlInDays:
   service:
-    baseUrl: "http://localhost/owner/dataset"
+    baseUrl: "https://service.pdok.nl/owner/dataset/atom/index.xml"
     lang: nl
-    stylesheet: "http://localhost/atom/style/style.xsl"
+    stylesheet: "https://service.pdok.nl/atom/style/style.xsl"
     title: Test Dataset ATOM
     subtitle: Test Dataset ATOM
     ownerInfoRef: pdok
@@ -25,9 +25,6 @@ spec:
         - opensearch
         - html
     rights: https://creativecommons.org/publicdomain/zero/1.0/deed.nl
-    author:
-      name: "PDOK Beheer"
-      email: "beheerPDOK@kadaster.nl"
   datasetFeeds:
     - technicalName: dataset-1-name
       title: "dataset-1-title \"1\""

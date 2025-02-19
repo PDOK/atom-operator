@@ -364,6 +364,21 @@ spec:
                       - email
                       - name
                       type: object
+                    datasetMetadataLinks:
+                      items:
+                        description: Metadatalink represents a link in the service
+                          or dataset feed
+                        properties:
+                          metadataIdentifier:
+                            type: string
+                          templates:
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - metadataIdentifier
+                        type: object
+                      type: array
                     entries:
                       items:
                         description: Entry represents an entry within a dataset feed,
@@ -528,6 +543,21 @@ spec:
                     type: string
                   rights:
                     type: string
+                  serviceMetadataLinks:
+                    items:
+                      description: Metadatalink represents a link in the service or
+                        dataset feed
+                      properties:
+                        metadataIdentifier:
+                          type: string
+                        templates:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - metadataIdentifier
+                      type: object
+                    type: array
                   stylesheet:
                     type: string
                   subtitle:

@@ -12,11 +12,10 @@ spec:
   general:
     dataset: dataset
     datasetOwner: owner
-    #dataVersion: version
+    dataVersion:
     serviceVersion: v1_0
-    #theme: theme
+    theme:
   service:
-    #updated: "2012-03-31T13:45:03Z"
     title: Test Dataset ATOM
     subtitle: Test Dataset ATOM
     metadataIdentifier: 1234-456
