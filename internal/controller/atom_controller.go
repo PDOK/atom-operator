@@ -154,7 +154,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 		Spec: traefikv1.IngressRouteSpec{
 			Routes: []traefikv1.Route{
 				{
-					Match: "Host(`localhost`) || Host(`support-cluster.pdok-system`) && PathPrefix(`/testecho`)",
+					Match: "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && PathPrefix(`/testecho`)",
 					Kind:  "Rule",
 					Middlewares: []traefikv1.MiddlewareRef{
 						{Name: "testecho-api-headers"},
