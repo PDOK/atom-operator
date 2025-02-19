@@ -30,7 +30,7 @@ import (
 
 // AtomSpec defines the desired state of Atom.
 type AtomSpec struct {
-	Lifecycle    Lifecycle     `json:"lifecycle,omitempty"` //
+	Lifecycle    Lifecycle     `json:"lifecycle,omitempty"`
 	Service      Service       `json:"service"`
 	DatasetFeeds []DatasetFeed `json:"datasetFeeds,omitempty"`
 }
@@ -116,9 +116,17 @@ type Polygon struct {
 
 // BBox defines a bounding box with coordinates
 type BBox struct {
+	// Linksboven X coördinaat
+	// +kubebuilder:validation:Pattern="^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
 	MinX string `json:"minx"`
+	// Rechtsonder X coördinaat
+	// +kubebuilder:validation:Pattern="^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
 	MaxX string `json:"maxx"`
+	// Linksboven Y coördinaat
+	// +kubebuilder:validation:Pattern="^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
 	MinY string `json:"miny"`
+	// Rechtsonder Y coördinaat
+	// +kubebuilder:validation:Pattern="^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
 	MaxY string `json:"maxy"`
 }
 
