@@ -156,10 +156,6 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 				{
 					Match: "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && PathPrefix(`/testecho`)",
 					Kind:  "Rule",
-					Middlewares: []traefikv1.MiddlewareRef{
-						{Name: "testecho-api-headers"},
-						{Name: "testecho-api-strip-prefix"},
-					},
 					Services: []traefikv1.Service{
 						{
 							LoadBalancerSpec: traefikv1.LoadBalancerSpec{
