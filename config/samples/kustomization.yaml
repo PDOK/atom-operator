@@ -1,4 +1,5 @@
 ## Append samples of your project ##
 resources:
 - v3_atom.yaml
+- v2beta1_atom.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples

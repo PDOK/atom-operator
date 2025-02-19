@@ -4,6 +4,161 @@ metadata:
   labels:
     app.kubernetes.io/name: atom-operator
     app.kubernetes.io/managed-by: kustomize
-  name: atom-sample
+    dataset: dataset
+    dataset-owner: owner
+    service-type: atom
+  name: v3-sample
 spec:
-  # TODO(user): Add fields here
+  lifecycle:
+    ttlInDays:
+  service:
+    baseUrl: "https://service.pdok.nl/owner/dataset/atom/index.xml"
+    lang: nl
+    stylesheet: "https://service.pdok.nl/atom/style/style.xsl"
+    title: Test Dataset ATOM
+    subtitle: Test Dataset ATOM
+    ownerInfoRef: pdok
+    serviceMetadataLinks:
+      metadataIdentifier: 9615cd15-631b-45f8-a22a-d9d9c48cf211
+      templates:
+        - csv
+        - opensearch
+        - html
+    rights: https://creativecommons.org/publicdomain/zero/1.0/deed.nl
+  datasetFeeds:
+    - technicalName: dataset-1-name
+      title: "dataset-1-title \"1\""
+      subtitle: "dataset-1-subtitle \"1\""
+      datasetMetadataLinks:
+        metadataIdentifier: 9615cd15-631b-45f8-a22a-d9d9c48cf211
+        templates:
+          - csv
+          - html
+      author:
+        name: owner
+        email: info@test.nl
+      spatial_dataset_identifier_code: "ce2c46dd-50c6-4beb-ba96-f769e948b296"
+      spatial_dataset_identifier_namespace: "http://www.pdok.nl" # default value
+      entries:
+        - technicalName: "dataset-1-name"
+          downloadlinks:
+            - data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file"
+          updated: "2012-03-31T13:45:03Z"
+          polygon:
+            bbox:
+              minx: "3.31"
+              maxx: "7.241"
+              miny: "50.731"
+              maxy: "53.61"
+          srs:
+            name: "Amersfoort / RD New"
+            uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
+    - technicalName: dataset-2-name
+      title: "dataset-2-title \"2\""
+      subtitle: "dataset-2-subtitle \"2\""
+      datasetMetadataLinks:
+        metadataIdentifier: 9615cd15-631b-45f8-a22a-d9d9c48cf211
+        templates:
+          - csv
+          - html
+      links:
+        - href: https://www.eionet.europa.eu/reportnet/docs/noise/guidelines/geopackage-encoding-rule-end.pdf
+          title: encodingRule
+          type: application/pdf
+          hreflang: en
+      author:
+        name: owner
+        email: info@test.nl
+      spatial_dataset_identifier_code: "ce2c46dd-50c6-4beb-ba96-f769e948b296"
+      spatial_dataset_identifier_namespace: "http://www.pdok.nl" # default value
+      entries:
+        - technicalName: "dataset_2_id_1"
+          title: "Dataset download GPKG"
+          downloadlinks:
+            - data: "http://localazurite.blob.azurite/bucket/key2/dataset.gpkg"
+              time: "2022-12-02T14:02:14Z"
+            - data: "http://localazurite.blob.azurite/bucket/key2/dataset.gpkg"
+              version: "v1" # mogelijk deprecated
+              time: "2022-12-02T14:02:14Z"
+          updated: "2012-03-31T13:45:03Z"
+          polygon:
+            bbox:
+              minx: "3.32"
+              maxx: "7.242"
+              miny: "50.732"
+              maxy: "53.62"
+          srs:
+            name: "Amersfoort / RD New"
+            uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
+        - technicalName: "dataset_2_id_2"
+          title: "Dataset download GML"
+          content: "Per Featuretype is er een downloadbestand beschikbaar"
+          downloadlinks:
+            - data: "http://localazurite.blob.azurite/bucket/key2/dataset_2_1.gml"
+              time: "2022-12-03T15:03:15Z"
+              bbox:
+                minx: "1"
+                miny: "2"
+                maxx: "3"
+                maxy: "4"
+            - data: "http://localazurite.blob.azurite/bucket/key2/dataset_2_2.gml"
+              time: "2022-12-04T16:04:16Z"
+              bbox:
+                minx: "5"
+                miny: "6"
+                maxx: "7"
+                maxy: "8"
+          updated: "2012-03-31T13:45:03Z"
+          polygon:
+            bbox:
+              minx: "3.32"
+              maxx: "7.242"
+              miny: "50.732"
+              maxy: "53.62"
+          srs:
+            name: "Amersfoort / RD New"
+            uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
+        - technicalName: "dataset_2_id_3"
+          title: "Dataset GPKG in alternate projection"
+          downloadlinks:
+            - data: "http://localazurite.blob.azurite/bucket/key2/dataset-alt.gpkg"
+          updated: "2012-03-31T13:45:03Z"
+          polygon:
+            bbox:
+              minx: "3.32"
+              maxx: "7.242"
+              miny: "50.732"
+              maxy: "53.62"
+          srs:
+            name: "Amersfoort / RD New"
+            uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
+        - technicalName: "dataset_2_id_4"
+          title: "Dataset download GEOTiff"
+          content: "geotiff downloads"
+          downloadlinks:
+            - data: "http://localazurite.blob.azurite/bucket/key2/kaartbladindex.json"
+              rel: index
+            - data: "http://localazurite.blob.azurite/bucket/key2/00.tif"
+              time: "2022-12-03T15:03:15Z"
+              bbox:
+                minx: "1"
+                miny: "2"
+                maxx: "3"
+                maxy: "4"
+            - data: "http://localazurite.blob.azurite/bucket/key2/01.tif"
+              time: "2022-12-04T16:04:16Z"
+              bbox:
+                minx: "5"
+                miny: "6"
+                maxx: "7"
+                maxy: "8"
+          updated: "2012-03-31T13:45:03Z"
+          polygon:
+            bbox:
+              minx: "3.32"
+              maxx: "7.242"
+              miny: "50.732"
+              maxy: "53.62"
+          srs:
+            name: "Amersfoort / RD New"
+            uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
