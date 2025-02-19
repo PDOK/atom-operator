@@ -25,6 +25,7 @@ rules:
   - get
   - list
   - update
+  - watch
 - apiGroups:
   - pdok.nl
   resources:
@@ -52,7 +53,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - traefik.containo.us
+  - traefik.io
   resources:
   - ingressroutes
   verbs:
@@ -61,3 +62,4 @@ rules:
   - get
   - list
   - update
+  - watch
