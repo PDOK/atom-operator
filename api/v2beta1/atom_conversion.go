@@ -48,14 +48,11 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	dst.ObjectMeta = src.ObjectMeta
 
 	// Lifecycle
-	log.Printf("Start mapping the Lifecycle specs...")
 	if src.Spec.Kubernetes != nil && src.Spec.Kubernetes.Lifecycle != nil && src.Spec.Kubernetes.Lifecycle.TTLInDays != nil {
 		dst.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*src.Spec.Kubernetes.Lifecycle.TTLInDays))
 	}
-	log.Printf("Done mapping the Lifecycle specs...")
 
 	// Service
-	log.Printf("Start mapping the Service...")
 	dst.Spec.Service = pdoknlv3.Service{
 		BaseURL:      createBaseURL(host, src.Spec.General),
 		Lang:         "nl",
@@ -69,10 +66,8 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 		},
 		Rights: src.Spec.Service.Rights,
 	}
-	log.Printf("Done mapping the Service...")
 
 	dst.Spec.DatasetFeeds = []pdoknlv3.DatasetFeed{}
-	log.Printf("Start mapping the Datasets...")
 	for _, srcDataset := range src.Spec.Service.Datasets {
 		dstDatasetFeed := pdoknlv3.DatasetFeed{
 			TechnicalName: srcDataset.Name,
@@ -87,7 +82,6 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 		}
 
 		// Map the links
-		log.Printf("Start mapping the Links...")
 		for _, srcLink := range srcDataset.Links {
 			dstLink := pdoknlv3.Link{
 				Title: srcLink.Type,
@@ -102,10 +96,8 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 			dstDatasetFeed.Links = append(dstDatasetFeed.Links, dstLink)
 		}
-		log.Printf("Done mapping the Links...")
 
 		// Map the entries
-		log.Printf("Start mapping the Entries...")
 		for _, srcDownload := range srcDataset.Downloads {
 			dstEntry := pdoknlv3.Entry{
 				TechnicalName: srcDownload.Name,
@@ -140,7 +132,6 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			}
 
 			// Map the links
-			log.Printf("Start mapping the DownloadLinks...")
 			for _, srcLink := range srcDownload.Links {
 				dstDownloadLink := pdoknlv3.DownloadLink{}
 
@@ -167,15 +158,12 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 				dstEntry.DownloadLinks = append(dstEntry.DownloadLinks, dstDownloadLink)
 			}
-			log.Printf("Done mapping the DownloadLinks...")
 
 			dstDatasetFeed.Entries = append(dstDatasetFeed.Entries, dstEntry)
 		}
-		log.Printf("Done mapping the Entries...")
 
 		dst.Spec.DatasetFeeds = append(dst.Spec.DatasetFeeds, dstDatasetFeed)
 	}
-	log.Printf("Done mapping the Datasets...")
 
 	return nil
 }
@@ -190,7 +178,6 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	dst.ObjectMeta = src.ObjectMeta
 
 	// General
-	log.Printf("Start mapping the General specs...")
 	dst.Spec.General = General{
 		Dataset:      src.ObjectMeta.Labels["dataset"],
 		DatasetOwner: src.ObjectMeta.Labels["dataset-owner"],
@@ -207,10 +194,7 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		dst.Spec.General.Theme = &theme
 	}
 
-	log.Printf("Done mapping the General specs...")
-
 	// Service
-	log.Printf("Start mapping the Service...")
 	dst.Spec.Service = AtomService{
 		Title:    src.Spec.Service.Title,
 		Subtitle: src.Spec.Service.Subtitle,
@@ -221,10 +205,8 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		},
 		MetadataIdentifier: src.Spec.Service.ServiceMetadataLinks.MetadataIdentifier,
 	}
-	log.Printf("Done mapping the Service...")
 
 	// Datasets
-	log.Printf("Start mapping the Datasets...")
 	dst.Spec.Service.Datasets = []Dataset{}
 	for _, srcDatasetFeed := range src.Spec.DatasetFeeds {
 		dstDataset := Dataset{
@@ -235,7 +217,6 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		}
 
 		// Map the links
-		log.Printf("Start mapping the Links...")
 		for _, srcLink := range srcDatasetFeed.Links {
 			dstDataset.Links = append(dstDataset.Links, OtherLink{
 				Type:        srcLink.Title,
@@ -244,7 +225,6 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 				Language:    &srcLink.Hreflang,
 			})
 		}
-		log.Printf("Done mapping the Links...")
 
 		if len(srcDatasetFeed.Entries) > 0 && srcDatasetFeed.Entries[0].Polygon != nil {
 			// We can assume all entries have the same bbox, so we take the first one
@@ -258,7 +238,6 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		}
 
 		// Map the downloads
-		log.Printf("Start mapping the Entries...")
 		for _, srcEntry := range srcDatasetFeed.Entries {
 			dstDownload := Download{
 				Name:    srcEntry.TechnicalName,
@@ -279,9 +258,7 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			}
 
 			// Map the links
-			log.Printf("Start mapping the DownloadLinks...")
 			for _, srcDownloadLink := range srcEntry.DownloadLinks {
-
 				dstLink := Link{
 					BlobKey: &srcDownloadLink.Data,
 					Rel:     &srcDownloadLink.Rel,
@@ -303,23 +280,18 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 				}
 			}
 
-			log.Printf("Done mapping the DownloadLinks...")
 			dstDataset.Downloads = append(dstDataset.Downloads, dstDownload)
 		}
-		log.Printf("Done mapping the Entries...")
 		dst.Spec.Service.Datasets = append(dst.Spec.Service.Datasets, dstDataset)
 	}
-	log.Printf("Start mapping the Datasets...")
 
 	// Kubernetes
-	log.Printf("Start mapping the Kubernetes Specs...")
 	dst.Spec.Kubernetes = &Kubernetes{
 		Lifecycle: &Lifecycle{},
 	}
 	if src.Spec.Lifecycle.TTLInDays != nil {
 		dst.Spec.Kubernetes.Lifecycle.TTLInDays = GetIntPointer(int(*src.Spec.Lifecycle.TTLInDays))
 	}
-	log.Printf("Done mapping the Kubernetes Specs...")
 
 	return nil
 }
