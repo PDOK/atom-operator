@@ -14,6 +14,313 @@ spec:
     singular: atom
   scope: Namespaced
   versions:
+  - name: v2beta1
+    schema:
+      openAPIV3Schema:
+        description: Atom is the Schema for the atoms API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AtomSpec defines the desired state of Atom.
+            properties:
+              general:
+                description: General is the struct with all generic fields for the
+                  crds
+                properties:
+                  dataVersion:
+                    type: string
+                  dataset:
+                    type: string
+                  datasetOwner:
+                    type: string
+                  serviceVersion:
+                    type: string
+                  theme:
+                    type: string
+                required:
+                - dataset
+                - datasetOwner
+                type: object
+              kubernetes:
+                description: Kubernetes is the struct with all fields that can be
+                  defined in kubernetes fields in the crds
+                properties:
+                  autoscaling:
+                    description: Autoscaling is the struct with all fields to configure
+                      autoscalers for the crs
+                    properties:
+                      averageCpuUtilization:
+                        type: integer
+                      maxReplicas:
+                        type: integer
+                      minReplicas:
+                        type: integer
+                    type: object
+                  healthCheck:
+                    description: HealthCheck is the struct with all fields to configure
+                      healthchecks for the crs
+                    properties:
+                      boundingbox:
+                        type: string
+                      mimetype:
+                        type: string
+                      querystring:
+                        type: string
+                    type: object
+                  lifecycle:
+                    description: Lifecycle is the struct with the fields to configure
+                      lifecycle settings for the resources
+                    properties:
+                      ttlInDays:
+                        type: integer
+                    type: object
+                  resources:
+                    description: ResourceRequirements describes the compute resource
+                      requirements.
+                    properties:
+                      claims:
+                        description: |-
+                          Claims lists the names of resources, defined in spec.resourceClaims,
+                          that are used by this container.
+
+                          This is an alpha field and requires enabling the
+                          DynamicResourceAllocation feature gate.
+
+                          This field is immutable. It can only be set for containers.
+                        items:
+                          description: ResourceClaim references one entry in PodSpec.ResourceClaims.
+                          properties:
+                            name:
+                              description: |-
+                                Name must match the name of one entry in pod.spec.resourceClaims of
+                                the Pod where this field is used. It makes that resource available
+                                inside a container.
+                              type: string
+                            request:
+                              description: |-
+                                Request is the name chosen for a request in the referenced claim.
+                                If empty, everything from the claim is made available, otherwise
+                                only the result of this request.
+                              type: string
+                          required:
+                          - name
+                          type: object
+                        type: array
+                        x-kubernetes-list-map-keys:
+                        - name
+                        x-kubernetes-list-type: map
+                      limits:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: |-
+                          Limits describes the maximum amount of compute resources allowed.
+                          More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                        type: object
+                      requests:
+                        additionalProperties:
+                          anyOf:
+                          - type: integer
+                          - type: string
+                          pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                          x-kubernetes-int-or-string: true
+                        description: |-
+                          Requests describes the minimum amount of compute resources required.
+                          If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
+                          otherwise to an implementation-defined value. Requests cannot exceed Limits.
+                          More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
+                        type: object
+                    type: object
+                type: object
+              service:
+                description: AtomService is the struct for all service level fields
+                properties:
+                  author:
+                    description: Author is the struct with the input for the author
+                      field of an atom
+                    properties:
+                      email:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - email
+                    - name
+                    type: object
+                  datasets:
+                    items:
+                      description: Dataset is the struct for all dataset level fields
+                      properties:
+                        bbox:
+                          description: Bbox is the struct for the bounding box extent
+                            of an atom
+                          properties:
+                            maxx:
+                              type: number
+                            maxy:
+                              type: number
+                            minx:
+                              type: number
+                            miny:
+                              type: number
+                          required:
+                          - maxx
+                          - maxy
+                          - minx
+                          - miny
+                          type: object
+                        downloads:
+                          items:
+                            description: Download is the struct for the download level
+                              fields
+                            properties:
+                              content:
+                                type: string
+                              links:
+                                items:
+                                  description: Link represents a link in a download
+                                    entry
+                                  properties:
+                                    BlobKey:
+                                      type: string
+                                    bbox:
+                                      description: Bbox is the struct for the bounding
+                                        box extent of an atom
+                                      properties:
+                                        maxx:
+                                          type: number
+                                        maxy:
+                                          type: number
+                                        minx:
+                                          type: number
+                                        miny:
+                                          type: number
+                                      required:
+                                      - maxx
+                                      - maxy
+                                      - minx
+                                      - miny
+                                      type: object
+                                    rel:
+                                      type: string
+                                    updated:
+                                      type: string
+                                    version:
+                                      type: string
+                                  required:
+                                  - BlobKey
+                                  type: object
+                                type: array
+                              name:
+                                type: string
+                              srs:
+                                description: Srs is the struct with the information
+                                  for the srs field of an atom
+                                properties:
+                                  code:
+                                    type: string
+                                  uri:
+                                    type: string
+                                required:
+                                - code
+                                - uri
+                                type: object
+                              title:
+                                type: string
+                              updated:
+                                type: string
+                            required:
+                            - name
+                            - srs
+                            type: object
+                          type: array
+                        links:
+                          items:
+                            description: OtherLink represents any type of link that
+                              is not a download link related to the data (see Link)
+                            properties:
+                              contentType:
+                                type: string
+                              language:
+                                type: string
+                              type:
+                                type: string
+                              uri:
+                                type: string
+                            required:
+                            - type
+                            - uri
+                            type: object
+                          type: array
+                        metadataIdentifier:
+                          type: string
+                        name:
+                          type: string
+                        sourceIdentifier:
+                          type: string
+                        subtitle:
+                          type: string
+                        title:
+                          type: string
+                      required:
+                      - bbox
+                      - downloads
+                      - metadataIdentifier
+                      - name
+                      - sourceIdentifier
+                      - subtitle
+                      - title
+                      type: object
+                    type: array
+                  metadataIdentifier:
+                    type: string
+                  rights:
+                    type: string
+                  subtitle:
+                    type: string
+                  title:
+                    type: string
+                  updated:
+                    type: string
+                required:
+                - author
+                - datasets
+                - metadataIdentifier
+                - rights
+                - subtitle
+                - title
+                type: object
+            required:
+            - general
+            - service
+            type: object
+          status:
+            description: AtomStatus defines the observed state of Atom.
+            type: object
+        type: object
+    served: true
+    storage: false
+    subresources:
+      status: {}
   - name: v3
     schema:
       openAPIV3Schema:
@@ -57,6 +364,21 @@ spec:
                       - email
                       - name
                       type: object
+                    datasetMetadataLinks:
+                      items:
+                        description: Metadatalink represents a link in the service
+                          or dataset feed
+                        properties:
+                          metadataIdentifier:
+                            type: string
+                          templates:
+                            items:
+                              type: string
+                            type: array
+                        required:
+                        - metadataIdentifier
+                        type: object
+                      type: array
                     entries:
                       items:
                         description: Entry represents an entry within a dataset feed,
@@ -208,19 +530,6 @@ spec:
                 description: Service defines the service configuration for the Atom
                   feed
                 properties:
-                  author:
-                    description: |-
-                      Author todo: move to higher level
-                      Author specifies the author or owner information
-                    properties:
-                      email:
-                        type: string
-                      name:
-                        type: string
-                    required:
-                    - email
-                    - name
-                    type: object
                   baseUrl:
                     type: string
                   lang:
@@ -246,8 +555,25 @@ spec:
                       - href
                       type: object
                     type: array
+                  ownerInfoRef:
+                    type: string
                   rights:
                     type: string
+                  serviceMetadataLinks:
+                    items:
+                      description: Metadatalink represents a link in the service or
+                        dataset feed
+                      properties:
+                        metadataIdentifier:
+                          type: string
+                        templates:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - metadataIdentifier
+                      type: object
+                    type: array
                   stylesheet:
                     type: string
                   subtitle:
@@ -255,8 +581,8 @@ spec:
                   title:
                     type: string
                 required:
-                - author
                 - baseUrl
+                - ownerInfoRef
                 - title
                 type: object
             required:

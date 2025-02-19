@@ -1,0 +1,61 @@
+apiVersion: pdok.nl/v2beta1
+kind: Atom
+metadata:
+  labels:
+    app.kubernetes.io/name: atom-operator
+    app.kubernetes.io/managed-by: kustomize
+    dataset: dataset
+    dataset-owner: owner
+    service-type: atom
+  name: v2-sample
+spec:
+  general:
+    dataset: dataset
+    datasetOwner: owner
+    dataVersion:
+    serviceVersion: v1_0
+    theme:
+  service:
+    title: Test Dataset ATOM
+    subtitle: Test Dataset ATOM
+    metadataIdentifier: 1234-456
+    rights: https://creativecommons.org/publicdomain/zero/1.0/deed.nl
+    author:
+      name: "PDOK Beheer"
+      email: "beheerPDOK@kadaster.nl"
+    datasets:
+      - name: dataset-1-name
+        title: "dataset-1-title \"1\""
+        subtitle: "dataset-1-subtitle \"1\""
+        metadataIdentifier: 00000000-0000-0000-0000-000000000000
+        sourceIdentifier: 00000000-0000-0000-0000-000000000000
+        links:
+          - type: encodingRule
+            uri: https://www.eionet.europa.eu/reportnet/docs/noise/guidelines/geopackage-encoding-rule-end.pdf
+            contentType: application/pdf
+            language: en
+        bbox:
+          minx: 3.31
+          maxx: 7.241
+          miny: 50.731
+          maxy: 53.61
+        downloads:
+          - name: "dataset_1_id_1"
+            updated: "2012-03-31T13:45:03Z"
+            content: "Per Featuretype is er een downloadbestand beschikbaar"
+            title: "Dataset download GML"
+            links:
+              - BlobKey: "http://localazurite.blob.azurite/bucket/key1/dataset_1.gpkg"
+                updated: "2022-12-02T14:02:14Z"
+                bbox:
+                  minx: 3.31
+                  maxx: 7.241
+                  miny: 50.731
+                  maxy: 53.61
+                version: "v1"
+            srs:
+              uri: "https://www.opengis.net/def/crs/EPSG/0/28992"
+              code: "Amersfoort / RD New"
+  kubernetes:
+    lifecycle:
+      ttlInDays: 1
