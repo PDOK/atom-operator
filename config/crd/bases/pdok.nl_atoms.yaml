@@ -535,8 +535,6 @@ spec:
                   ownerInfoRef:
                     type: string
                   rights:
-                    description: Links                []Link       `json:"links,omitempty"`
-                      // Todo kan weg?
                     type: string
                   serviceMetadataLinks:
                     description: Metadatalink represents a link in the service or
