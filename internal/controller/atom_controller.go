@@ -26,6 +26,7 @@ package controller
 
 import (
 	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -112,7 +113,10 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			ll.Error(err, "failed to get object")
 			return ctrl.Result{}, err
 		}
-		r.Create(ctx, deployment)
+		if err := r.Create(ctx, deployment); err != nil {
+			ll.Error(err, "failed to create Deployment")
+			return ctrl.Result{}, err
+		}
 	}
 	err := r.Update(ctx, deployment)
 	if err != nil {
@@ -144,9 +148,16 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			ll.Error(err, "failed to get object")
 			return ctrl.Result{}, err
 		}
-		r.Create(ctx, service)
+		if err := r.Create(ctx, service); err != nil {
+			ll.Error(err, "failed to create Service")
+			return ctrl.Result{}, err
+		}
 	}
-	r.Update(ctx, service)
+
+	if err := r.Update(ctx, service); err != nil {
+		ll.Error(err, "failed to update Service")
+		return ctrl.Result{}, err
+	}
 
 	// Define the IngressRoute for Traefik
 	ingressRoute := &traefikiov1alpha1.IngressRoute{
@@ -186,9 +197,16 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			ll.Error(err, "failed to get object: %v")
 			return ctrl.Result{}, err
 		}
-		r.Create(ctx, ingressRoute)
+
+		if err := r.Create(ctx, ingressRoute); err != nil {
+			ll.Error(err, "failed to create IngressRoute")
+			return ctrl.Result{}, err
+		}
 	}
-	r.Update(ctx, ingressRoute)
+	if err := r.Update(ctx, ingressRoute); err != nil {
+		ll.Error(err, "failed to update IngressRoute")
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }

@@ -49,8 +49,7 @@ type Service struct {
 	Subtitle             string       `json:"subtitle,omitempty"`
 	OwnerInfoRef         string       `json:"ownerInfoRef"`
 	ServiceMetadataLinks MetadataLink `json:"serviceMetadataLinks,omitempty"`
-	//Links                []Link       `json:"links,omitempty"` // Todo kan weg?
-	Rights string `json:"rights,omitempty"`
+	Rights               string       `json:"rights,omitempty"`
 }
 
 // Link represents a link in the service or dataset feed
