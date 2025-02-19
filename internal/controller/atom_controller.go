@@ -31,7 +31,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
-	traefikv1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -149,19 +149,19 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 	r.Update(ctx, service)
 
 	// Define the IngressRoute for Traefik
-	ingressRoute := &traefikv1.IngressRoute{
+	ingressRoute := &traefikiov1alpha1.IngressRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testecho-api",
 			Namespace: testEcho.Namespace,
 		},
-		Spec: traefikv1.IngressRouteSpec{
-			Routes: []traefikv1.Route{
+		Spec: traefikiov1alpha1.IngressRouteSpec{
+			Routes: []traefikiov1alpha1.Route{
 				{
 					Match: "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && PathPrefix(`/testecho`)",
 					Kind:  "Rule",
-					Services: []traefikv1.Service{
+					Services: []traefikiov1alpha1.Service{
 						{
-							LoadBalancerSpec: traefikv1.LoadBalancerSpec{
+							LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
 								Name: "testecho-api",
 								Port: intstr.FromInt32(80),
 							},
