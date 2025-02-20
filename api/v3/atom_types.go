@@ -29,7 +29,7 @@ import (
 )
 
 // BaseURLHost is accessed by other api versions (i.e. v2beta1)
-var BaseURLHost string
+var baseURLHost string
 
 // AtomSpec defines the desired state of Atom.
 type AtomSpec struct {
@@ -175,6 +175,9 @@ func init() {
 
 // SetAtomBaseURLHost is used to set the BaseURL Host in main
 func SetAtomBaseURLHost(atomBaseURLHost string) {
-	BaseURLHost := atomBaseURLHost
-	_ = BaseURLHost // Prevent unused variable
+	baseURLHost = atomBaseURLHost
+}
+
+func GetAtomBaseURLHost() string {
+	return baseURLHost
 }
