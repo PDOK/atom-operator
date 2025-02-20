@@ -42,7 +42,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
 		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
 
-	host := "https://service.pdok.nl/" // Todo read from flag
+	log.Printf("Check Atom BaseURLHost: %s", pdoknlv3.BaseURLHost)
 
 	// ObjectMeta
 	dst.ObjectMeta = src.ObjectMeta
@@ -54,7 +54,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 	// Service
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(host, src.Spec.General),
+		BaseURL:      createBaseURL(pdoknlv3.BaseURLHost, src.Spec.General),
 		Lang:         "nl",
 		Stylesheet:   "https://service.pdok.nl/atom/style/style.xsl",
 		Title:        src.Spec.Service.Title,

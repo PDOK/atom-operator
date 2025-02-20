@@ -28,6 +28,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// BaseURLHost is accessed by other api versions (i.e. v2beta1)
+var BaseURLHost string
+
 // AtomSpec defines the desired state of Atom.
 type AtomSpec struct {
 	Lifecycle    Lifecycle     `json:"lifecycle,omitempty"`
@@ -82,7 +85,7 @@ type DatasetFeed struct {
 	Entries                           []Entry      `json:"entries,omitempty"`
 }
 
-// Metadatalink represents a link in the service or dataset feed
+// MetadataLink represents a link in the service or dataset feed
 type MetadataLink struct {
 	MetadataIdentifier string   `json:"metadataIdentifier"`
 	Templates          []string `json:"templates,omitempty"`
@@ -168,4 +171,10 @@ type AtomList struct {
 
 func init() {
 	SchemeBuilder.Register(&Atom{}, &AtomList{})
+}
+
+// SetAtomBaseURLHost is used to set the BaseURL Host in main
+func SetAtomBaseURLHost(atomBaseURLHost string) {
+	BaseURLHost := atomBaseURLHost
+	_ = BaseURLHost // Prevent unused variable
 }

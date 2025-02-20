@@ -365,7 +365,7 @@ spec:
                       - name
                       type: object
                     datasetMetadataLinks:
-                      description: Metadatalink represents a link in the service or
+                      description: MetadataLink represents a link in the service or
                         dataset feed
                       properties:
                         metadataIdentifier:
@@ -537,7 +537,7 @@ spec:
                   rights:
                     type: string
                   serviceMetadataLinks:
-                    description: Metadatalink represents a link in the service or
+                    description: MetadataLink represents a link in the service or
                       dataset feed
                     properties:
                       metadataIdentifier:
