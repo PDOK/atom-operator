@@ -61,7 +61,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 		OwnerInfoRef: "pdok",
 		ServiceMetadataLinks: pdoknlv3.MetadataLink{
 			MetadataIdentifier: src.Spec.Service.MetadataIdentifier,
-			Templates:          []string{"csv", "opensearch", "html"},
+			Templates:          []string{"csw", "opensearch", "html"},
 		},
 		Rights: src.Spec.Service.Rights,
 	}
@@ -74,7 +74,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			Subtitle:      srcDataset.Subtitle,
 			DatasetMetadataLinks: pdoknlv3.MetadataLink{
 				MetadataIdentifier: srcDataset.MetadataIdentifier,
-				Templates:          []string{"csv", "html"},
+				Templates:          []string{"csw", "html"},
 			},
 			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
 			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
