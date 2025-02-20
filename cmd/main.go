@@ -90,7 +90,7 @@ func main() {
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 
-	flag.StringVar(&atomBaseURLHost, "atom-baseurl-host", "https://service.pdok.nl/main/",
+	flag.StringVar(&atomBaseURLHost, "atom-baseurl-host", "http://localhost:32788/",
 		"The host which is used to create the Atom BaseURL.")
 	opts := zap.Options{
 		Development: true,
@@ -100,7 +100,6 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	setupLog.Info("Checking atomBaseURLHost value: " + atomBaseURLHost)
 	pdoknlv3.SetAtomBaseURLHost(atomBaseURLHost)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled

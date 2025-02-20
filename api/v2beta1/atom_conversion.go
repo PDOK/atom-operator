@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,8 +42,6 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
 		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
-
-	log.Printf("Check Atom BaseURLHost: %s", pdoknlv3.GetAtomBaseURLHost())
 
 	// ObjectMeta
 	dst.ObjectMeta = src.ObjectMeta
@@ -297,7 +296,6 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 }
 
 func createBaseURL(host string, general General) (baseURL string) {
-
 	atomURI := fmt.Sprintf("%s/%s", general.DatasetOwner, general.Dataset)
 	if general.Theme != nil {
 		atomURI += fmt.Sprintf("/%s", *general.Theme)
@@ -308,7 +306,7 @@ func createBaseURL(host string, general General) (baseURL string) {
 		atomURI += fmt.Sprintf("/%s", *general.ServiceVersion)
 	}
 
-	baseURL = fmt.Sprintf("%s/%s/index.xml", host, atomURI)
+	baseURL = fmt.Sprintf("%s/%s/index.xml", strings.TrimSuffix(host, "/"), atomURI)
 	return
 }
 
