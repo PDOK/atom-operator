@@ -26,12 +26,13 @@ package controller
 
 import (
 	"context"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
-	traefikv1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -49,9 +50,9 @@ type AtomReconciler struct {
 // +kubebuilder:rbac:groups=pdok.nl,resources=atoms,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=pdok.nl,resources=atoms/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=pdok.nl,resources=atoms/finalizers,verbs=update
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=create;get;update;list;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=watch;create;get;update;list;delete
 // +kubebuilder:rbac:groups=core,resources=services,verbs=watch;create;get;update;list;delete
-// +kubebuilder:rbac:groups=traefik.containo.us,resources=ingressroutes,verbs=create;get;update;list;delete
+// +kubebuilder:rbac:groups=traefik.io,resources=ingressroutes,verbs=get;list;watch;create;update;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -112,7 +113,10 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			ll.Error(err, "failed to get object")
 			return ctrl.Result{}, err
 		}
-		r.Create(ctx, deployment)
+		if err := r.Create(ctx, deployment); err != nil {
+			ll.Error(err, "failed to create Deployment")
+			return ctrl.Result{}, err
+		}
 	}
 	err := r.Update(ctx, deployment)
 	if err != nil {
@@ -144,24 +148,31 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			ll.Error(err, "failed to get object")
 			return ctrl.Result{}, err
 		}
-		r.Create(ctx, service)
+		if err := r.Create(ctx, service); err != nil {
+			ll.Error(err, "failed to create Service")
+			return ctrl.Result{}, err
+		}
 	}
-	r.Update(ctx, service)
+
+	if err := r.Update(ctx, service); err != nil {
+		ll.Error(err, "failed to update Service")
+		return ctrl.Result{}, err
+	}
 
 	// Define the IngressRoute for Traefik
-	ingressRoute := &traefikv1.IngressRoute{
+	ingressRoute := &traefikiov1alpha1.IngressRoute{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "testecho-api",
 			Namespace: testEcho.Namespace,
 		},
-		Spec: traefikv1.IngressRouteSpec{
-			Routes: []traefikv1.Route{
+		Spec: traefikiov1alpha1.IngressRouteSpec{
+			Routes: []traefikiov1alpha1.Route{
 				{
 					Match: "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && PathPrefix(`/testecho`)",
 					Kind:  "Rule",
-					Services: []traefikv1.Service{
+					Services: []traefikiov1alpha1.Service{
 						{
-							LoadBalancerSpec: traefikv1.LoadBalancerSpec{
+							LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
 								Name: "testecho-api",
 								Port: intstr.FromInt32(80),
 							},
@@ -186,9 +197,16 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 			ll.Error(err, "failed to get object: %v")
 			return ctrl.Result{}, err
 		}
-		r.Create(ctx, ingressRoute)
+
+		if err := r.Create(ctx, ingressRoute); err != nil {
+			ll.Error(err, "failed to create IngressRoute")
+			return ctrl.Result{}, err
+		}
 	}
-	r.Update(ctx, ingressRoute)
+	if err := r.Update(ctx, ingressRoute); err != nil {
+		ll.Error(err, "failed to update IngressRoute")
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }

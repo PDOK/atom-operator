@@ -365,20 +365,18 @@ spec:
                       - name
                       type: object
                     datasetMetadataLinks:
-                      items:
-                        description: Metadatalink represents a link in the service
-                          or dataset feed
-                        properties:
-                          metadataIdentifier:
+                      description: MetadataLink represents a link in the service or
+                        dataset feed
+                      properties:
+                        metadataIdentifier:
+                          type: string
+                        templates:
+                          items:
                             type: string
-                          templates:
-                            items:
-                              type: string
-                            type: array
-                        required:
-                        - metadataIdentifier
-                        type: object
-                      type: array
+                          type: array
+                      required:
+                      - metadataIdentifier
+                      type: object
                     entries:
                       items:
                         description: Entry represents an entry within a dataset feed,
@@ -534,46 +532,23 @@ spec:
                     type: string
                   lang:
                     type: string
-                  links:
-                    items:
-                      description: Link represents a link in the service or dataset
-                        feed
-                      properties:
-                        category:
-                          type: string
-                        href:
-                          type: string
-                        hreflang:
-                          type: string
-                        rel:
-                          type: string
-                        title:
-                          type: string
-                        type:
-                          type: string
-                      required:
-                      - href
-                      type: object
-                    type: array
                   ownerInfoRef:
                     type: string
                   rights:
                     type: string
                   serviceMetadataLinks:
-                    items:
-                      description: Metadatalink represents a link in the service or
-                        dataset feed
-                      properties:
-                        metadataIdentifier:
+                    description: MetadataLink represents a link in the service or
+                      dataset feed
+                    properties:
+                      metadataIdentifier:
+                        type: string
+                      templates:
+                        items:
                           type: string
-                        templates:
-                          items:
-                            type: string
-                          type: array
-                      required:
-                      - metadataIdentifier
-                      type: object
-                    type: array
+                        type: array
+                    required:
+                    - metadataIdentifier
+                    type: object
                   stylesheet:
                     type: string
                   subtitle:

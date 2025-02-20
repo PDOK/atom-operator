@@ -26,9 +26,15 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
+
+	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	"golang.org/x/tools/go/packages"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -70,12 +76,23 @@ var _ = BeforeSuite(func() {
 	err = pdoknlv3.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = traefikiov1alpha1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	By("bootstrapping test environment")
+	traefikCRDPath := must(getTraefikCRDPath())
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
+		CRDInstallOptions: envtest.CRDInstallOptions{
+			Scheme: nil,
+			Paths: []string{
+				filepath.Join("..", "..", "config", "crd", "bases"),
+				traefikCRDPath,
+			},
+			ErrorIfPathMissing: true,
+		},
 	}
 
 	// Retrieve the first found binary directory to allow running tests from IDEs
@@ -121,4 +138,25 @@ func getFirstFoundEnvTestBinaryDir() string {
 		}
 	}
 	return ""
+}
+
+func getTraefikCRDPath() (string, error) {
+	traefikModule, err := getModule("github.com/traefik/traefik/v2")
+	if err != nil {
+		return "", err
+	}
+	if traefikModule.Dir == "" {
+		return "", errors.New("cannot find path for traefik module")
+	}
+	return filepath.Join(traefikModule.Dir, "integration", "fixtures", "k8s", "01-traefik-crd.yml"), nil
+}
+
+func getModule(name string) (module *packages.Module, err error) {
+	out, err := exec.Command("go", "list", "-json", "-m", name).Output()
+	if err != nil {
+		return
+	}
+	module = &packages.Module{}
+	err = json.Unmarshal(out, module)
+	return
 }
