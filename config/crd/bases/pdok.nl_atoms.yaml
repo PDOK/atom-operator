@@ -511,7 +511,6 @@ spec:
                     subtitle:
                       type: string
                     technicalName:
-                      description: Hallo Basim lala
                       type: string
                     title:
                       type: string
