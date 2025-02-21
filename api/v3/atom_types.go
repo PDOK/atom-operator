@@ -28,6 +28,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// BaseURLHost is accessed by other api versions (i.e. v2beta1)
+var baseURLHost string
+
 // AtomSpec defines the desired state of Atom.
 type AtomSpec struct {
 	Lifecycle    Lifecycle     `json:"lifecycle,omitempty"`
@@ -42,15 +45,14 @@ type Lifecycle struct {
 
 // Service defines the service configuration for the Atom feed
 type Service struct {
-	BaseURL              string         `json:"baseUrl"`
-	Lang                 string         `json:"lang,omitempty"`
-	Stylesheet           string         `json:"stylesheet,omitempty"`
-	Title                string         `json:"title"`
-	Subtitle             string         `json:"subtitle,omitempty"`
-	OwnerInfoRef         string         `json:"ownerInfoRef"`
-	ServiceMetadataLinks []MetadataLink `json:"serviceMetadataLinks,omitempty"`
-	Links                []Link         `json:"links,omitempty"` // Todo kan weg?
-	Rights               string         `json:"rights,omitempty"`
+	BaseURL              string       `json:"baseUrl"`
+	Lang                 string       `json:"lang,omitempty"`
+	Stylesheet           string       `json:"stylesheet,omitempty"`
+	Title                string       `json:"title"`
+	Subtitle             string       `json:"subtitle,omitempty"`
+	OwnerInfoRef         string       `json:"ownerInfoRef"`
+	ServiceMetadataLinks MetadataLink `json:"serviceMetadataLinks,omitempty"`
+	Rights               string       `json:"rights,omitempty"`
 }
 
 // Link represents a link in the service or dataset feed
@@ -72,18 +74,18 @@ type Author struct {
 
 // DatasetFeed represents individual dataset feeds within the Atom service
 type DatasetFeed struct {
-	TechnicalName                     string         `json:"technicalName"`
-	Title                             string         `json:"title"`
-	Subtitle                          string         `json:"subtitle,omitempty"`
-	Links                             []Link         `json:"links,omitempty"` // Todo kan weg?
-	DatasetMetadataLinks              []MetadataLink `json:"datasetMetadataLinks,omitempty"`
-	Author                            Author         `json:"author,omitempty"`
-	SpatialDatasetIdentifierCode      string         `json:"spatial_dataset_identifier_code,omitempty"`
-	SpatialDatasetIdentifierNamespace string         `json:"spatial_dataset_identifier_namespace,omitempty"`
-	Entries                           []Entry        `json:"entries,omitempty"`
+	TechnicalName                     string       `json:"technicalName"`
+	Title                             string       `json:"title"`
+	Subtitle                          string       `json:"subtitle,omitempty"`
+	Links                             []Link       `json:"links,omitempty"` // Todo kan weg?
+	DatasetMetadataLinks              MetadataLink `json:"datasetMetadataLinks,omitempty"`
+	Author                            Author       `json:"author,omitempty"`
+	SpatialDatasetIdentifierCode      string       `json:"spatial_dataset_identifier_code,omitempty"`
+	SpatialDatasetIdentifierNamespace string       `json:"spatial_dataset_identifier_namespace,omitempty"`
+	Entries                           []Entry      `json:"entries,omitempty"`
 }
 
-// Metadatalink represents a link in the service or dataset feed
+// MetadataLink represents a link in the service or dataset feed
 type MetadataLink struct {
 	MetadataIdentifier string   `json:"metadataIdentifier"`
 	Templates          []string `json:"templates,omitempty"`
@@ -169,4 +171,13 @@ type AtomList struct {
 
 func init() {
 	SchemeBuilder.Register(&Atom{}, &AtomList{})
+}
+
+// SetAtomBaseURLHost is used to set the BaseURL Host in main
+func SetAtomBaseURLHost(atomBaseURLHost string) {
+	baseURLHost = atomBaseURLHost
+}
+
+func GetAtomBaseURLHost() string {
+	return baseURLHost
 }

@@ -1,8 +1,9 @@
 package atom_generator
 
 import (
-	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	"time"
+
+	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 )
 
 func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom) (atomGeneratorConfig AtomGeneratorConfig, err error) {
@@ -121,5 +122,5 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom) (atomGeneratorConfig Ato
 		},
 	}
 
-	return
+	return atomGeneratorConfig, err
 }

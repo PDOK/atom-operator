@@ -21,7 +21,7 @@ spec:
     serviceMetadataLinks:
       metadataIdentifier: 9615cd15-631b-45f8-a22a-d9d9c48cf211
       templates:
-        - csv
+        - csw
         - opensearch
         - html
     rights: https://creativecommons.org/publicdomain/zero/1.0/deed.nl
@@ -32,7 +32,7 @@ spec:
       datasetMetadataLinks:
         metadataIdentifier: 9615cd15-631b-45f8-a22a-d9d9c48cf211
         templates:
-          - csv
+          - csw
           - html
       author:
         name: owner
@@ -59,7 +59,7 @@ spec:
       datasetMetadataLinks:
         metadataIdentifier: 9615cd15-631b-45f8-a22a-d9d9c48cf211
         templates:
-          - csv
+          - csw
           - html
       links:
         - href: https://www.eionet.europa.eu/reportnet/docs/noise/guidelines/geopackage-encoding-rule-end.pdf
