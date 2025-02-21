@@ -15,12 +15,12 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom) (atomGeneratorConfig ato
 				ID:         atom.Spec.Service.BaseURL + "/index.xml",
 				InspireDls: "http://inspire.ec.europa.eu/schemas/inspire_dls/1.0",
 				Lang:       &lang,
-				//XMLStylesheet: "",
+				// XMLStylesheet: "",
 			},
 		},
 	}
 
-	//atomGeneratorConfig = AtomGeneratorConfig{
+	// atomGeneratorConfig = AtomGeneratorConfig{
 	//	Feeds: []Feed{
 	//		{
 	//			ID:         atom.Spec.Service.BaseURL + "/index.xml",
@@ -130,7 +130,8 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom) (atomGeneratorConfig ato
 	//			},
 	//		},
 	//	},
-	//}
+	// }
 
-	return
+	// return
+	return atomGeneratorConfig, err
 }
