@@ -54,7 +54,6 @@ type Service struct {
 	OwnerInfoRef         string       `json:"ownerInfoRef"`
 	ServiceMetadataLinks MetadataLink `json:"serviceMetadataLinks,omitempty"`
 	Rights               string       `json:"rights,omitempty"`
-	Links                []Link       `json:"links,omitempty"`
 }
 
 // Link represents a link in the service or dataset feed

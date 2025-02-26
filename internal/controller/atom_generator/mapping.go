@@ -11,11 +11,10 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom) (atomGeneratorConfig ato
 
 	language := "nl"
 	xmlSheet := "https://service.pdok.nl/atom/style/style.xsl"
-	selfLink := getLinkByRelation(atom, language, "self")
-	describedbyLink := getLinkByRelation(atom, language, "describedby")
-	searchLink := getLinkByRelation(atom, language, "search")
-	upLink := getLinkByRelation(atom, language, "up")
-	relatedLink := getLinkByRelation(atom, language, "related")
+	selfLink := getSelfLink(atom, language)
+	describedbyLink := getCSWDescribedbyLink(atom, language)
+	searchLink := getSearchLink(atom, language)
+	relatedLink := getHTMLRelatedLink(atom, language)
 	latestUpdated := getLatestUpdate(atom.Spec.DatasetFeeds)
 
 	atomGeneratorConfig = atom_feed.Feeds{
@@ -34,7 +33,6 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom) (atomGeneratorConfig ato
 				Self:        &selfLink,
 				Describedby: &describedbyLink,
 				Search:      &searchLink,
-				Up:          &upLink,
 				Link: []atom_feed.Link{
 					relatedLink,
 				},
@@ -77,13 +75,37 @@ func getEntriesArray(atom pdoknlv3.Atom) []atom_feed.Entry {
 				SpatialDatasetIdentifierCode:      datasetFeed.SpatialDatasetIdentifierCode,
 				SpatialDatasetIdentifierNamespace: datasetFeed.SpatialDatasetIdentifierNamespace,
 				Category:                          getCategory(entry.SRS),
-				//Link:                              nil, // []Links
+				Link:                              getEntryLinksArray(entry), // []Links
 			}
 			retEntriesArray = append(retEntriesArray, singleEntry)
 		}
 	}
 
 	return retEntriesArray
+}
+
+func getEntryLinksArray(entry pdoknlv3.Entry) []atom_feed.Link {
+	linksArray := []atom_feed.Link{}
+	for _, link := range entry.DownloadLinks {
+		dataLink := link.Data
+		bboxString := getBboxString(link.BBox)
+
+		l := atom_feed.Link{
+			Data:    &dataLink,
+			Rel:     link.Rel,
+			Version: link.Version,
+			Time:    link.Time,
+			Bbox:    &bboxString,
+		}
+		linksArray = append(linksArray, l)
+	}
+	return linksArray
+}
+
+func getBboxString(bbox *pdoknlv3.BBox) string {
+	var sb strings.Builder
+	sb.WriteString(bbox.MinX + " " + bbox.MinY + " " + bbox.MaxX + " " + bbox.MaxY)
+	return sb.String()
 }
 
 func getCategory(srs *pdoknlv3.SRS) []atom_feed.Category {
@@ -111,21 +133,6 @@ func getBoundingBoxPolygon(bbox pdoknlv3.BBox) string {
 	return sb.String()
 }
 
-func getLinkByRelation(atom pdoknlv3.Atom, language string, relation string) atom_feed.Link {
-	for _, link := range atom.Spec.Service.Links {
-		if link.Rel == relation {
-			return atom_feed.Link{
-				Rel:      relation,
-				Href:     link.Href,
-				Type:     link.Type,
-				Title:    link.Title,
-				Hreflang: &language,
-			}
-		}
-	}
-	return atom_feed.Link{}
-}
-
 func getAuthor(author pdoknlv3.Author) atom_feed.Author {
 	return atom_feed.Author{
 		Name:  author.Name,
@@ -133,159 +140,55 @@ func getAuthor(author pdoknlv3.Author) atom_feed.Author {
 	}
 }
 
-// atomGeneratorConfig = AtomGeneratorConfig{
-//	Feeds: []Feed{
-//		{
-//			ID:         atom.Spec.Service.BaseURL + "/index.xml",
-//			InspireDLS: "http://inspire.ec.europa.eu/schemas/inspire_dls/1.0",
-//			Lang:       "nl",
-//			Stylesheet: "example.com/styles/atom.xsl",
-//			Title:      "Service Title",
-//			Subtitle:   "Service Subtitle",
-//			Link: []Link{
-//				{
-//					Rel:   "self",
-//					Href:  atom.Spec.Service.BaseURL + "/index.xml",
-//					Title: "Service Title",
-//					Type:  "application/atom+xml",
-//				},
-//				{
-//					Rel:  "describedby",
-//					Href: "example.com/getrecord?id=service1",
-//					Type: "application/xml",
-//				},
-//				{
-//					Rel:   "search",
-//					Href:  "example.com/opensearch.xml",
-//					Title: "Open Search document voor INSPIRE Download service PDOK",
-//					Type:  "application/opensearchdescription+xml",
-//				},
-//				{
-//					Rel:   "related",
-//					Href:  "example.com/metadata/service1",
-//					Type:  "text/html",
-//					Title: "NGR pagina voor deze download service",
-//				},
-//			},
-//			Rights:  "All rights reserved",
-//			Updated: &updatedTime,
-//			Author: Author{
-//				Name:  "PDOK Beheer",
-//				Email: "beheerPDOK@kadaster.nl",
-//			},
-//			Entry: []Entry{
-//				{
-//					ID:                                "example.com/atom/dataset1.xml",
-//					Title:                             "Dataset 1 Title",
-//					SpatialDatasetIdentifierCode:      "dataset1-id",
-//					SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
-//					Link: []Link{
-//						{
-//							Rel:  "describedby",
-//							Href: "example.com/getrecord?id=dataset1",
-//							Type: "application/xml",
-//						},
-//						{
-//							Rel:   "alternate",
-//							Href:  "example.com/atom/dataset1.xml",
-//							Type:  "application/atom+xml",
-//							Title: "Dataset 1 Title",
-//						},
-//					},
-//					Updated: &updatedTime,
-//					Summary: "Dataset 1 Subtitle",
-//					Polygon: "42.0 12.0 42.0 13.0 43.0 13.0 43.0 12.0 42.0 12.0",
-//					Category: []Category{
-//						{
-//							Term:  "urn:ogc:def:crs:EPSG::4326",
-//							Label: "EPSG:4326",
-//						},
-//					},
-//				},
-//				// Adding another entry for completeness
-//				{
-//					ID:    "example.com/atom/dataset2.xml",
-//					Title: "Dataset 2 Title",
-//					Link: []Link{
-//						{
-//							Rel:  "self",
-//							Href: "example.com/atom/dataset2.xml",
-//						},
-//						{
-//							Rel:   "up",
-//							Href:  "example.com/atom/index.xml",
-//							Type:  "application/atom+xml",
-//							Title: "Top Atom Download Service Feed",
-//						},
-//						{
-//							Rel:  "describedby",
-//							Href: "example.com/getrecord?id=service1",
-//							Type: "text/html",
-//						},
-//						{
-//							Rel:   "related",
-//							Href:  "example.com/metadata/dataset2",
-//							Type:  "text/html",
-//							Title: "NGR pagina voor deze dataset",
-//						},
-//						{
-//							Rel:      "describedby",
-//							Href:     "example.com/link1",
-//							Title:    "Link Type 1",
-//							Type:     "application/pdf",
-//							Hreflang: "en",
-//						},
-//						// Add more links if needed
-//					},
-//					Rights:  "All rights reserved",
-//					Updated: "20-04-2024 huplelepup",
-//				},
-//			},
-//		},
-//	},
-// }
+func getSelfLink(atom pdoknlv3.Atom, language string) atom_feed.Link {
+	return atom_feed.Link{
+		Rel:      "self",
+		Href:     atom.Spec.Service.BaseURL + "/index.xml",
+		Title:    strings.Replace(atom.Spec.Service.Title, "\"", "\\\"", -1),
+		Type:     "application/atom+xml",
+		Hreflang: &language,
+	}
+}
 
-// return
+// TODO: Maak gebruik van de MetadataUrls uit https://github.com/PDOK/operator-commons/blob/master/api/v1/ownerinfo_types.go  Voor nu is hardcoded urlś zijn gebouwd.
+func getCSWDescribedbyLink(atom pdoknlv3.Atom, language string) atom_feed.Link {
+	for _, template := range atom.Spec.Service.ServiceMetadataLinks.Templates {
+		if template == "csw" {
+			return atom_feed.Link{
+				Rel:      "describedby",
+				Href:     "https://www.nationaalgeoregister.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=" + atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier,
+				Type:     "application/xml",
+				Hreflang: &language,
+			}
+		}
+	}
+	return atom_feed.Link{}
+}
 
-//func getSelfLink(atom pdoknlv3.Atom, language string) atom_feed.Link {
-//	return atom_feed.Link{
-//		Rel:      "self",
-//		Href:     atom.Spec.Service.BaseURL + "/index.xml",
-//		Title:    atom.Spec.Service.Title,
-//		Type:     "application/atom+xml",
-//		Hreflang: &language,
-//	}
-//}
-//
-//func getDescribedbyLink(atom pdoknlv3.Atom, language string) atom_feed.Link {
-//	href, title := "", ""
-//	for _, link := range atom.Spec.Service.Links {
-//		if link.Rel == "describedby" {
-//			href = link.Href
-//			title = link.Title
-//		}
-//	}
-//	return atom_feed.Link{
-//		Rel:      "describedby",
-//		Href:     href,
-//		Type:     "application/xml",
-//		Hreflang: &language,
-//	}
-//}
-//
-//func getSearchLink(atom pdoknlv3.Atom, language string) atom_feed.Link {
-//	href, title := "", ""
-//	for _, link := range atom.Spec.Service.Links {
-//		if link.Rel == "search" {
-//			href = link.Href
-//			title = link.Title
-//		}
-//	}
-//	return atom_feed.Link{
-//		Rel:      "search",
-//		Href:     href,
-//		Type:     "application/opensearchdescription+xml",
-//		Title:    title,
-//		Hreflang: &language,
-//	}
-//}
+func getSearchLink(atom pdoknlv3.Atom, language string) atom_feed.Link {
+	for _, template := range atom.Spec.Service.ServiceMetadataLinks.Templates {
+		if template == "opensearch" {
+			return atom_feed.Link{
+				Rel:      "search",
+				Href:     "https://www.nationaalgeoregister.nl/geonetwork/opensearch/dut/" + atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier + "/OpenSearchDescription.xml",
+				Type:     "application/xml",
+				Hreflang: &language,
+			}
+		}
+	}
+	return atom_feed.Link{}
+}
+
+func getHTMLRelatedLink(atom pdoknlv3.Atom, language string) atom_feed.Link {
+	for _, template := range atom.Spec.Service.ServiceMetadataLinks.Templates {
+		if template == "html" {
+			return atom_feed.Link{
+				Rel:      "related",
+				Href:     "https://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/" + atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier,
+				Type:     "text/html",
+				Hreflang: &language,
+			}
+		}
+	}
+	return atom_feed.Link{}
+}
