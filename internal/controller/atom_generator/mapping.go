@@ -16,6 +16,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom) (atomGeneratorConfig ato
 	searchLink := getLinkByRelation(atom, language, "search")
 	upLink := getLinkByRelation(atom, language, "up")
 	relatedLink := getLinkByRelation(atom, language, "related")
+	latestUpdated := getLatestUpdate(atom.Spec.DatasetFeeds)
 
 	atomGeneratorConfig = atom_feed.Feeds{
 		Feeds: []atom_feed.Feed{
@@ -37,14 +38,26 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom) (atomGeneratorConfig ato
 				Link: []atom_feed.Link{
 					relatedLink,
 				},
-				Rights: atom.Spec.Service.Rights,
-				//Updated: atom.Spec.Service.U niet meer vindbaar
-				Author: getAuthor(atom.Spec.Author),
-				Entry:  getEntriesArray(atom),
+				Rights:  atom.Spec.Service.Rights,
+				Updated: &latestUpdated,
+				Author:  getAuthor(atom.Spec.Author),
+				Entry:   getEntriesArray(atom),
 			},
 		},
 	}
 	return atomGeneratorConfig, err
+}
+
+func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) string {
+	updateTime := feeds[0].Entries[0].Updated
+	for _, datasetFeed := range feeds {
+		for _, entry := range datasetFeed.Entries {
+			if updateTime.Before(entry.Updated) {
+				updateTime = entry.Updated
+			}
+		}
+	}
+	return updateTime.Format(time.RFC3339)
 }
 
 func getEntriesArray(atom pdoknlv3.Atom) []atom_feed.Entry {
@@ -54,16 +67,16 @@ func getEntriesArray(atom pdoknlv3.Atom) []atom_feed.Entry {
 			updateTime := entry.Updated.Format(time.RFC3339)
 
 			singleEntry := atom_feed.Entry{
-				ID:      entry.TechnicalName,
-				Title:   entry.Title,
-				Content: entry.Content,
-				//Summary: entry.,
-				//Rights: entry.Right,
-				Updated: &updateTime,
-				Polygon: getBoundingBoxPolygon(entry.Polygon),
-				//SpatialDatasetIdentifierCode:      nil,
-				//SpatialDatasetIdentifierNamespace: nil,
-				//Category:                          nil,
+				ID:                                entry.TechnicalName,
+				Title:                             entry.Title,
+				Content:                           entry.Content,
+				Summary:                           datasetFeed.Subtitle,
+				Rights:                            atom.Spec.Service.Rights,
+				Updated:                           &updateTime,
+				Polygon:                           getBoundingBoxPolygon(entry.Polygon.BBox),
+				SpatialDatasetIdentifierCode:      datasetFeed.SpatialDatasetIdentifierCode,
+				SpatialDatasetIdentifierNamespace: datasetFeed.SpatialDatasetIdentifierNamespace,
+				Category:                          getCategory(entry.SRS),
 				//Link:                              nil, // []Links
 			}
 			retEntriesArray = append(retEntriesArray, singleEntry)
@@ -73,18 +86,28 @@ func getEntriesArray(atom pdoknlv3.Atom) []atom_feed.Entry {
 	return retEntriesArray
 }
 
-func getBoundingBoxPolygon(polygon *pdoknlv3.Polygon) string {
+func getCategory(srs *pdoknlv3.SRS) []atom_feed.Category {
+	cat := []atom_feed.Category{
+		{
+			Term:  srs.URI,
+			Label: srs.Name,
+		},
+	}
+	return cat
+}
+
+func getBoundingBoxPolygon(bbox pdoknlv3.BBox) string {
 	var sb strings.Builder
 	// punt links beneden start van een polygon
-	sb.WriteString(polygon.BBox.MinX + " " + polygon.BBox.MinY + " ")
+	sb.WriteString(bbox.MinX + " " + bbox.MinY + " ")
 	// punt links boven start van een polygon
-	sb.WriteString(polygon.BBox.MinX + " " + polygon.BBox.MaxY + " ")
+	sb.WriteString(bbox.MinX + " " + bbox.MaxY + " ")
 	// punt rechts boven start van een polygon
-	sb.WriteString(polygon.BBox.MaxX + " " + polygon.BBox.MaxY + " ")
+	sb.WriteString(bbox.MaxX + " " + bbox.MaxY + " ")
 	// punt rechts beneden start van een polygon
-	sb.WriteString(polygon.BBox.MaxX + " " + polygon.BBox.MinY + " ")
+	sb.WriteString(bbox.MaxX + " " + bbox.MinY + " ")
 	// punt links beneden. eninde van een polygon is gelijk aan de start
-	sb.WriteString(polygon.BBox.MinX + " " + polygon.BBox.MinY + " ")
+	sb.WriteString(bbox.MinX + " " + bbox.MinY + " ")
 	return sb.String()
 }
 
