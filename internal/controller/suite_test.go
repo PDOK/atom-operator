@@ -33,6 +33,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	operatorcommonsv1 "github.com/pdok/operator-commons/api/v1"
 	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	"golang.org/x/tools/go/packages"
 
@@ -79,10 +80,15 @@ var _ = BeforeSuite(func() {
 	err = traefikiov1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = operatorcommonsv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	By("bootstrapping test environment")
 	traefikCRDPath := must(getTraefikCRDPath())
+	ownerInfoCRDPath := must(getOwnerInfoCRDPath())
+
 	testEnv = &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
 		CRDInstallOptions: envtest.CRDInstallOptions{
@@ -90,6 +96,7 @@ var _ = BeforeSuite(func() {
 			Paths: []string{
 				filepath.Join("..", "..", "config", "crd", "bases"),
 				traefikCRDPath,
+				ownerInfoCRDPath,
 			},
 			ErrorIfPathMissing: true,
 		},
@@ -138,6 +145,17 @@ func getFirstFoundEnvTestBinaryDir() string {
 		}
 	}
 	return ""
+}
+
+func getOwnerInfoCRDPath() (string, error) {
+	operatorCommonsModule, err := getModule("github.com/pdok/operator-commons")
+	if err != nil {
+		return "", err
+	}
+	if operatorCommonsModule.Dir == "" {
+		return "", errors.New("cannot find path for OperatorCommons module")
+	}
+	return filepath.Join(operatorCommonsModule.Dir, "config", "crd", "bases", "pdok.nl_ownerinfoes.yaml"), nil
 }
 
 func getTraefikCRDPath() (string, error) {

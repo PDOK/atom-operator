@@ -27,6 +27,8 @@ package controller
 import (
 	"context"
 
+	v1 "github.com/pdok/operator-commons/api/v1"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -40,26 +42,58 @@ import (
 
 var _ = Describe("Atom Controller", func() {
 	Context("When reconciling a resource", func() {
-		const resourceName = "test-resource"
+		const atomResourceName = "test-atom"
+		const ownerInfoResourceName = "pdok"
+		const namespace = "default"
 
 		ctx := context.Background()
 
-		typeNamespacedName := types.NamespacedName{
-			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+		typeNamespacedNameAtom := types.NamespacedName{
+			Name:      atomResourceName,
+			Namespace: namespace,
 		}
 		atom := &pdoknlv3.Atom{}
 
+		typeNamespacedNameOwnerInfo := types.NamespacedName{
+			Namespace: namespace,
+			Name:      ownerInfoResourceName,
+		}
+		ownerInfo := &v1.OwnerInfo{}
+
 		BeforeEach(func() {
+
 			By("creating the custom resource for the Kind Atom")
-			err := k8sClient.Get(ctx, typeNamespacedName, atom)
+			err := k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
 			if err != nil && errors.IsNotFound(err) {
 				resource := &pdoknlv3.Atom{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      resourceName,
-						Namespace: "default",
+						Namespace: namespace,
+						Name:      atomResourceName,
+					},
+					Spec: pdoknlv3.AtomSpec{
+						Service: pdoknlv3.Service{
+							OwnerInfoRef: ownerInfoResourceName,
+						},
 					},
 					// TODO(user): Specify other spec details if needed.
+				}
+				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
+			}
+
+			By("creating the custom resource for the Kind OwnerInfo")
+			err = k8sClient.Get(ctx, typeNamespacedNameOwnerInfo, ownerInfo)
+			if err != nil && errors.IsNotFound(err) { //
+
+				resource := &v1.OwnerInfo{
+					ObjectMeta: metav1.ObjectMeta{
+						Namespace: namespace,
+						Name:      ownerInfoResourceName,
+					},
+					// TODO(user): Specify other spec details if needed.
+					// Author
+					// CSW template
+					// Opensearch template
+					// HTML template
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
@@ -67,12 +101,19 @@ var _ = Describe("Atom Controller", func() {
 
 		AfterEach(func() {
 			// TODO(user): Cleanup logic after each test, like removing the resource instance.
-			resource := &pdoknlv3.Atom{}
-			err := k8sClient.Get(ctx, typeNamespacedName, resource)
+			atomResource := &pdoknlv3.Atom{}
+			err := k8sClient.Get(ctx, typeNamespacedNameAtom, atomResource)
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Cleanup the specific resource instance Atom")
-			Expect(k8sClient.Delete(ctx, resource)).To(Succeed())
+			Expect(k8sClient.Delete(ctx, atomResource)).To(Succeed())
+
+			ownerInfoResource := &v1.OwnerInfo{}
+			err = k8sClient.Get(ctx, typeNamespacedNameOwnerInfo, ownerInfoResource)
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Cleanup the specific resource instance OwnerInfo")
+			Expect(k8sClient.Delete(ctx, ownerInfoResource)).To(Succeed())
 		})
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
@@ -82,7 +123,7 @@ var _ = Describe("Atom Controller", func() {
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedName,
+				NamespacedName: typeNamespacedNameAtom,
 			})
 			Expect(err).NotTo(HaveOccurred())
 			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.

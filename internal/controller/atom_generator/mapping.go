@@ -3,11 +3,17 @@ package atom_generator
 import (
 	atom_feed "github.com/pdok/atom-generator/feeds"
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
+	v1 "github.com/pdok/operator-commons/api/v1"
 )
 
-func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom) (atomGeneratorConfig atom_feed.Feeds, err error) {
+func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) (atomGeneratorConfig atom_feed.Feeds, err error) {
 
 	lang := "nl"
+
+	// Todo use these templates
+	// csv := ownerInfo.Spec.MetadataUrls.CSV
+	// opensearch := ownerInfo.Spec.MetadataUrls.OpenSearch
+	// html := ownerInfo.Spec.MetadataUrls.HTML
 
 	atomGeneratorConfig = atom_feed.Feeds{
 		Feeds: []atom_feed.Feed{

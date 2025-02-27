@@ -25,6 +25,8 @@ SOFTWARE.
 package v3
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -180,4 +182,25 @@ func SetAtomBaseURLHost(atomBaseURLHost string) {
 
 func GetAtomBaseURLHost() string {
 	return baseURLHost
+}
+
+func (r *Atom) GetURI() (URI string) {
+	datasetOwner := "unknown"
+	if v, ok := r.ObjectMeta.Labels["dataset-owner"]; ok {
+		datasetOwner = v
+	}
+	dataset := "unknown"
+	if v, ok := r.ObjectMeta.Labels["dataset"]; ok {
+		dataset = v
+	}
+	URI = fmt.Sprintf("%s/%s", datasetOwner, dataset)
+
+	if v, ok := r.ObjectMeta.Labels["theme"]; ok {
+		URI += fmt.Sprintf("/%s", v)
+	}
+	URI += "/atom"
+	if v, ok := r.ObjectMeta.Labels["service-version"]; ok {
+		URI += fmt.Sprintf("/%s", v)
+	}
+	return
 }
