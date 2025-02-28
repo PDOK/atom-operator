@@ -42,7 +42,8 @@ import (
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	atom_generator "github.com/pdok/atom-operator/internal/controller/atom_generator"
-	operatorcommonsv1 "github.com/pdok/operator-commons/api/v1"
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+
 	traefikdynamic "github.com/traefik/traefik/v2/pkg/config/dynamic"
 	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -253,7 +254,7 @@ func ReconcileAtom(r *AtomReconciler, ctx context.Context, req ctrl.Request) (ct
 	}
 
 	// Fetch the OwnerInfo instance
-	var ownerInfo operatorcommonsv1.OwnerInfo
+	var ownerInfo smoothoperatorv1.OwnerInfo
 
 	if err := r.Get(ctx, client.ObjectKey{
 		Namespace: atom.Namespace,
@@ -709,7 +710,7 @@ func setupConfigMap(r *AtomReconciler, ctx context.Context, atom pdoknlv3.Atom, 
 	return nil
 }
 
-func GetGeneratorConfig(atom pdoknlv3.Atom, ownerInfo operatorcommonsv1.OwnerInfo, ll logr.Logger) string {
+func GetGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo, ll logr.Logger) string {
 
 	atomGeneratorConfig, err := atom_generator.MapAtomV3ToAtomGeneratorConfig(atom, ownerInfo)
 	if err != nil {
@@ -733,6 +734,6 @@ func (r *AtomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&traefikiov1alpha1.Middleware{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&traefikiov1alpha1.IngressRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&v1.PodDisruptionBudget{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Owns(&operatorcommonsv1.OwnerInfo{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Owns(&smoothoperatorv1.OwnerInfo{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Complete(r)
 }

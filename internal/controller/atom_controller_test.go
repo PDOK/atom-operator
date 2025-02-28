@@ -27,7 +27,7 @@ package controller
 import (
 	"context"
 
-	v1 "github.com/pdok/operator-commons/api/v1"
+	v1 "github.com/pdok/smooth-operator/api/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"

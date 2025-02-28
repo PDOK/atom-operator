@@ -33,7 +33,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	operatorcommonsv1 "github.com/pdok/operator-commons/api/v1"
+	smoothoperator1 "github.com/pdok/smooth-operator/api/v1"
 	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	"golang.org/x/tools/go/packages"
 
@@ -80,7 +80,7 @@ var _ = BeforeSuite(func() {
 	err = traefikiov1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	err = operatorcommonsv1.AddToScheme(scheme.Scheme)
+	err = smoothoperator1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
@@ -148,14 +148,14 @@ func getFirstFoundEnvTestBinaryDir() string {
 }
 
 func getOwnerInfoCRDPath() (string, error) {
-	operatorCommonsModule, err := getModule("github.com/pdok/operator-commons")
+	smoothOperatorModule, err := getModule("github.com/pdok/smooth-operator")
 	if err != nil {
 		return "", err
 	}
-	if operatorCommonsModule.Dir == "" {
-		return "", errors.New("cannot find path for OperatorCommons module")
+	if smoothOperatorModule.Dir == "" {
+		return "", errors.New("cannot find path for smooth-operator module")
 	}
-	return filepath.Join(operatorCommonsModule.Dir, "config", "crd", "bases", "pdok.nl_ownerinfoes.yaml"), nil
+	return filepath.Join(smoothOperatorModule.Dir, "config", "crd", "bases", "pdok.nl_ownerinfoes.yaml"), nil
 }
 
 func getTraefikCRDPath() (string, error) {
