@@ -55,6 +55,7 @@ type Service struct {
 	OwnerInfoRef         string       `json:"ownerInfoRef"`
 	ServiceMetadataLinks MetadataLink `json:"serviceMetadataLinks,omitempty"`
 	Rights               string       `json:"rights,omitempty"`
+	Author               Author       `json:"author,omitempty"`
 }
 
 // Link represents a link in the service or dataset feed
@@ -81,7 +82,6 @@ type DatasetFeed struct {
 	Subtitle                          string       `json:"subtitle,omitempty"`
 	Links                             []Link       `json:"links,omitempty"` // Todo kan weg?
 	DatasetMetadataLinks              MetadataLink `json:"datasetMetadataLinks,omitempty"`
-	Author                            Author       `json:"author,omitempty"`
 	SpatialDatasetIdentifierCode      string       `json:"spatial_dataset_identifier_code,omitempty"`
 	SpatialDatasetIdentifierNamespace string       `json:"spatial_dataset_identifier_namespace,omitempty"`
 	Entries                           []Entry      `json:"entries,omitempty"`
