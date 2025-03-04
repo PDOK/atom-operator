@@ -26,8 +26,12 @@ package controller
 
 import (
 	"context"
-
-	"github.com/go-logr/logr"
+	"fmt"
+	"k8s.io/apimachinery/pkg/api/equality"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strconv"
+	"time"
 
 	v1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -35,19 +39,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
-	atom_generator "github.com/pdok/atom-operator/internal/controller/atom_generator"
+	"github.com/pdok/atom-operator/internal/controller/atom_generator"
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 
 	traefikdynamic "github.com/traefik/traefik/v2/pkg/config/dynamic"
 	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -55,18 +59,30 @@ import (
 )
 
 const (
-	valuesFileName  = "values.yaml"
-	mainPortName    = "main"
-	mainPortNr      = 80
+	reconciledConditionType         = "Reconciled"
+	reconciledConditionReasonSucces = "Succes"
+	reconciledConditionReasonError  = "Error"
+)
+
+const (
+	appLabelKey     = "app"
+	atomName        = "atom"
+	configFileName  = "values.yaml"
+	atomPortName    = "atom-service"
+	atomPortNr      = 80
 	stripPrefixName = "atom-strip-prefix"
-	headersName     = "atom-cors-headers"
-	srvDir          = "/srv"
+	corsHeadersName = "atom-cors-headers"
+	downloadsName   = "atom-downloads"
+
+	srvDir = "/srv"
 )
 
 // AtomReconciler reconciles a Atom object
 type AtomReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme             *runtime.Scheme
+	AtomGeneratorImage string
+	LighttpdImage      string
 }
 
 // +kubebuilder:rbac:groups=pdok.nl,resources=atoms,verbs=get;list;watch;create;update;patch;delete
@@ -88,640 +104,685 @@ type AtomReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.20.0/pkg/reconcile
-func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-
-	result1, err1 := ReconcileEchoServer(r, ctx, req)
-	if err1 != nil {
-		return result1, err1
-	}
-	result2, err2 := ReconcileAtom(r, ctx, req)
-	return result2, err2
-}
-
-func ReconcileEchoServer(r *AtomReconciler, ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	ll := log.FromContext(ctx)
-	// Fetch the Atom instance
-	var testEcho pdoknlv3.Atom
-	if err := r.Get(ctx, req.NamespacedName, &testEcho); err != nil {
-		ll.Error(err, "unable to fetch TestEcho")
-		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	// Define the Deployment for the echo server
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "testecho-server",
-			Namespace: testEcho.Namespace,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"app": "testecho"},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{"app": "testecho"},
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "echo-server",
-							Image: "ealen/echo-server",
-							Ports: []corev1.ContainerPort{{ContainerPort: 80}},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// Set the controller reference to ensure garbage collection
-	if err := ctrl.SetControllerReference(&testEcho, deployment, r.Scheme); err != nil {
-		ll.Error(err, "unable to set controller reference for deployment")
-		return ctrl.Result{}, err
-	}
-
-	// Create or update Deployment
-	key := types.NamespacedName{Namespace: deployment.GetNamespace(), Name: deployment.GetName()}
-	if err := r.Get(ctx, key, deployment); err != nil {
-		if client.IgnoreNotFound(err) != nil {
-			ll.Error(err, "failed to get object")
-			return ctrl.Result{}, err
-		}
-		if err := r.Create(ctx, deployment); err != nil {
-			ll.Error(err, "failed to create Deployment")
-			return ctrl.Result{}, err
-		}
-	}
-	err := r.Update(ctx, deployment)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	// Define the Service for the echo server
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "testecho-api",
-			Namespace: testEcho.Namespace,
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{"app": "testecho"},
-			Ports:    []corev1.ServicePort{{Port: 80, TargetPort: intstr.FromInt32(80)}},
-		},
-	}
-
-	// Set the controller reference for the service
-	if err := ctrl.SetControllerReference(&testEcho, service, r.Scheme); err != nil {
-		ll.Error(err, "unable to set controller reference for service")
-		return ctrl.Result{}, err
-	}
-
-	// Create or update Service
-	key = types.NamespacedName{Namespace: service.GetNamespace(), Name: service.GetName()}
-	if err := r.Get(ctx, key, service); err != nil {
-		if client.IgnoreNotFound(err) != nil {
-			ll.Error(err, "failed to get object")
-			return ctrl.Result{}, err
-		}
-		if err := r.Create(ctx, service); err != nil {
-			ll.Error(err, "failed to create Service")
-			return ctrl.Result{}, err
-		}
-	}
-
-	if err := r.Update(ctx, service); err != nil {
-		ll.Error(err, "failed to update Service")
-		return ctrl.Result{}, err
-	}
-
-	// Define the IngressRoute for Traefik
-	ingressRoute := &traefikiov1alpha1.IngressRoute{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "testecho-api",
-			Namespace: testEcho.Namespace,
-		},
-		Spec: traefikiov1alpha1.IngressRouteSpec{
-			Routes: []traefikiov1alpha1.Route{
-				{
-					Match: "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && PathPrefix(`/testecho`)",
-					Kind:  "Rule",
-					Services: []traefikiov1alpha1.Service{
-						{
-							LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
-								Name: "testecho-api",
-								Port: intstr.FromInt32(80),
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	// Set the controller reference for the ingress
-	if err := ctrl.SetControllerReference(&testEcho, ingressRoute, r.Scheme); err != nil {
-		ll.Error(err, "unable to set controller reference for ingress")
-		return ctrl.Result{}, err
-	}
-
-	// Create or update IngressRoute
-	key = types.NamespacedName{Namespace: ingressRoute.GetNamespace(), Name: ingressRoute.GetName()}
-	if err := r.Get(ctx, key, ingressRoute); err != nil {
-		if client.IgnoreNotFound(err) != nil {
-			ll.Error(err, "failed to get object: %v")
-			return ctrl.Result{}, err
-		}
-
-		if err := r.Create(ctx, ingressRoute); err != nil {
-			ll.Error(err, "failed to create IngressRoute")
-			return ctrl.Result{}, err
-		}
-	}
-	if err := r.Update(ctx, ingressRoute); err != nil {
-		ll.Error(err, "failed to update IngressRoute")
-		return ctrl.Result{}, err
-	}
-
-	return ctrl.Result{}, nil
-}
-
-func ReconcileAtom(r *AtomReconciler, ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	ll := log.FromContext(ctx)
+func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+	lgr := log.FromContext(ctx)
 
 	// Fetch the Atom instance
-	var atom pdoknlv3.Atom
-	if err := r.Get(ctx, req.NamespacedName, &atom); err != nil {
-		ll.Error(err, "unable to fetch Atom resource")
+	atom := &pdoknlv3.Atom{}
+	if err = r.Client.Get(ctx, req.NamespacedName, atom); err != nil {
+		if apierrors.IsNotFound(err) {
+			lgr.Info("Atom resource not found", "name", req.NamespacedName)
+		} else {
+			lgr.Error(err, "unable to fetch Atom resource", "error", err)
+		}
+		return result, client.IgnoreNotFound(err)
 	}
 
 	// Fetch the OwnerInfo instance
-	var ownerInfo smoothoperatorv1.OwnerInfo
-
-	if err := r.Get(ctx, client.ObjectKey{
+	ownerInfo := &smoothoperatorv1.OwnerInfo{}
+	objectKey := client.ObjectKey{
 		Namespace: atom.Namespace,
 		Name:      atom.Spec.Service.OwnerInfoRef,
-	}, &ownerInfo); err != nil {
-		ll.Error(err, "unable to fetch OwnerInfo resource")
+	}
+	if err := r.Client.Get(ctx, objectKey, ownerInfo); err != nil {
+		if apierrors.IsNotFound(err) {
+			lgr.Info("OwnerInfo resource not found", "name", req.NamespacedName)
+		} else {
+			lgr.Error(err, "unable to fetch OwnerInfo resource", "error", err)
+		}
+		return result, client.IgnoreNotFound(err)
 	}
 
-	atomGeneratorConfig := GetGeneratorConfig(atom, ownerInfo, ll)
-	if err := setupConfigMap(r, ctx, atom, ll, atomGeneratorConfig); err != nil {
-		return ctrl.Result{}, err
+	// Get generator config
+	if atomGeneratorConfig, err := getGeneratorConfig(atom, ownerInfo); err != nil {
+		lgr.Error(err, "unable to get generator config", "error", err)
+	} else {
+		atom.Spec.Service.GeneratorConfig = atomGeneratorConfig
 	}
 
-	if err := setupDeployment(r, ctx, atom, ll); err != nil {
-		return ctrl.Result{}, err
-	}
+	// Todo finalizeIfNecessary()?
+	//fullName := getObjectFullName(r.Client, atom)
+	//shouldContinue, err := finalizeIfNecessary(ctx, r.Client, atom, finalizerName, func() error {
+	//	lgr.Info("deleting resources", "name", fullName)
+	//	return r.deleteAllForAtom(ctx, atom)
+	//})
+	//if !shouldContinue || err != nil {
+	//	return result, err
+	//}
 
-	if err := setupService(r, ctx, atom, ll); err != nil {
-		return ctrl.Result{}, err
+	operationResults, err := r.createOrUpdateAllForAtom(ctx, atom)
+	if err != nil {
+		r.logAndUpdateStatusError(ctx, atom, err)
+		return result, err
 	}
+	r.logAndUpdateStatusFinished(ctx, atom, operationResults)
 
-	if err := setupPodDisruptionBudget(r, ctx, atom, ll); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	if err := setupIngressRoute(r, ctx, atom, ll); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	return ctrl.Result{}, nil
+	return result, err
 
 }
 
-func setupIngressRoute(r *AtomReconciler, ctx context.Context, atom pdoknlv3.Atom, ll logr.Logger) error {
-	// TODO Middleware
-	//  middlewareDownloads := &traefikiov1alpha1.Middleware{
-	//	ObjectMeta: metav1.ObjectMeta{
-	//		Name:      atom.Name + "-middleware",
-	//		Namespace: atom.Namespace,
-	//		Labels:    atom.Labels,
-	//	},
-	//	Spec: traefikiov1alpha1.MiddlewareSpec{
-	//		ReplacePathRegex: &traefikdynamic.ReplacePathRegex{
-	//			Regex: "^/{{ atom_uri }}/downloads/{{ item.version + '/' if item.version != '' else '' }}({{ download_links | json_query(blob_names_selecting_query) }})", // TODO
-	//			Replacement: "/{{ item.blobPrefix }}/$1",
-	//		},
-	//	},
-	// }
+func (r *AtomReconciler) logAndUpdateStatusError(ctx context.Context, atom *pdoknlv3.Atom, err error) {
+	r.updateStatus(ctx, atom, []metav1.Condition{{
+		Type:               reconciledConditionType,
+		Status:             metav1.ConditionFalse,
+		Reason:             reconciledConditionReasonError,
+		Message:            err.Error(),
+		ObservedGeneration: atom.Generation,
+		LastTransitionTime: metav1.NewTime(time.Now()),
+	}}, nil)
+}
 
-	middlewareHeaders := &traefikiov1alpha1.Middleware{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      atom.Name + headersName,
-			Namespace: atom.Namespace,
-			Labels:    atom.Labels,
-		},
-		Spec: traefikiov1alpha1.MiddlewareSpec{
-			Headers: &traefikdynamic.Headers{
-				AccessControlAllowHeaders:    []string{"Content-Type"},
-				AccessControlAllowMethods:    []string{"GET", "HEAD", "OPTIONS"},
-				AccessControlAllowOriginList: []string{"*"},
-			},
-		},
+func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdoknlv3.Atom) (operationResults map[string]controllerutil.OperationResult, err error) {
+	operationResults = make(map[string]controllerutil.OperationResult, 7)
+	c := r.Client
+
+	// region Create or update ConfigMap
+	configMap := getBareConfigMap(atom)
+
+	// mutate (also) before to get the hash suffix in the name
+	if err = r.mutateConfigMap(atom, configMap); err != nil {
+		return operationResults, err
+	}
+	operationResults[getObjectFullName(r.Client, atom)], err = controllerutil.CreateOrUpdate(ctx, r.Client, configMap, func() error {
+		return r.mutateConfigMap(atom, configMap)
+	})
+	if err != nil {
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, configMap), err)
+	}
+	// endregion
+
+	// region Create or update Deployment
+	deployment := getBareDeployment(atom)
+	operationResults[getObjectFullName(r.Client, deployment)], err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
+		return r.mutateDeployment(atom, deployment)
+	})
+	if err != nil {
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, deployment), err)
+	}
+	// endregion
+
+	// region Create or update Service
+	service := getBareService(atom)
+	operationResults[getObjectFullName(r.Client, service)], err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+		return r.mutateService(atom, service)
+	})
+	if err != nil {
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, service), err)
+	}
+	// endregion
+
+	// region Create or update Middleware
+
+	stripPrefixMiddleware := getBareStripPrefixMiddleware(atom)
+	operationResults[getObjectFullName(r.Client, stripPrefixMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, stripPrefixMiddleware, func() error {
+		return r.mutateStripPrefixMiddleware(atom, stripPrefixMiddleware)
+	})
+	if err != nil {
+		return operationResults, fmt.Errorf("could not create or update resource %s: %w", getObjectFullName(c, stripPrefixMiddleware), err)
 	}
 
-	middlewareStripPrefix := &traefikiov1alpha1.Middleware{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      atom.Name + stripPrefixName,
-			Namespace: atom.Namespace,
-			Labels:    atom.Labels,
-		},
-		Spec: traefikiov1alpha1.MiddlewareSpec{
-			StripPrefix: &traefikdynamic.StripPrefix{
-				Prefixes: []string{atom.GetURI()},
-			},
-		},
+	corsHeadersMiddleware := getBareCorsHeadersMiddleware(atom)
+	operationResults[getObjectFullName(r.Client, corsHeadersMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, corsHeadersMiddleware, func() error {
+		return r.mutateCorsHeadersMiddleware(atom, corsHeadersMiddleware)
+	})
+	if err != nil {
+		return operationResults, fmt.Errorf("could not create or update resource %s: %w", getObjectFullName(c, corsHeadersMiddleware), err)
 	}
 
-	middlewares := []*traefikiov1alpha1.Middleware{middlewareHeaders, middlewareStripPrefix}
-	for _, middleware := range middlewares {
-		// Set the controller reference for the Middleware
-		if err := ctrl.SetControllerReference(&atom, middleware, r.Scheme); err != nil {
-			ll.Error(err, "unable to set controller reference for Middleware")
-			return err
-		}
-
-		key := types.NamespacedName{Namespace: middleware.GetNamespace(), Name: middleware.GetName()}
-		if err := r.Get(ctx, key, middleware); err != nil {
-			if client.IgnoreNotFound(err) != nil {
-				ll.Error(err, "failed to get Middleware")
-				return err
+	// Create or update extra middleware per downloadLink
+	downloadLinkNr := 0
+	for _, datasetFeed := range atom.Spec.DatasetFeeds {
+		for _, entry := range datasetFeed.Entries {
+			for _, downloadLink := range entry.DownloadLinks {
+				downloadLinkNr++
+				downloadLinkMiddleware := getBareDownloadLinkMiddleware(atom, downloadLinkNr)
+				operationResults[getObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
+					return r.mutateDownloadLinkMiddleware(atom, &downloadLink, downloadLinkMiddleware)
+				})
+				if err != nil {
+					return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, downloadLinkMiddleware), err)
+				}
 			}
-			if err := r.Create(ctx, middleware); err != nil {
-				ll.Error(err, "failed to create Middleware")
-				return err
-			}
-		}
-		if err := r.Update(ctx, middleware); err != nil {
-			ll.Error(err, "failed to update Middleware")
-			return err
 		}
 	}
 
-	ingressRoute := &traefikiov1alpha1.IngressRoute{
+	// endregion
+
+	// region Create or update IngressRoute
+	ingressRoute := getBareIngressRoute(atom)
+	operationResults[getObjectFullName(r.Client, ingressRoute)], err = controllerutil.CreateOrUpdate(ctx, r.Client, ingressRoute, func() error {
+		return r.mutateIngressRoute(atom, ingressRoute)
+	})
+	if err != nil {
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, ingressRoute), err)
+	}
+
+	// endregion
+
+	// region Create or update PodDisruptionBudget
+	podDisruptionBudget := getBarePodDisruptionBudget(atom)
+	operationResults[getObjectFullName(r.Client, podDisruptionBudget)], err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+		return r.mutatePodDisruptionBudget(atom, podDisruptionBudget)
+	})
+	if err != nil {
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, podDisruptionBudget), err)
+	}
+	// endregion
+
+	return operationResults, nil
+}
+
+func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.Atom) (err error) {
+	configMap := getBareConfigMap(atom)
+	// mutate (also) before to get the hash suffix in the name
+	if err = r.mutateConfigMap(atom, configMap); err != nil {
+		return
+	}
+	return deleteObjects(ctx, r.Client, []client.Object{
+		configMap,
+		getBareDeployment(atom),
+		getBareService(atom),
+		getBareStripPrefixMiddleware(atom),
+		getBareCorsHeadersMiddleware(atom),
+		getBareIngressRoute(atom),
+		getBarePodDisruptionBudget(atom),
+	})
+}
+
+func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
+	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      atom.Name + "-atom",
-			Namespace: atom.Namespace,
-			// Todo set uptime annotations
-			//  Annotations: map[string]string{
-			//	  "uptime.pdok.nl/id":   "{{ name|hash('sha1') }}",
-			//	  "uptime.pdok.nl/name": "{{ uptime_name }}",
-			//	  "uptime.pdok.nl/url":  "{{ ansible_env.BASE_URL }}/{{ atom_uri }}/index.xml",
-			//	  "uptime.pdok.nl/tags": "public-stats,atom",
-			//  },
-			Labels: atom.Labels,
+			Name:      getBareDeployment(obj).GetName(),
+			Namespace: obj.GetNamespace(),
 		},
-		Spec: traefikiov1alpha1.IngressRouteSpec{
-			Routes: []traefikiov1alpha1.Route{
+	}
+}
+
+func (r *AtomReconciler) mutateConfigMap(atom *pdoknlv3.Atom, configMap *corev1.ConfigMap) error {
+	labels := cloneOrEmptyMap(atom.GetLabels())
+	labels[appLabelKey] = atomName
+	if err := setImmutableLabels(r.Client, configMap, labels); err != nil {
+		return err
+	}
+
+	configMap.Immutable = boolPtr(true)
+	configMap.Data = map[string]string{configFileName: atom.Spec.Service.GeneratorConfig}
+
+	if err := ensureSetGVK(r.Client, configMap, configMap); err != nil {
+		return err
+	}
+	if err := ctrl.SetControllerReference(atom, configMap, r.Scheme); err != nil {
+		return err
+	}
+	return addHashSuffix(configMap)
+}
+
+func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
+	return &appsv1.Deployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: obj.GetName() + "-" + atomName,
+			// name might become too long. not handling here. will just fail on apply.
+			Namespace: obj.GetNamespace(),
+		},
+	}
+}
+
+func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv1.Deployment) error {
+	labels := cloneOrEmptyMap(atom.GetLabels())
+	labels[appLabelKey] = atomName
+	if err := setImmutableLabels(r.Client, deployment, labels); err != nil {
+		return err
+	}
+
+	podTemplateAnnotations := cloneOrEmptyMap(deployment.Spec.Template.GetAnnotations())
+
+	matchLabels := cloneOrEmptyMap(labels)
+	deployment.Spec.Selector = &metav1.LabelSelector{
+		MatchLabels: matchLabels,
+	}
+
+	deployment.Spec.MinReadySeconds = 0
+	deployment.Spec.ProgressDeadlineSeconds = int32Ptr(600)
+	deployment.Spec.Strategy = appsv1.DeploymentStrategy{
+		Type: appsv1.RollingUpdateDeploymentStrategyType,
+		RollingUpdate: &appsv1.RollingUpdateDeployment{
+			MaxUnavailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 0},
+			MaxSurge:       &intstr.IntOrString{Type: intstr.Int, IntVal: 4},
+		},
+	}
+	deployment.Spec.RevisionHistoryLimit = int32Ptr(1)
+	deployment.Spec.Replicas = int32Ptr(2)
+
+	podTemplateSpec := corev1.PodTemplateSpec{
+		ObjectMeta: metav1.ObjectMeta{
+			Labels:      matchLabels,
+			Annotations: podTemplateAnnotations,
+		},
+		Spec: corev1.PodSpec{
+			Volumes: []corev1.Volume{
+				{Name: "data", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
+				{Name: "socket", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
+				{Name: "config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: atom.Name + "-atom-generator"}}},
+				},
+			},
+			InitContainers: []corev1.Container{
 				{
-					Kind:  "Rule",
-					Match: "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && Path(`/" + atom.GetURI() + "/index.xml`)",
-					Services: []traefikiov1alpha1.Service{
-						{
-							LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
-								Name: atom.Name + "-atom-service",
-								Port: intstr.IntOrString{Type: intstr.Int, IntVal: 80},
-							},
-						},
-					},
-					Middlewares: []traefikiov1alpha1.MiddlewareRef{
-						{Name: atom.Name + headersName, Namespace: atom.Namespace},
-						{Name: atom.Name + stripPrefixName, Namespace: atom.Namespace},
+					Name:            "init-atom",
+					ImagePullPolicy: corev1.PullIfNotPresent,
+					Command:         []string{"./atom"},
+					Args:            []string{"-f=" + srvDir + "/config/" + configFileName, "-o=" + srvDir + "/data"},
+					VolumeMounts: []corev1.VolumeMount{
+						{Name: "data", MountPath: srvDir + "/data"},
+						{Name: "config", MountPath: srvDir + "/config"},
 					},
 				},
-				// Todo loop per dataset
-				// {
-				//	Kind:  "Rule",
-				//	Match: "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && Path(`/" + atom.GetURI() + " /{{ dataset.name }}.xml`)",
-				//	Services: []traefikiov1alpha1.Service{
-				//		{
-				//			LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
-				//				Name: atom.Name + "-atom-service",
-				//				Port: intstr.IntOrString{Type: intstr.Int, IntVal: 80},
-				//			},
-				//		},
-				//	},
-				//	Middlewares: []traefikiov1alpha1.MiddlewareRef{
-				//		{Name: atom.Name + headersName, Namespace: atom.Namespace},
-				//		{Name: atom.Name + stripPrefixName, Namespace: atom.Namespace},
-				//	},
-				// },
+			},
+			Containers: []corev1.Container{
 				{
-					Kind:  "Rule",
-					Match: "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && PathPrefix(`/" + atom.GetURI() + "/downloads/`)",
-					Services: []traefikiov1alpha1.Service{
-						{LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
-							Name:           "azure-storage",
-							Port:           intstr.IntOrString{Type: intstr.String, StrVal: "azure-storage"},
-							PassHostHeader: boolPtr(false),
-						}},
-					},
-					Middlewares: []traefikiov1alpha1.MiddlewareRef{
-						{Name: atom.Name + "-atom-headers", Namespace: atom.Namespace},
-						// Todo loop per middleware download
-					},
-				},
-			},
-		},
-	}
-
-	// Set the controller reference for the ingress
-	if err := ctrl.SetControllerReference(&atom, ingressRoute, r.Scheme); err != nil {
-		ll.Error(err, "unable to set controller reference for IngressRoute")
-		return err
-	}
-
-	// Create or update IngressRoute
-	key := types.NamespacedName{Namespace: ingressRoute.GetNamespace(), Name: ingressRoute.GetName()}
-	if err := r.Get(ctx, key, ingressRoute); err != nil {
-		if client.IgnoreNotFound(err) != nil {
-			ll.Error(err, "failed to get IngressRoute: %v")
-			return err
-		}
-
-		if err := r.Create(ctx, ingressRoute); err != nil {
-			ll.Error(err, "failed to create IngressRoute")
-			return err
-		}
-	}
-	if err := r.Update(ctx, ingressRoute); err != nil {
-		ll.Error(err, "failed to update IngressRoute")
-		return err
-	}
-	return nil
-}
-
-func setupPodDisruptionBudget(r *AtomReconciler, ctx context.Context, atom pdoknlv3.Atom, ll logr.Logger) error {
-	podDisruptionBudget := &v1.PodDisruptionBudget{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      atom.Name + "-atom-pdb",
-			Namespace: atom.Namespace,
-			Labels:    atom.Labels},
-		Spec: v1.PodDisruptionBudgetSpec{
-			MaxUnavailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 1},
-		},
-		Status: v1.PodDisruptionBudgetStatus{},
-	}
-
-	// Set the controller reference for the PodDisruptionBudget
-	if err := ctrl.SetControllerReference(&atom, podDisruptionBudget, r.Scheme); err != nil {
-		ll.Error(err, "unable to set controller reference for podDisruptionBudget")
-		return err
-	}
-
-	key := types.NamespacedName{Namespace: podDisruptionBudget.Namespace, Name: podDisruptionBudget.Name}
-	if err := r.Get(ctx, key, podDisruptionBudget); err != nil {
-		if client.IgnoreNotFound(err) != nil {
-			ll.Error(err, "failed to get PodDisruptionBudget")
-			return err
-		}
-		if err := r.Create(ctx, podDisruptionBudget); err != nil {
-			ll.Error(err, "failed to create PodDisruptionBudget")
-			return err
-		}
-	}
-	if err := r.Update(ctx, podDisruptionBudget); err != nil {
-		ll.Error(err, "failed to update PodDisruptionBudget")
-		return err
-	}
-
-	return nil
-}
-
-func setupService(r *AtomReconciler, ctx context.Context, atom pdoknlv3.Atom, ll logr.Logger) error {
-	// Define the Service for the atom
-	service := &corev1.Service{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      atom.Name + "-atom-service",
-			Namespace: atom.Namespace,
-			Labels:    atom.Labels,
-		},
-		Spec: corev1.ServiceSpec{
-			Selector: map[string]string{
-				"app":           "atom-service",
-				"service-type":  "atom",
-				"dataset":       atom.Labels["dataset"],
-				"dataset-owner": atom.Labels["dataset-owner"],
-			},
-			Ports: []corev1.ServicePort{{Name: "atom-service", Port: 80, TargetPort: intstr.FromInt32(80), Protocol: "TCP"}},
-		},
-	}
-
-	// Set the controller reference for the Service
-	if err := ctrl.SetControllerReference(&atom, service, r.Scheme); err != nil {
-		ll.Error(err, "unable to set controller reference for service")
-		return err
-	}
-
-	// Create or update Service
-	key := types.NamespacedName{Namespace: service.GetNamespace(), Name: service.GetName()}
-	if err := r.Get(ctx, key, service); err != nil {
-		if client.IgnoreNotFound(err) != nil {
-			ll.Error(err, "failed to get Service")
-			return err
-		}
-		if err := r.Create(ctx, service); err != nil {
-			ll.Error(err, "failed to create Service")
-			return err
-		}
-	}
-
-	if err := r.Update(ctx, service); err != nil {
-		ll.Error(err, "failed to update Service")
-		return err
-	}
-	return nil
-}
-
-func setupDeployment(r *AtomReconciler, ctx context.Context, atom pdoknlv3.Atom, ll logr.Logger) error {
-	// Define the Deployment for the Atom
-	deployment := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      atom.Name + "-atom-service",
-			Namespace: atom.Namespace,
-			Labels:    atom.Labels,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: int32Ptr(2),
-			Strategy: appsv1.DeploymentStrategy{
-				Type: appsv1.RollingUpdateDeploymentStrategyType,
-				RollingUpdate: &appsv1.RollingUpdateDeployment{
-					MaxUnavailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 0},
-					MaxSurge:       &intstr.IntOrString{Type: intstr.Int, IntVal: 4},
-				},
-			},
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					"app":           "atom-service",
-					"service-type":  "atom",
-					"dataset":       atom.Labels["dataset"],
-					"dataset-owner": atom.Labels["dataset-owner"],
-				},
-			},
-			RevisionHistoryLimit: int32Ptr(1),
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{
-						"cluster-autoscaler.kubernetes.io/safe-to-evict": "true",
-						"kubectl.kubernetes.io/default-container":        "atom-service",
-						"priority.version-checker.io/atom-service":       "8",
-						// Todo uptime.pdok.nl ?
-					},
-					Labels: map[string]string{
-						"app":           "atom-service",
-						"service-type":  "atom",
-						"dataset":       atom.Labels["dataset"],
-						"dataset-owner": atom.Labels["dataset-owner"]},
-				},
-				Spec: corev1.PodSpec{
-					Volumes: []corev1.Volume{
-						{Name: "data", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
-						{Name: "socket", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
-						{Name: "config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{
-							LocalObjectReference: corev1.LocalObjectReference{
-								Name: atom.Name + "-atom-generator",
-							}}}},
-					},
-					InitContainers: []corev1.Container{
+					Name: "atom-service",
+					Ports: []corev1.ContainerPort{
 						{
-							Name:            "init-atom",
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Image:           "acrpdokprodman.azurecr.io/mirror/docker.io/pdok/atom-generator:0.6.0",
-							Command:         []string{"./atom"},
-							Args:            []string{"-f=" + srvDir + "/config/" + valuesFileName, "-o=" + srvDir + "/data"},
-							VolumeMounts: []corev1.VolumeMount{
-								{Name: "data", MountPath: srvDir + "/data"},
-								{Name: "config", MountPath: srvDir + "/config"},
-							},
+							Name:          atomPortName,
+							ContainerPort: atomPortNr,
 						},
 					},
-					Containers: []corev1.Container{
-						{
-							Name: "atom-service",
-							Ports: []corev1.ContainerPort{
-								{
-									Name:          mainPortName,
-									ContainerPort: mainPortNr,
-								},
+					ImagePullPolicy: corev1.PullIfNotPresent,
+					LivenessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path:   "/index.xml",
+								Port:   intstr.FromInt32(atomPortNr),
+								Scheme: corev1.URISchemeHTTP,
 							},
-							ImagePullPolicy: corev1.PullIfNotPresent,
-							Image:           "acrpdokprodman.azurecr.io/mirror/docker.io/pdok/lighttpd:1.4.67",
-							LivenessProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path:   "/index.xml",
-										Port:   intstr.FromInt32(mainPortNr),
-										Scheme: corev1.URISchemeHTTP,
-									},
-								},
-								InitialDelaySeconds: 5,
-								TimeoutSeconds:      5,
-								PeriodSeconds:       10,
+						},
+						InitialDelaySeconds: 5,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
+					},
+					ReadinessProbe: &corev1.Probe{
+						ProbeHandler: corev1.ProbeHandler{
+							HTTPGet: &corev1.HTTPGetAction{
+								Path:   "/index.xml",
+								Port:   intstr.FromInt32(atomPortNr),
+								Scheme: corev1.URISchemeHTTP,
 							},
-							ReadinessProbe: &corev1.Probe{
-								ProbeHandler: corev1.ProbeHandler{
-									HTTPGet: &corev1.HTTPGetAction{
-										Path:   "/index.xml",
-										Port:   intstr.FromInt32(mainPortNr),
-										Scheme: corev1.URISchemeHTTP,
-									},
-								},
-								InitialDelaySeconds: 5,
-								TimeoutSeconds:      5,
-								PeriodSeconds:       10,
-							},
-							Resources: corev1.ResourceRequirements{
-								Limits: corev1.ResourceList{
-									corev1.ResourceMemory: resource.MustParse("64M"),
-								},
-								Requests: corev1.ResourceList{
-									corev1.ResourceCPU: resource.MustParse("0.01"),
-								},
-							},
-							VolumeMounts: []corev1.VolumeMount{
-								{Name: "socket", MountPath: "/tmp", ReadOnly: false},
-								{Name: "data", MountPath: "var/www"},
-							},
+						},
+						InitialDelaySeconds: 5,
+						TimeoutSeconds:      5,
+						PeriodSeconds:       10,
+					},
+					Resources: corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceMemory: resource.MustParse("64M"),
+						},
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("0.01"),
+						},
+					},
+					VolumeMounts: []corev1.VolumeMount{
+						{Name: "socket", MountPath: "/tmp", ReadOnly: false},
+						{Name: "data", MountPath: "var/www"},
+					},
+				},
+			},
+		},
+	}
+
+	// Todo strategicMergePatch()?
+	//if atom.Spec.PodSpecPatch != nil {
+	//	patchedPod, err := strategicMergePatch(&podTemplateSpec.Spec, &atom.Spec.PodSpecPatch)
+	//	if err != nil {
+	//		return err
+	//	}
+	//	podTemplateSpec.Spec = *patchedPod
+	//}
+	podTemplateSpec.Spec.InitContainers[0].Image = r.AtomGeneratorImage
+	podTemplateSpec.Spec.Containers[0].Image = r.LighttpdImage
+	deployment.Spec.Template = podTemplateSpec
+
+	if err := ensureSetGVK(r.Client, deployment, deployment); err != nil {
+		return err
+	}
+	return ctrl.SetControllerReference(atom, deployment, r.Scheme)
+
+}
+
+func getBareService(obj metav1.Object) *corev1.Service {
+	return &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      obj.GetName() + "-atom",
+			Namespace: obj.GetNamespace(),
+		},
+	}
+}
+
+func (r *AtomReconciler) mutateService(atom *pdoknlv3.Atom, service *corev1.Service) error {
+	labels := cloneOrEmptyMap(atom.GetLabels())
+	selector := cloneOrEmptyMap(atom.GetLabels())
+	selector[appLabelKey] = atomName
+	if err := setImmutableLabels(r.Client, service, labels); err != nil {
+		return err
+	}
+
+	service.Spec = corev1.ServiceSpec{
+		Ports: []corev1.ServicePort{
+			{
+				Name:       atomPortName,
+				Port:       atomPortNr,
+				Protocol:   corev1.ProtocolTCP,
+				TargetPort: intstr.FromInt32(atomPortNr),
+			},
+		},
+		Selector: selector,
+	}
+	if err := ensureSetGVK(r.Client, service, service); err != nil {
+		return err
+	}
+	return ctrl.SetControllerReference(atom, service, r.Scheme)
+}
+
+func getBareStripPrefixMiddleware(obj metav1.Object) *traefikiov1alpha1.Middleware {
+	return &traefikiov1alpha1.Middleware{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: obj.GetName() + "-" + stripPrefixName,
+			// name might become too long. not handling here. will just fail on apply.
+			Namespace: obj.GetNamespace(),
+		},
+	}
+}
+
+func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware) error {
+	labels := cloneOrEmptyMap(atom.GetLabels())
+	if err := setImmutableLabels(r.Client, middleware, labels); err != nil {
+		return err
+	}
+	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
+		StripPrefix: &traefikdynamic.StripPrefix{
+			Prefixes: []string{"/" + atom.GetURI() + "/"}},
+	}
+
+	if err := ensureSetGVK(r.Client, middleware, middleware); err != nil {
+		return err
+	}
+	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
+}
+
+func getBareCorsHeadersMiddleware(obj metav1.Object) *traefikiov1alpha1.Middleware {
+	return &traefikiov1alpha1.Middleware{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: obj.GetName() + "-" + corsHeadersName,
+			// name might become too long. not handling here. will just fail on apply.
+			Namespace: obj.GetNamespace(),
+			UID:       obj.GetUID(),
+		},
+	}
+}
+
+func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware) error {
+	labels := cloneOrEmptyMap(atom.GetLabels())
+	if err := setImmutableLabels(r.Client, middleware, labels); err != nil {
+		return err
+	}
+	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
+		Headers: &traefikdynamic.Headers{
+			AccessControlAllowHeaders:    []string{"Content-Type"},
+			AccessControlAllowMethods:    []string{"GET", "HEAD", "OPTIONS"},
+			AccessControlAllowOriginList: []string{"*"},
+		},
+	}
+	if err := ensureSetGVK(r.Client, middleware, middleware); err != nil {
+		return err
+	}
+	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
+}
+
+func getBareDownloadLinkMiddleware(obj metav1.Object, dlNumber int) *traefikiov1alpha1.Middleware {
+	return &traefikiov1alpha1.Middleware{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: obj.GetName() + "-" + downloadsName + "-" + strconv.Itoa(dlNumber),
+			// name might become too long. not handling here. will just fail on apply.
+			Namespace: obj.GetNamespace(),
+		},
+	}
+}
+
+func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLink, middleware *traefikiov1alpha1.Middleware) error {
+	labels := cloneOrEmptyMap(atom.GetLabels())
+	if err := setImmutableLabels(r.Client, middleware, labels); err != nil {
+		return err
+	}
+
+	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
+		ReplacePathRegex: &traefikdynamic.ReplacePathRegex{
+			Regex:       getDownloadLinkRegex(atom, downloadLink),
+			Replacement: getDownloadLinkReplacement(downloadLink),
+		},
+	}
+
+	if err := ensureSetGVK(r.Client, middleware, middleware); err != nil {
+		return err
+	}
+	return ctrl.SetControllerReference(middleware, middleware, r.Scheme)
+}
+
+func getBareIngressRoute(obj metav1.Object) *traefikiov1alpha1.IngressRoute {
+	return &traefikiov1alpha1.IngressRoute{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      obj.GetName(),
+			Namespace: obj.GetNamespace(),
+		},
+	}
+}
+
+func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *traefikiov1alpha1.IngressRoute) error {
+	labels := cloneOrEmptyMap(atom.GetLabels())
+	if err := setImmutableLabels(r.Client, ingressRoute, labels); err != nil {
+		return err
+	}
+
+	ingressRoute.Spec = traefikiov1alpha1.IngressRouteSpec{
+		Routes: []traefikiov1alpha1.Route{
+			{
+				Kind:  "Rule",
+				Match: getMatchRuleForIndex(atom),
+				Services: []traefikiov1alpha1.Service{
+					{
+						LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
+							Name: getBareService(atom).GetName(),
+							Kind: "Service",
+							Port: intstr.FromString(atomPortName),
 						},
 					},
 				},
+				Middlewares: []traefikiov1alpha1.MiddlewareRef{
+					{
+						Name:      atom.Name + "-" + stripPrefixName,
+						Namespace: atom.GetNamespace(),
+					},
+					{
+						Name:      atom.Name + "-" + corsHeadersName,
+						Namespace: atom.GetNamespace(),
+					},
+				},
 			},
 		},
 	}
 
-	// Set the controller reference to ensure garbage collection
-	if err := ctrl.SetControllerReference(&atom, deployment, r.Scheme); err != nil {
-		ll.Error(err, "unable to set controller reference for deployment")
-		return err
-	}
-
-	// Create or update Deployment
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: deployment.GetNamespace(),
-		Name:      deployment.GetName(),
-	}, deployment); err != nil {
-		if client.IgnoreNotFound(err) != nil {
-			ll.Error(err, "failed to get Deployment")
-			return err
-		}
-		if err := r.Create(ctx, deployment); err != nil {
-			ll.Error(err, "failed to create Deployment")
-			return err
-		}
-	}
-	if err := r.Update(ctx, deployment); err != nil {
-		return err
-	}
-	return nil
-}
-
-func setupConfigMap(r *AtomReconciler, ctx context.Context, atom pdoknlv3.Atom, ll logr.Logger, generatorConfig string) error {
-
-	configMap := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      atom.Name + "-atom-generator",
-			Namespace: atom.Namespace,
+	azureStorageRule := traefikiov1alpha1.Route{
+		Kind:  "Rule",
+		Match: getMatchRuleForDownloads(atom),
+		Services: []traefikiov1alpha1.Service{
+			{
+				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
+					Name:           "azure-storage",
+					Port:           intstr.IntOrString{Type: intstr.String, StrVal: "azure-storage"},
+					PassHostHeader: boolPtr(false),
+				},
+			},
 		},
-		Immutable: boolPtr(true),
-		Data:      map[string]string{valuesFileName: generatorConfig},
+		Middlewares: []traefikiov1alpha1.MiddlewareRef{
+			{
+				Name:      atom.Name + "-" + corsHeadersName,
+				Namespace: atom.GetNamespace(),
+			},
+		},
+	}
+	// Set additional Azure storage middleware per downloadLink
+	for downloadLinkNr := range atom.GetNrOfDownloadLinks() {
+		middlewareRef := traefikiov1alpha1.MiddlewareRef{
+			Name:      atom.Name + "-" + downloadsName + "-" + strconv.Itoa(downloadLinkNr),
+			Namespace: atom.GetNamespace(),
+		}
+		azureStorageRule.Middlewares = append(azureStorageRule.Middlewares, middlewareRef)
+	}
+	ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, azureStorageRule)
+
+	// Set additional routes per datasetFeed
+	for _, datasetFeed := range atom.Spec.DatasetFeeds {
+		matchRule := getMatchRuleForDatasetFeed(atom, &datasetFeed)
+		rule := getDefaultRule(atom, matchRule)
+		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)
 	}
 
-	// Create or update ConfigMap
-	key := types.NamespacedName{Namespace: configMap.GetNamespace(), Name: configMap.GetName()}
-	if err := r.Get(ctx, key, configMap); err != nil {
-		if client.IgnoreNotFound(err) != nil {
-			ll.Error(err, "failed to get ConfigMap")
-			return err
-		}
-		if err := r.Create(ctx, configMap); err != nil {
-			ll.Error(err, "failed to create ConfigMap")
-			return err
-		}
-	}
-	err := r.Update(ctx, configMap)
-	if err != nil {
+	if err := ensureSetGVK(r.Client, ingressRoute, ingressRoute); err != nil {
 		return err
 	}
-
-	// Set the controller reference for the ConfigMap
-	if err := ctrl.SetControllerReference(&atom, configMap, r.Scheme); err != nil {
-		ll.Error(err, "unable to set ConfigMap reference for service")
-		return err
-	}
-	return nil
+	return ctrl.SetControllerReference(atom, ingressRoute, r.Scheme)
 }
 
-func GetGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo, ll logr.Logger) string {
+func getBarePodDisruptionBudget(obj metav1.Object) *v1.PodDisruptionBudget {
+	return &v1.PodDisruptionBudget{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      obj.GetName() + "-atom-service",
+			Namespace: obj.GetNamespace(),
+		},
+	}
+}
 
-	atomGeneratorConfig, err := atom_generator.MapAtomV3ToAtomGeneratorConfig(atom, ownerInfo)
-	if err != nil {
-		ll.Error(err, "failed to map the V3 atom to generator config.")
+func (r *AtomReconciler) mutatePodDisruptionBudget(atom *pdoknlv3.Atom, podDisruptionBudget *v1.PodDisruptionBudget) error {
+	labels := cloneOrEmptyMap(atom.GetLabels())
+	matchLabels := cloneOrEmptyMap(atom.GetLabels())
+	matchLabels[appLabelKey] = atomName
+	if err := setImmutableLabels(r.Client, podDisruptionBudget, labels); err != nil {
+		return err
 	}
 
-	yamlConfig, err := yaml.Marshal(&atomGeneratorConfig)
-	if err != nil {
-		ll.Error(err, "failed to marshal the V3 atom generator config to yaml")
+	podDisruptionBudget.Spec = v1.PodDisruptionBudgetSpec{
+		MaxUnavailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 1},
+		Selector: &metav1.LabelSelector{
+			MatchLabels: matchLabels,
+		},
 	}
-	return string(yamlConfig)
+
+	if err := ensureSetGVK(r.Client, podDisruptionBudget, podDisruptionBudget); err != nil {
+		return err
+	}
+	return ctrl.SetControllerReference(atom, podDisruptionBudget, r.Scheme)
+}
+
+func getGeneratorConfig(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo) (config string, err error) {
+	atomGeneratorConfig, err := atom_generator.MapAtomV3ToAtomGeneratorConfig(*atom, *ownerInfo)
+	if err != nil {
+		return "", fmt.Errorf("failed to map the V3 atom to generator config: %w", err)
+	}
+
+	if yamlConfig, err := yaml.Marshal(&atomGeneratorConfig); err != nil {
+		return "", fmt.Errorf("failed to marshal the generator config to yaml: %w", err)
+	} else {
+		return string(yamlConfig), nil
+	}
+}
+
+func getMatchRuleForIndex(atom *pdoknlv3.Atom) string {
+	// Todo use GetAtomBaseURLHost()
+	return "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && Path(`/" + atom.GetURI() + "/index.xml`)"
+}
+
+func getMatchRuleForDownloads(atom *pdoknlv3.Atom) string {
+	// Todo use GetAtomBaseURLHost()
+	return "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && PathPrefix(`/" + atom.GetURI() + "/downloads/`)"
+}
+
+func getMatchRuleForDatasetFeed(atom *pdoknlv3.Atom, datasetFeed *pdoknlv3.DatasetFeed) string {
+	// Todo use GetAtomBaseURLHost()
+	return "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && Path(/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml"
+}
+
+func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Route {
+	return traefikiov1alpha1.Route{
+		Kind:  "Rule",
+		Match: matchRule,
+		Services: []traefikiov1alpha1.Service{
+			{
+				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
+					Name: getBareService(atom).GetName(),
+					Kind: "Service",
+					Port: intstr.FromString(atomPortName),
+				},
+			},
+		},
+		Middlewares: []traefikiov1alpha1.MiddlewareRef{
+			{
+				Name:      atom.Name + "-" + stripPrefixName,
+				Namespace: atom.GetNamespace(),
+			},
+			{
+				Name:      atom.Name + "-" + corsHeadersName,
+				Namespace: atom.GetNamespace(),
+			},
+		},
+	}
+}
+
+func getDownloadLinkRegex(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLink) string {
+	version := ""
+	if downloadLink.Version != nil {
+		version = *downloadLink.Version + "/"
+	}
+	// Todo compare to an example
+	//Regex:       "^/{{ atom_uri }}/downloads/{{ item.version + '/' if item.version != '' else '' }}({{ download_links | json_query(blob_names_selecting_query) }})",
+	return fmt.Sprintf("/%s/downloads/%s(%s)", atom.GetURI(), version, downloadLink.GetBlobName())
+}
+
+func getDownloadLinkReplacement(downloadLink *pdoknlv3.DownloadLink) string {
+	return "/" + downloadLink.GetBlobPrefix() + "/$1"
+}
+
+func (r *AtomReconciler) logAndUpdateStatusFinished(ctx context.Context, atom *pdoknlv3.Atom, operationResults map[string]controllerutil.OperationResult) {
+	lgr := log.FromContext(ctx)
+	lgr.Info("operation results", "results", operationResults)
+	r.updateStatus(ctx, atom, []metav1.Condition{{
+		Type:               reconciledConditionType,
+		Status:             metav1.ConditionTrue,
+		Reason:             reconciledConditionReasonSucces,
+		ObservedGeneration: atom.Generation,
+		LastTransitionTime: metav1.NewTime(time.Now()),
+	}}, operationResults)
+}
+
+func (r *AtomReconciler) updateStatus(ctx context.Context, atom *pdoknlv3.Atom, conditions []metav1.Condition, operationResults map[string]controllerutil.OperationResult) {
+	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(atom), atom); err != nil {
+		log.FromContext(ctx).Error(err, "unable to update status")
+		return
+	}
+
+	changed := false
+	for _, condition := range conditions {
+		if meta.SetStatusCondition(&atom.Status.Conditions, condition) {
+			changed = true
+		}
+	}
+	if !equality.Semantic.DeepEqual(atom.Status.OperationResults, operationResults) {
+		atom.Status.OperationResults = operationResults
+		changed = true
+	}
+	if !changed {
+		return
+	}
+	if err := r.Status().Update(ctx, atom); err != nil {
+		log.FromContext(ctx).Error(err, "unable to update status")
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.

@@ -26,6 +26,9 @@ package v3
 
 import (
 	"fmt"
+	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -38,6 +41,11 @@ type AtomSpec struct {
 	Lifecycle    Lifecycle     `json:"lifecycle,omitempty"`
 	Service      Service       `json:"service"`
 	DatasetFeeds []DatasetFeed `json:"datasetFeeds,omitempty"`
+	//+kubebuilder:validation:Type=object
+	//+kubebuilder:validation:Schemaless
+	//+kubebuilder:pruning:PreserveUnknownFields
+	// Optional strategic merge patch for the pod in the deployment. E.g. to patch the resources or add extra env vars.
+	PodSpecPatch *corev1.PodSpec `json:"podSpecPatch,omitempty"`
 }
 
 // todo: move to higher level (operator-support repo)
@@ -55,6 +63,9 @@ type Service struct {
 	OwnerInfoRef         string       `json:"ownerInfoRef"`
 	ServiceMetadataLinks MetadataLink `json:"serviceMetadataLinks,omitempty"`
 	Rights               string       `json:"rights,omitempty"`
+
+	// +kubebuilder:validation:Optional
+	GeneratorConfig string `json:"-"` // Skip this field in the CRD schema
 }
 
 // Link represents a link in the service or dataset feed
@@ -79,7 +90,7 @@ type DatasetFeed struct {
 	TechnicalName                     string       `json:"technicalName"`
 	Title                             string       `json:"title"`
 	Subtitle                          string       `json:"subtitle,omitempty"`
-	Links                             []Link       `json:"links,omitempty"` // Todo kan weg?
+	Links                             []Link       `json:"links,omitempty"`
 	DatasetMetadataLinks              MetadataLink `json:"datasetMetadataLinks,omitempty"`
 	Author                            Author       `json:"author,omitempty"`
 	SpatialDatasetIdentifierCode      string       `json:"spatial_dataset_identifier_code,omitempty"`
@@ -144,7 +155,12 @@ type SRS struct {
 type AtomStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	// todo: Analyse which statuses we need
+
+	// Each condition contains details for one aspect of the current state of this Atom.
+	// Known .status.conditions.type are: "Reconciled"
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	// The result of creating or updating of each derived resource for this Atom.
+	OperationResults map[string]controllerutil.OperationResult `json:"operationResults,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -203,4 +219,25 @@ func (r *Atom) GetURI() (URI string) {
 		URI += fmt.Sprintf("/%s", v)
 	}
 	return
+}
+
+func (r *Atom) GetNrOfDownloadLinks() (count int) {
+	for _, datasetFeed := range r.Spec.DatasetFeeds {
+		for _, entry := range datasetFeed.Entries {
+			for range entry.DownloadLinks {
+				count++
+			}
+		}
+	}
+	return
+}
+
+func (dl *DownloadLink) GetBlobPrefix() string {
+	index := strings.LastIndex(dl.Data, "/") + 1
+	return dl.Data[:index]
+}
+
+func (dl *DownloadLink) GetBlobName() string {
+	index := strings.LastIndex(dl.Data, "/") + 1
+	return dl.Data[index:]
 }
