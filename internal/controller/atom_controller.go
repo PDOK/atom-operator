@@ -65,6 +65,7 @@ const (
 )
 
 const (
+	controllerName  = "atom-controller"
 	appLabelKey     = "app"
 	atomName        = "atom"
 	configFileName  = "values.yaml"
@@ -75,6 +76,10 @@ const (
 	downloadsName   = "atom-downloads"
 
 	srvDir = "/srv"
+)
+
+var (
+	finalizerName = controllerName + "." + pdoknlv3.GroupVersion.Group + "/finalizer"
 )
 
 // AtomReconciler reconciles a Atom object
@@ -140,15 +145,14 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		atom.Spec.Service.GeneratorConfig = atomGeneratorConfig
 	}
 
-	// Todo finalizeIfNecessary()?
-	//fullName := getObjectFullName(r.Client, atom)
-	//shouldContinue, err := finalizeIfNecessary(ctx, r.Client, atom, finalizerName, func() error {
-	//	lgr.Info("deleting resources", "name", fullName)
-	//	return r.deleteAllForAtom(ctx, atom)
-	//})
-	//if !shouldContinue || err != nil {
-	//	return result, err
-	//}
+	fullName := getObjectFullName(r.Client, atom)
+	shouldContinue, err := finalizeIfNecessary(ctx, r.Client, atom, finalizerName, func() error {
+		lgr.Info("deleting resources", "name", fullName)
+		return r.deleteAllForAtom(ctx, atom)
+	})
+	if !shouldContinue || err != nil {
+		return result, err
+	}
 
 	operationResults, err := r.createOrUpdateAllForAtom(ctx, atom)
 	if err != nil {
@@ -194,7 +198,7 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	// region Create or update Deployment
 	deployment := getBareDeployment(atom)
 	operationResults[getObjectFullName(r.Client, deployment)], err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
-		return r.mutateDeployment(atom, deployment)
+		return r.mutateDeployment(atom, deployment, configMap.GetName())
 	})
 	if err != nil {
 		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, deployment), err)
@@ -261,7 +265,7 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 
 	// region Create or update PodDisruptionBudget
 	podDisruptionBudget := getBarePodDisruptionBudget(atom)
-	operationResults[getObjectFullName(r.Client, podDisruptionBudget)], err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+	operationResults[getObjectFullName(r.Client, podDisruptionBudget)], err = controllerutil.CreateOrUpdate(ctx, r.Client, podDisruptionBudget, func() error {
 		return r.mutatePodDisruptionBudget(atom, podDisruptionBudget)
 	})
 	if err != nil {
@@ -286,6 +290,8 @@ func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.At
 		getBareCorsHeadersMiddleware(atom),
 		getBareIngressRoute(atom),
 		getBarePodDisruptionBudget(atom),
+
+		// Todo delete extra middleware, per datasetFeed?
 	})
 }
 
@@ -327,7 +333,7 @@ func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
 	}
 }
 
-func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv1.Deployment) error {
+func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv1.Deployment, configMapName string) error {
 	labels := cloneOrEmptyMap(atom.GetLabels())
 	labels[appLabelKey] = atomName
 	if err := setImmutableLabels(r.Client, deployment, labels); err != nil {
@@ -363,7 +369,7 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 				{Name: "data", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 				{Name: "socket", VolumeSource: corev1.VolumeSource{EmptyDir: &corev1.EmptyDirVolumeSource{}}},
 				{Name: "config", VolumeSource: corev1.VolumeSource{ConfigMap: &corev1.ConfigMapVolumeSource{
-					LocalObjectReference: corev1.LocalObjectReference{Name: atom.Name + "-atom-generator"}}},
+					LocalObjectReference: corev1.LocalObjectReference{Name: configMapName}}},
 				},
 			},
 			InitContainers: []corev1.Container{
@@ -429,14 +435,13 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 		},
 	}
 
-	// Todo strategicMergePatch()?
-	//if atom.Spec.PodSpecPatch != nil {
-	//	patchedPod, err := strategicMergePatch(&podTemplateSpec.Spec, &atom.Spec.PodSpecPatch)
-	//	if err != nil {
-	//		return err
-	//	}
-	//	podTemplateSpec.Spec = *patchedPod
-	//}
+	if atom.Spec.PodSpecPatch != nil {
+		patchedPod, err := strategicMergePatch(&podTemplateSpec.Spec, &atom.Spec.PodSpecPatch)
+		if err != nil {
+			return err
+		}
+		podTemplateSpec.Spec = *patchedPod
+	}
 	podTemplateSpec.Spec.InitContainers[0].Image = r.AtomGeneratorImage
 	podTemplateSpec.Spec.Containers[0].Image = r.LighttpdImage
 	deployment.Spec.Template = podTemplateSpec
@@ -563,7 +568,7 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downl
 	if err := ensureSetGVK(r.Client, middleware, middleware); err != nil {
 		return err
 	}
-	return ctrl.SetControllerReference(middleware, middleware, r.Scheme)
+	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
 func getBareIngressRoute(obj metav1.Object) *traefikiov1alpha1.IngressRoute {

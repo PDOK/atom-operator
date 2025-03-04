@@ -34,6 +34,7 @@ import (
 	"maps"
 	"regexp"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/kustomize/api/hasher"
@@ -49,6 +50,31 @@ func deleteObjects(ctx context.Context, c client.Client, objects []client.Object
 		}
 	}
 	return
+}
+
+func finalizeIfNecessary(ctx context.Context, c client.Client, obj client.Object, finalizerName string, finalizer func() error) (shouldContinue bool, err error) {
+	// not under deletion, ensure finalizer annotation
+	if obj.GetDeletionTimestamp().IsZero() {
+		if !controllerutil.ContainsFinalizer(obj, finalizerName) {
+			controllerutil.AddFinalizer(obj, finalizerName)
+			err = c.Update(ctx, obj)
+			return false, err
+		}
+		return true, nil
+	}
+
+	// under deletion but not our finalizer annotation, do nothing
+	if !controllerutil.ContainsFinalizer(obj, finalizerName) {
+		return false, nil
+	}
+
+	// run finalizer and remove annotation
+	if err = finalizer(); err != nil {
+		return false, err
+	}
+	controllerutil.RemoveFinalizer(obj, finalizerName)
+	err = c.Update(ctx, obj)
+	return false, err
 }
 
 func setImmutableLabels(c client.Client, obj client.Object, labels map[string]string) error {

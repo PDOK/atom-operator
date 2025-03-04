@@ -351,19 +351,6 @@ spec:
                   description: DatasetFeed represents individual dataset feeds within
                     the Atom service
                   properties:
-                    author:
-                      description: |-
-                        Author todo: move to higher level
-                        Author specifies the author or owner information
-                      properties:
-                        email:
-                          type: string
-                        name:
-                          type: string
-                      required:
-                      - email
-                      - name
-                      type: object
                     datasetMetadataLinks:
                       description: MetadataLink represents a link in the service or
                         dataset feed
@@ -533,6 +520,17 @@ spec:
                 description: Service defines the service configuration for the Atom
                   feed
                 properties:
+                  author:
+                    description: Author specifies the author or owner information
+                    properties:
+                      email:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - email
+                    - name
+                    type: object
                   baseUrl:
                     type: string
                   lang:

@@ -65,7 +65,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 
 func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
 	if len(feeds) == 0 {
-		return "", fmt.Errorf("OwnerInfo heeft geen html template")
+		return "", fmt.Errorf("Atom heeft geen dataset feeds.")
 	}
 	updateTime := feeds[0].Entries[0].Updated
 	for _, datasetFeed := range feeds {
