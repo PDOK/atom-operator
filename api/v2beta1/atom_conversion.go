@@ -298,12 +298,12 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 func createBaseURL(host string, general General) (baseURL string) {
 	atomURI := fmt.Sprintf("%s/%s", general.DatasetOwner, general.Dataset)
 	if general.Theme != nil {
-		atomURI += fmt.Sprintf("/%s", *general.Theme)
+		atomURI += "/" + *general.Theme
 	}
 	atomURI += "/atom"
 
 	if general.ServiceVersion != nil {
-		atomURI += fmt.Sprintf("/%s", *general.ServiceVersion)
+		atomURI += "/" + *general.ServiceVersion
 	}
 
 	baseURL = fmt.Sprintf("%s/%s/index.xml", strings.TrimSuffix(host, "/"), atomURI)

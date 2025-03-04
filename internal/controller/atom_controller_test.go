@@ -64,7 +64,6 @@ var fullAtom = pdoknlv3.Atom{
 		Labels: map[string]string{
 			"dataset":       "test-dataset",
 			"dataset-owner": "test-datasetowner",
-			//"app":           "atom",
 		},
 	},
 	Spec: pdoknlv3.AtomSpec{

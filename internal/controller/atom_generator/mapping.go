@@ -1,13 +1,14 @@
 package atom_generator
 
 import (
-	"fmt"
+	"errors"
+	"strings"
+	"time"
+
 	"github.com/cbroglie/mustache"
 	atom_feed "github.com/pdok/atom-generator/feeds"
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	v1 "github.com/pdok/smooth-operator/api/v1"
-	"strings"
-	"time"
 )
 
 func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) (atomGeneratorConfig atom_feed.Feeds, err error) {
@@ -65,7 +66,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 
 func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
 	if len(feeds) == 0 {
-		return "", fmt.Errorf("Atom heeft geen dataset feeds.")
+		return "", errors.New("Atom heeft geen dataset feeds.")
 	}
 	updateTime := feeds[0].Entries[0].Updated
 	for _, datasetFeed := range feeds {
@@ -190,7 +191,7 @@ func getCSWDescribedbyLink(atom pdoknlv3.Atom, language string, ownerInfo v1.Own
 			}, nil
 		}
 	}
-	return atom_feed.Link{}, fmt.Errorf("OwnerInfo heeft geen CSW template")
+	return atom_feed.Link{}, errors.New("OwnerInfo heeft geen CSW template")
 }
 
 func getSearchLink(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo) (atom_feed.Link, error) {
@@ -209,7 +210,7 @@ func getSearchLink(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo) 
 			}, nil
 		}
 	}
-	return atom_feed.Link{}, fmt.Errorf("OwnerInfo heeft geen opensearch template")
+	return atom_feed.Link{}, errors.New("OwnerInfo heeft geen opensearch template")
 }
 
 func getHTMLRelatedLink(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo) (atom_feed.Link, error) {
@@ -227,5 +228,5 @@ func getHTMLRelatedLink(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerI
 			}, nil
 		}
 	}
-	return atom_feed.Link{}, fmt.Errorf("OwnerInfo heeft geen html template")
+	return atom_feed.Link{}, errors.New("OwnerInfo heeft geen html template")
 }

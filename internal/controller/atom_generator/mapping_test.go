@@ -1,11 +1,12 @@
 package atom_generator
 
 import (
+	"reflect"
+	"testing"
+
 	"github.com/pdok/atom-generator/feeds"
 	v3 "github.com/pdok/atom-operator/api/v3"
 	v1 "github.com/pdok/smooth-operator/api/v1"
-	"reflect"
-	"testing"
 )
 
 func TestMapAtomV3ToAtomGeneratorConfig(t *testing.T) {
@@ -57,7 +58,7 @@ func TestMapAtomV3ToAtomGeneratorConfig(t *testing.T) {
 										{
 											TechnicalName: "https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
 											Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
-											Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO). Geotechnisch sondeeronderzoek (in het Engels Cone Penetration Test, afgekort tot CPT) is onderzoek dat tot doel heeft informatie over de bodemkundige of geologische opbouw van de ondergrond te verwerven, waarbij in het veld metingen aan de ondergrond worden gedaan door een kegelvormige sonde de grond in te drukken. Traditioneel is het doel met de sonde de weerstand en de wrijving die de conus op de weg naar beneden ondervind te bepalen om daaruit mechanische eigenschappen van de ondergrond af te leiden. In de loop van de tijd is de sonde zo geevolueerd dat een breed scala aan metingen verricht kan worden. Voor meer informatie raadpleeg www.basisregistratieondergrond.nl",
+											Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO). Geotechnisch sondeeronderzoek (in het Engels Cone Penetration Test, afgekort tot CPT) is onderzoek dat tot doel heeft informative over de bodemkundige of geologische opbouw van de ondergrond te verwerven, waarbij in het veld metingen aan de ondergrond worden gedaan door een kegelvormige sonde de grond in te drukken. Traditioneel is het doel met de sonde de weerstand en de wrijving die de conus op de weg naar beneden ondervind te bepalen om daaruit mechanische eigenschappen van de ondergrond af te leiden. In de loop van de tijd is de sonde zo geevolueerd dat een breed scala aan metingen verricht kan worden. Voor meer informative raadpleeg www.basisregistratieondergrond.nl",
 											DownloadLinks: []v3.DownloadLink{},
 										},
 									},

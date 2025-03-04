@@ -68,7 +68,7 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
-// nolint:gocyclo
+//nolint:gocyclo
 func main() {
 	var metricsAddr string
 	var metricsCertPath, metricsCertName, metricsCertKey string
@@ -235,7 +235,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// nolint:goconst
+	//nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookpdoknlv2beta1.SetupAtomWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")
@@ -243,7 +243,7 @@ func main() {
 		}
 	}
 
-	// nolint:goconst
+	//nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookpdoknlv3.SetupAtomWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")

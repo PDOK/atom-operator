@@ -31,8 +31,9 @@ import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 )
 
-// nolint:unused
 // log is for logging in this package.
+//
+//nolint:unused
 var atomlog = logf.Log.WithName("atom-resource")
 
 // SetupAtomWebhookWithManager registers the webhook for Atom in the manager.

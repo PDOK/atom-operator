@@ -27,11 +27,12 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"time"
+
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strconv"
-	"time"
 
 	v1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -692,11 +693,11 @@ func getGeneratorConfig(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerIn
 		return "", fmt.Errorf("failed to map the V3 atom to generator config: %w", err)
 	}
 
-	if yamlConfig, err := yaml.Marshal(&atomGeneratorConfig); err != nil {
+	yamlConfig, err := yaml.Marshal(&atomGeneratorConfig)
+	if err != nil {
 		return "", fmt.Errorf("failed to marshal the generator config to yaml: %w", err)
-	} else {
-		return string(yamlConfig), nil
 	}
+	return string(yamlConfig), nil
 }
 
 func getMatchRuleForIndex(atom *pdoknlv3.Atom) string {

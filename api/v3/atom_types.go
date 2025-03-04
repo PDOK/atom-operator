@@ -26,9 +26,10 @@ package v3
 
 import (
 	"fmt"
+	"strings"
+
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -199,7 +200,7 @@ func GetAtomBaseURLHost() string {
 	return baseURLHost
 }
 
-func (r *Atom) GetURI() (URI string) {
+func (r *Atom) GetURI() (uri string) {
 	datasetOwner := "unknown"
 	if v, ok := r.ObjectMeta.Labels["dataset-owner"]; ok {
 		datasetOwner = v
@@ -208,14 +209,14 @@ func (r *Atom) GetURI() (URI string) {
 	if v, ok := r.ObjectMeta.Labels["dataset"]; ok {
 		dataset = v
 	}
-	URI = fmt.Sprintf("%s/%s", datasetOwner, dataset)
+	uri = fmt.Sprintf("%s/%s", datasetOwner, dataset)
 
 	if v, ok := r.ObjectMeta.Labels["theme"]; ok {
-		URI += fmt.Sprintf("/%s", v)
+		uri += "/" + v
 	}
-	URI += "/atom"
+	uri += "/atom"
 	if v, ok := r.ObjectMeta.Labels["service-version"]; ok {
-		URI += fmt.Sprintf("/%s", v)
+		uri += "/" + v
 	}
 	return
 }
