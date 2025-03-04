@@ -26,7 +26,13 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 		return atom_feed.Feeds{}, err
 	}
 	relatedLink, err = getHTMLRelatedLink(atom, language, ownerInfo)
-	latestUpdated := getLatestUpdate(atom.Spec.DatasetFeeds)
+	if err != nil {
+		return atom_feed.Feeds{}, err
+	}
+	latestUpdated, err := getLatestUpdate(atom.Spec.DatasetFeeds)
+	if err != nil {
+		return atom_feed.Feeds{}, err
+	}
 
 	atomGeneratorConfig = atom_feed.Feeds{
 		Feeds: []atom_feed.Feed{
@@ -57,7 +63,10 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 	return atomGeneratorConfig, err
 }
 
-func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) string {
+func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
+	if len(feeds) == 0 {
+		return "", fmt.Errorf("OwnerInfo heeft geen html template")
+	}
 	updateTime := feeds[0].Entries[0].Updated
 	for _, datasetFeed := range feeds {
 		for _, entry := range datasetFeed.Entries {
@@ -66,7 +75,7 @@ func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) string {
 			}
 		}
 	}
-	return updateTime.Format(time.RFC3339)
+	return updateTime.Format(time.RFC3339), nil
 }
 
 func getEntriesArray(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) []atom_feed.Entry {
