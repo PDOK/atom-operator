@@ -26,6 +26,7 @@ package controller
 
 import (
 	"context"
+	corev1 "k8s.io/api/core/v1"
 
 	v1 "github.com/pdok/smooth-operator/api/v1"
 
@@ -40,11 +41,67 @@ import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 )
 
+const (
+	atomResourceName      = "test-atom"
+	ownerInfoResourceName = "pdok"
+	namespace             = "default"
+	testImageName1        = "test.test/image:test1"
+	testImageName2        = "test.test/image:test2"
+)
+
+var fullAtom = pdoknlv3.Atom{
+	ObjectMeta: metav1.ObjectMeta{
+		Namespace: namespace,
+		Name:      atomResourceName,
+		Labels: map[string]string{
+			"dataset":       "test-dataset",
+			"dataset-owner": "test-datasetowner",
+			//"app":           "atom",
+		},
+	},
+	Spec: pdoknlv3.AtomSpec{
+		Service: pdoknlv3.Service{
+			BaseURL:      "https://my.test-resource.test/atom",
+			Lang:         "test lang",
+			Stylesheet:   "test stylesheet",
+			Title:        "test title",
+			Subtitle:     "test subtitle",
+			OwnerInfoRef: ownerInfoResourceName,
+			ServiceMetadataLinks: pdoknlv3.MetadataLink{
+				MetadataIdentifier: "00000000-0000-0000-0000-000000000000",
+				Templates:          []string{"csw", "opensearch", "html"},
+			},
+			Rights: "test rights",
+		},
+		DatasetFeeds: []pdoknlv3.DatasetFeed{},
+		PodSpecPatch: &corev1.PodSpec{
+			InitContainers: []corev1.Container{
+				{
+					Name: "init-container",
+					VolumeMounts: []corev1.VolumeMount{
+						{Name: "data", MountPath: srvDir + "/data"},
+						{Name: "config", MountPath: srvDir + "/config"},
+					},
+					Image: testImageName1,
+				},
+			},
+			Containers: []corev1.Container{
+				{
+					Name: "atom-service",
+					VolumeMounts: []corev1.VolumeMount{
+						{Name: "socket", MountPath: "/tmp", ReadOnly: false},
+						{Name: "data", MountPath: "var/www"},
+					},
+					Image: testImageName2,
+				},
+			},
+			Volumes: []corev1.Volume{},
+		},
+	},
+}
+
 var _ = Describe("Atom Controller", func() {
 	Context("When reconciling a resource", func() {
-		const atomResourceName = "test-atom"
-		const ownerInfoResourceName = "pdok"
-		const namespace = "default"
 
 		ctx := context.Background()
 
@@ -65,18 +122,7 @@ var _ = Describe("Atom Controller", func() {
 			By("creating the custom resource for the Kind Atom")
 			err := k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
 			if err != nil && errors.IsNotFound(err) {
-				resource := &pdoknlv3.Atom{
-					ObjectMeta: metav1.ObjectMeta{
-						Namespace: namespace,
-						Name:      atomResourceName,
-					},
-					Spec: pdoknlv3.AtomSpec{
-						Service: pdoknlv3.Service{
-							OwnerInfoRef: ownerInfoResourceName,
-						},
-					},
-					// TODO(user): Specify other spec details if needed.
-				}
+				resource := fullAtom.DeepCopy()
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 
@@ -118,8 +164,10 @@ var _ = Describe("Atom Controller", func() {
 		It("should successfully reconcile the resource", func() {
 			By("Reconciling the created resource")
 			controllerReconciler := &AtomReconciler{
-				Client: k8sClient,
-				Scheme: k8sClient.Scheme(),
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
 			}
 
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{

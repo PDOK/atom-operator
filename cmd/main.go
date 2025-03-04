@@ -47,6 +47,11 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
+const (
+	defaultAtomGeneratorImage = "docker.io/pdok/atom-generator:0.6.0"
+	defaultLighttpdImage      = "docker.io/pdok/lighttpd:1.4.67"
+)
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -73,6 +78,8 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var atomBaseURLHost string
+	var atomGeneratorImage string
+	var lighttpdImage string
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -91,9 +98,10 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-
 	flag.StringVar(&atomBaseURLHost, "atom-baseurl-host", "http://localhost:32788/",
 		"The host which is used to create the Atom BaseURL.")
+	flag.StringVar(&atomGeneratorImage, "atom-generator-image", defaultAtomGeneratorImage, "The image to use in the Atom generator init-container.")
+	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -218,8 +226,10 @@ func main() {
 	}
 
 	if err = (&controller.AtomReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		AtomGeneratorImage: atomGeneratorImage,
+		LighttpdImage:      lighttpdImage,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Atom")
 		os.Exit(1)
