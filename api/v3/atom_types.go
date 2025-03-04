@@ -63,7 +63,8 @@ type Service struct {
 	OwnerInfoRef         string       `json:"ownerInfoRef"`
 	ServiceMetadataLinks MetadataLink `json:"serviceMetadataLinks,omitempty"`
 	Rights               string       `json:"rights,omitempty"`
-
+	Author               Author       `json:"author,omitempty"`
+  
 	// +kubebuilder:validation:Optional
 	GeneratorConfig string `json:"-"` // Skip this field in the CRD schema
 }
@@ -78,7 +79,6 @@ type Link struct {
 	Title    string `json:"title,omitempty"`
 }
 
-// Author todo: move to higher level
 // Author specifies the author or owner information
 type Author struct {
 	Name  string `json:"name"`
@@ -87,15 +87,14 @@ type Author struct {
 
 // DatasetFeed represents individual dataset feeds within the Atom service
 type DatasetFeed struct {
-	TechnicalName                     string       `json:"technicalName"`
-	Title                             string       `json:"title"`
-	Subtitle                          string       `json:"subtitle,omitempty"`
-	Links                             []Link       `json:"links,omitempty"`
-	DatasetMetadataLinks              MetadataLink `json:"datasetMetadataLinks,omitempty"`
-	Author                            Author       `json:"author,omitempty"`
-	SpatialDatasetIdentifierCode      string       `json:"spatial_dataset_identifier_code,omitempty"`
-	SpatialDatasetIdentifierNamespace string       `json:"spatial_dataset_identifier_namespace,omitempty"`
-	Entries                           []Entry      `json:"entries,omitempty"`
+	TechnicalName        string       `json:"technicalName"`
+	Title                string       `json:"title"`
+	Subtitle             string       `json:"subtitle,omitempty"`
+	Links                []Link       `json:"links,omitempty"` // Todo kan weg?
+	DatasetMetadataLinks MetadataLink `json:"datasetMetadataLinks,omitempty"`
+	SpatialDatasetIdentifierCode      string  `json:"spatial_dataset_identifier_code,omitempty"`
+	SpatialDatasetIdentifierNamespace string  `json:"spatial_dataset_identifier_namespace,omitempty"`
+	Entries                           []Entry `json:"entries,omitempty"`
 }
 
 // MetadataLink represents a link in the service or dataset feed
