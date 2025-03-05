@@ -746,9 +746,7 @@ func getDownloadLinkRegex(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLi
 	if downloadLink.Version != nil {
 		version = *downloadLink.Version + "/"
 	}
-	// Todo compare to an example
-	//Regex:       "^/{{ atom_uri }}/downloads/{{ item.version + '/' if item.version != '' else '' }}({{ download_links | json_query(blob_names_selecting_query) }})",
-	return fmt.Sprintf("/%s/downloads/%s(%s)", atom.GetURI(), version, downloadLink.GetBlobName())
+	return fmt.Sprintf("^/%s/downloads/%s(%s)", atom.GetURI(), version, downloadLink.GetBlobName())
 }
 
 func getDownloadLinkReplacement(downloadLink *pdoknlv3.DownloadLink) string {
