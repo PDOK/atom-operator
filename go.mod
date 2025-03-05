@@ -6,11 +6,10 @@ godebug default=go1.23
 
 require (
 	github.com/cbroglie/mustache v1.4.0
-	github.com/go-logr/logr v1.4.2
 	github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega v1.35.1
 	github.com/pdok/atom-generator v0.6.0
-	github.com/pdok/smooth-operator v0.0.0-20250228084310-9fff7e0bf501
+	github.com/pdok/smooth-operator v0.0.1
 	github.com/pkg/errors v0.9.1
 	github.com/traefik/traefik/v2 v2.11.20
 	golang.org/x/tools v0.28.0
@@ -42,6 +41,7 @@ require (
 	github.com/go-acme/lego/v4 v4.21.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
 	github.com/go-jose/go-jose/v4 v4.0.4 // indirect
+	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-logr/zapr v1.3.0 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect

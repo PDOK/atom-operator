@@ -185,7 +185,7 @@ var _ = Describe("Atom Controller", func() {
 					},
 					Spec: smoothoperatorv1.OwnerInfoSpec{
 						MetadataUrls: smoothoperatorv1.MetadataUrls{
-							CSV: smoothoperatorv1.MetadataURL{
+							CSW: smoothoperatorv1.MetadataURL{
 								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id={{identifier}}",
 							},
 							OpenSearch: smoothoperatorv1.MetadataURL{

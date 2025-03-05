@@ -179,7 +179,7 @@ func replaceMustachTemplate(hrefTemplate string, identifier string) (string, err
 func getCSWDescribedbyLink(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo) (atom_feed.Link, error) {
 	for _, template := range atom.Spec.Service.ServiceMetadataLinks.Templates {
 		if template == "csw" {
-			href, err := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.CSV.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
+			href, err := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.CSW.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
 			if err != nil {
 				return atom_feed.Link{}, err
 			}
