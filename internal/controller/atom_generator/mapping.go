@@ -58,7 +58,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 				Rights:  atom.Spec.Service.Rights,
 				Updated: &latestUpdated,
 				Author:  getAuthor(atom.Spec.Service.Author),
-				Entry:   getEntriesArray(atom, ownerInfo),
+				Entry:   getEntriesArray(atom),
 			},
 		},
 	}
@@ -84,11 +84,10 @@ func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
 	return updateTime.Format(time.RFC3339), nil
 }
 
-func getEntriesArray(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) []atom_feed.Entry {
+func getEntriesArray(atom pdoknlv3.Atom) []atom_feed.Entry {
 	var retEntriesArray []atom_feed.Entry
 	for _, datasetFeed := range atom.Spec.DatasetFeeds {
 		for _, entry := range datasetFeed.Entries {
-			updateTime := entry.Updated.Format(time.RFC3339)
 
 			singleEntry := atom_feed.Entry{
 				ID:                                entry.TechnicalName,
@@ -96,13 +95,21 @@ func getEntriesArray(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) []atom_feed.Ent
 				Content:                           entry.Content,
 				Summary:                           datasetFeed.Subtitle,
 				Rights:                            atom.Spec.Service.Rights,
-				Updated:                           &updateTime,
-				Polygon:                           getBoundingBoxPolygon(entry.Polygon.BBox),
 				SpatialDatasetIdentifierCode:      datasetFeed.SpatialDatasetIdentifierCode,
 				SpatialDatasetIdentifierNamespace: datasetFeed.SpatialDatasetIdentifierNamespace,
-				Category:                          getCategory(entry.SRS),
 				Link:                              getEntryLinksArray(entry),
 			}
+			if entry.Updated != nil {
+				updateTime := entry.Updated.Format(time.RFC3339)
+				singleEntry.Updated = &updateTime
+			}
+			if entry.SRS != nil {
+				singleEntry.Category = getCategory(entry.SRS)
+			}
+			if entry.Polygon != nil {
+				singleEntry.Polygon = getBoundingBoxPolygon(entry.Polygon.BBox)
+			}
+
 			retEntriesArray = append(retEntriesArray, singleEntry)
 		}
 	}
