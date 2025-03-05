@@ -109,14 +109,17 @@ func getEntryLinksArray(entry pdoknlv3.Entry) []atom_feed.Link {
 	linksArray := []atom_feed.Link{}
 	for _, link := range entry.DownloadLinks {
 		dataLink := link.Data
-		bboxString := getBboxString(link.BBox)
 
 		l := atom_feed.Link{
 			Data:    &dataLink,
 			Rel:     link.Rel,
 			Version: link.Version,
 			Time:    link.Time,
-			Bbox:    &bboxString,
+		}
+
+		if link.BBox != nil {
+			bboxString := getBboxString(link.BBox)
+			l.Bbox = &bboxString
 		}
 		linksArray = append(linksArray, l)
 	}
