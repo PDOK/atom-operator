@@ -28,7 +28,6 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,9 +52,9 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 	// Service
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(pdoknlv3.GetAtomBaseURLHost(), src.Spec.General),
+		BaseURL:      createBaseURL(pdoknlv3.GetBaseURLHost(), src.Spec.General),
 		Lang:         "nl",
-		Stylesheet:   "https://service.pdok.nl/atom/style/style.xsl",
+		Stylesheet:   pdoknlv3.GetBaseURLHost() + "/atom/style/style.xsl",
 		Title:        src.Spec.Service.Title,
 		Subtitle:     src.Spec.Service.Subtitle,
 		OwnerInfoRef: "pdok",
@@ -312,7 +311,7 @@ func createBaseURL(host string, general General) (baseURL string) {
 		atomURI += "/" + *general.ServiceVersion
 	}
 
-	baseURL = fmt.Sprintf("%s/%s/index.xml", strings.TrimSuffix(host, "/"), atomURI)
+	baseURL = fmt.Sprintf("%s/%s", host, atomURI)
 	return
 }
 

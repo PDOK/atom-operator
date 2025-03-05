@@ -703,17 +703,17 @@ func getGeneratorConfig(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerIn
 }
 
 func getMatchRuleForIndex(atom *pdoknlv3.Atom) string {
-	// Todo use GetAtomBaseURLHost()
+	// Todo use GetBaseURLHost()
 	return "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && Path(`/" + atom.GetURI() + "/index.xml`)"
 }
 
 func getMatchRuleForDownloads(atom *pdoknlv3.Atom) string {
-	// Todo use GetAtomBaseURLHost()
+	// Todo use GetBaseURLHost()
 	return "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && PathPrefix(`/" + atom.GetURI() + "/downloads/`)"
 }
 
 func getMatchRuleForDatasetFeed(atom *pdoknlv3.Atom, datasetFeed *pdoknlv3.DatasetFeed) string {
-	// Todo use GetAtomBaseURLHost()
+	// Todo use GetBaseURLHost()
 	return "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && Path(/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml"
 }
 

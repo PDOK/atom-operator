@@ -54,7 +54,7 @@ spec:
         args:
           - --leader-elect
           - --health-probe-bind-address=:8081
-          - --atom-baseurl-host=https://test.service.pdok.nl/
+          - --atom-baseurl-host=https://kangaroo.test.pdok.nl
           - --blob_endpoint=https://samercator.blob.core.windows.net
         image: controller:latest
         name: manager

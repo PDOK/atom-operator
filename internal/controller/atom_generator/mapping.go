@@ -17,7 +17,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 	var describedbyLink, searchLink, relatedLink atom_feed.Link
 
 	language := "nl"
-	xmlSheet := "https://service.pdok.nl/atom/style/style.xsl"
+	xmlSheet := pdoknlv3.GetBaseURLHost() + "/atom/style/style.xsl"
 	selfLink := getSelfLink(atom, language)
 	describedbyLink, err = getCSWDescribedbyLink(atom, language, ownerInfo)
 	if err != nil {

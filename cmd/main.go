@@ -113,7 +113,7 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	pdoknlv3.SetAtomBaseURLHost(atomBaseURLHost)
+	pdoknlv3.SetBaseURLHost(atomBaseURLHost)
 	pdoknlv3.SetBlobEndpoint(blobEndpoint)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled

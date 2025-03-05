@@ -194,12 +194,11 @@ func init() {
 	SchemeBuilder.Register(&Atom{}, &AtomList{})
 }
 
-// SetAtomBaseURLHost is used to set the BaseURL Host in main
-func SetAtomBaseURLHost(atomBaseURLHost string) {
-	baseURLHost = atomBaseURLHost
+func SetBaseURLHost(host string) {
+	baseURLHost = strings.TrimSuffix(host, "/")
 }
 
-func GetAtomBaseURLHost() string {
+func GetBaseURLHost() string {
 	return baseURLHost
 }
 
