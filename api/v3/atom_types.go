@@ -37,6 +37,9 @@ import (
 // BaseURLHost is accessed by other api versions (i.e. v2beta1)
 var baseURLHost string
 
+// BlobEndpoint is needed for atom services
+var blobEndpoint string
+
 // AtomSpec defines the desired state of Atom.
 type AtomSpec struct {
 	Lifecycle    Lifecycle     `json:"lifecycle,omitempty"`
@@ -198,6 +201,14 @@ func SetAtomBaseURLHost(atomBaseURLHost string) {
 
 func GetAtomBaseURLHost() string {
 	return baseURLHost
+}
+
+func SetBlobEndpoint(blobEndpoint string) {
+	blobEndpoint = blobEndpoint
+}
+
+func GetBlobEndpoint() string {
+	return blobEndpoint
 }
 
 func (r *Atom) GetURI() (uri string) {

@@ -78,6 +78,7 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var atomBaseURLHost string
+	var blobEndpoint string
 	var atomGeneratorImage string
 	var lighttpdImage string
 	var tlsOpts []func(*tls.Config)
@@ -100,6 +101,8 @@ func main() {
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.StringVar(&atomBaseURLHost, "atom-baseurl-host", "http://localhost:32788/",
 		"The host which is used to create the Atom BaseURL.")
+
+	flag.StringVar(&blobEndpoint, "blob_endpoint", "https://samercator.blob.core.windows.net", "The blobstore endpoint used for file downloads.")
 	flag.StringVar(&atomGeneratorImage, "atom-generator-image", defaultAtomGeneratorImage, "The image to use in the Atom generator init-container.")
 	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
 	opts := zap.Options{
@@ -111,6 +114,7 @@ func main() {
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	pdoknlv3.SetAtomBaseURLHost(atomBaseURLHost)
+	pdoknlv3.SetBlobEndpoint(blobEndpoint)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will

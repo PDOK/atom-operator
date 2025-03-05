@@ -120,7 +120,7 @@ func getEntriesArray(atom pdoknlv3.Atom) []atom_feed.Entry {
 func getEntryLinksArray(entry pdoknlv3.Entry) []atom_feed.Link {
 	linksArray := []atom_feed.Link{}
 	for _, link := range entry.DownloadLinks {
-		dataLink := link.Data
+		dataLink := pdoknlv3.GetBlobEndpoint() + "/" + link.Data
 
 		l := atom_feed.Link{
 			Data:    &dataLink,
