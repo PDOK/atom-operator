@@ -203,8 +203,8 @@ func GetAtomBaseURLHost() string {
 	return baseURLHost
 }
 
-func SetBlobEndpoint(blobEndpoint string) {
-	blobEndpoint = blobEndpoint
+func SetBlobEndpoint(endpoint string) {
+	blobEndpoint = endpoint
 }
 
 func GetBlobEndpoint() string {
