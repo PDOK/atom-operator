@@ -109,7 +109,7 @@ type Download struct {
 
 // Link represents a link in a download entry
 type Link struct {
-	BlobKey *string `json:"BlobKey"`
+	BlobKey *string `json:"blobKey"`
 	Updated *string `json:"updated,omitempty"`
 	Version *string `json:"version,omitempty"`
 	Bbox    *Bbox   `json:"bbox,omitempty"`
