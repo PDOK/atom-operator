@@ -253,6 +253,16 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			if srcEntry.Updated != nil {
 				updatedString := srcEntry.Updated.Format(time.RFC3339)
 				dstDownload.Updated = &updatedString
+
+				// Set Service updated with latest Entry
+				if dst.Spec.Service.Updated == nil {
+					dst.Spec.Service.Updated = &updatedString
+				} else {
+					serviceUpdated, _ := time.Parse(time.RFC3339, *dst.Spec.Service.Updated)
+					if serviceUpdated.Before(srcEntry.Updated.Time) {
+						dst.Spec.Service.Updated = &updatedString
+					}
+				}
 			}
 
 			if srcEntry.SRS != nil {
