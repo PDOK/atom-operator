@@ -57,7 +57,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 				},
 				Rights:  atom.Spec.Service.Rights,
 				Updated: &latestUpdated,
-				Author:  getAuthor(atom.Spec.Service.Author),
+				Author:  getAuthor(ownerInfo.Spec.Atom.Author),
 				Entry:   getEntriesArray(atom),
 			},
 		},
@@ -165,11 +165,11 @@ func getBoundingBoxPolygon(bbox pdoknlv3.BBox) string {
 	// punt rechts beneden start van een polygon
 	sb.WriteString(bbox.MaxX + " " + bbox.MinY + " ")
 	// punt links beneden. eninde van een polygon is gelijk aan de start
-	sb.WriteString(bbox.MinX + " " + bbox.MinY + " ")
+	sb.WriteString(bbox.MinX + " " + bbox.MinY)
 	return sb.String()
 }
 
-func getAuthor(author pdoknlv3.Author) atom_feed.Author {
+func getAuthor(author v1.Author) atom_feed.Author {
 	return atom_feed.Author{
 		Name:  author.Name,
 		Email: author.Email,
