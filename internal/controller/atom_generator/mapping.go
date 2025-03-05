@@ -9,6 +9,7 @@ import (
 	atom_feed "github.com/pdok/atom-generator/feeds"
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	v1 "github.com/pdok/smooth-operator/api/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) (atomGeneratorConfig atom_feed.Feeds, err error) {
@@ -68,13 +69,17 @@ func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
 	if len(feeds) == 0 {
 		return "", errors.New("Atom heeft geen dataset feeds.")
 	}
-	updateTime := feeds[0].Entries[0].Updated
+
+	var updateTime *metav1.Time
 	for _, datasetFeed := range feeds {
 		for _, entry := range datasetFeed.Entries {
-			if updateTime.Before(entry.Updated) {
+			if entry.Updated != nil && (updateTime == nil || updateTime.Before(entry.Updated)) {
 				updateTime = entry.Updated
 			}
 		}
+	}
+	if updateTime == nil {
+		return "", nil
 	}
 	return updateTime.Format(time.RFC3339), nil
 }
