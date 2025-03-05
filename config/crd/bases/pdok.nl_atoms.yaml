@@ -200,8 +200,6 @@ spec:
                                   description: Link represents a link in a download
                                     entry
                                   properties:
-                                    BlobKey:
-                                      type: string
                                     bbox:
                                       description: Bbox is the struct for the bounding
                                         box extent of an atom
@@ -220,6 +218,8 @@ spec:
                                       - minx
                                       - miny
                                       type: object
+                                    blobKey:
+                                      type: string
                                     rel:
                                       type: string
                                     updated:
@@ -227,7 +227,7 @@ spec:
                                     version:
                                       type: string
                                   required:
-                                  - BlobKey
+                                  - blobKey
                                   type: object
                                 type: array
                               name:
