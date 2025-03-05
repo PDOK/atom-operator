@@ -120,15 +120,21 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			if srcDownload.Content != nil {
 				dstEntry.Content = *srcDownload.Content
 			}
+
+			var updated string
 			if srcDownload.Updated != nil {
-				parsedUpdatedTime, err := time.Parse(time.RFC3339, *srcDownload.Updated)
-				if err != nil {
-					log.Printf("Error parsing updated time: %v", err)
-					dstEntry.Updated = nil
-				}
-				updatedTime := metav1.NewTime(parsedUpdatedTime)
-				dstEntry.Updated = &updatedTime
+				updated = *srcDownload.Updated
+			} else if src.Spec.Service.Updated != nil {
+				updated = *src.Spec.Service.Updated
 			}
+
+			parsedUpdatedTime, err := time.Parse(time.RFC3339, updated)
+			if err != nil {
+				log.Printf("Error parsing updated time: %v", err)
+				dstEntry.Updated = nil
+			}
+			updatedTime := metav1.NewTime(parsedUpdatedTime)
+			dstEntry.Updated = &updatedTime
 
 			// Map the links
 			for _, srcLink := range srcDownload.Links {
