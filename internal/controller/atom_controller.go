@@ -671,7 +671,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 func getBarePodDisruptionBudget(obj metav1.Object) *v1.PodDisruptionBudget {
 	return &v1.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      obj.GetName() + "-atom-service",
+			Name:      obj.GetName() + "-atom-pdb",
 			Namespace: obj.GetNamespace(),
 		},
 	}
@@ -679,12 +679,12 @@ func getBarePodDisruptionBudget(obj metav1.Object) *v1.PodDisruptionBudget {
 
 func (r *AtomReconciler) mutatePodDisruptionBudget(atom *pdoknlv3.Atom, podDisruptionBudget *v1.PodDisruptionBudget) error {
 	labels := cloneOrEmptyMap(atom.GetLabels())
-	matchLabels := cloneOrEmptyMap(atom.GetLabels())
-	matchLabels[appLabelKey] = atomName
+	labels[appLabelKey] = atomName
 	if err := setImmutableLabels(r.Client, podDisruptionBudget, labels); err != nil {
 		return err
 	}
 
+	matchLabels := cloneOrEmptyMap(labels)
 	podDisruptionBudget.Spec = v1.PodDisruptionBudgetSpec{
 		MaxUnavailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 1},
 		Selector: &metav1.LabelSelector{
