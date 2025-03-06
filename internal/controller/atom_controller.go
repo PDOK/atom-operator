@@ -114,6 +114,7 @@ type AtomReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.20.0/pkg/reconcile
 func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	lgr := log.FromContext(ctx)
+	lgr.Info("Starting reconcile for atom resource", "name", req.NamespacedName)
 
 	// Fetch the Atom instance
 	atom := &pdoknlv3.Atom{}
@@ -157,11 +158,14 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return result, err
 	}
 
+	lgr.Info("creating resources for atom", "atom", atom)
 	operationResults, err := r.createOrUpdateAllForAtom(ctx, atom)
 	if err != nil {
+		lgr.Info("failed creating resources for atom", "atom", atom)
 		r.logAndUpdateStatusError(ctx, atom, err)
 		return result, err
 	}
+	lgr.Info("finished creating resources for atom", "atom", atom)
 	r.logAndUpdateStatusFinished(ctx, atom, operationResults)
 
 	return result, err
@@ -768,12 +772,13 @@ func (r *AtomReconciler) logAndUpdateStatusFinished(ctx context.Context, atom *p
 }
 
 func (r *AtomReconciler) updateStatus(ctx context.Context, atom *pdoknlv3.Atom, conditions []metav1.Condition, operationResults map[string]controllerutil.OperationResult) {
-	log.FromContext(ctx).Info("updateStatus 1", "atom", atom)
+	lgr := log.FromContext(ctx)
+	lgr.Info("updateStatus 1", "atom", atom)
 	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(atom), atom); err != nil {
 		log.FromContext(ctx).Error(err, "unable to update status")
 		return
 	}
-	log.FromContext(ctx).Info("updateStatus 2", "atom", atom)
+	lgr.Info("updateStatus 2", "atom", atom)
 
 	changed := false
 	for _, condition := range conditions {
@@ -789,7 +794,7 @@ func (r *AtomReconciler) updateStatus(ctx context.Context, atom *pdoknlv3.Atom, 
 		return
 	}
 	if err := r.Status().Update(ctx, atom); err != nil {
-		log.FromContext(ctx).Error(err, "unable to update status")
+		lgr.Error(err, "unable to update status")
 	}
 }
 
