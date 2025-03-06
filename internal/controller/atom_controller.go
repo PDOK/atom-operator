@@ -768,10 +768,12 @@ func (r *AtomReconciler) logAndUpdateStatusFinished(ctx context.Context, atom *p
 }
 
 func (r *AtomReconciler) updateStatus(ctx context.Context, atom *pdoknlv3.Atom, conditions []metav1.Condition, operationResults map[string]controllerutil.OperationResult) {
+	log.FromContext(ctx).Info("updateStatus 1", "atom", atom)
 	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(atom), atom); err != nil {
 		log.FromContext(ctx).Error(err, "unable to update status")
 		return
 	}
+	log.FromContext(ctx).Info("updateStatus 2", "atom", atom)
 
 	changed := false
 	for _, condition := range conditions {
