@@ -244,7 +244,7 @@ func (r *Atom) GetNrOfDownloadLinks() (count int) {
 }
 
 func (dl *DownloadLink) GetBlobPrefix() string {
-	index := strings.LastIndex(dl.Data, "/") + 1
+	index := strings.LastIndex(dl.Data, "/")
 	return dl.Data[:index]
 }
 

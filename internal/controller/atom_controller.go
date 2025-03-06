@@ -116,6 +116,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	lgr := log.FromContext(ctx)
 	lgr.Info("Starting reconcile for atom resource", "name", req.NamespacedName)
 
+	lgr.Info("Fetching atom", "name", req.NamespacedName)
 	// Fetch the Atom instance
 	atom := &pdoknlv3.Atom{}
 	if err = r.Client.Get(ctx, req.NamespacedName, atom); err != nil {
@@ -127,6 +128,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return result, client.IgnoreNotFound(err)
 	}
 
+	lgr.Info("Fetching OwnerInfo", "name", req.NamespacedName)
 	// Fetch the OwnerInfo instance
 	ownerInfo := &smoothoperatorv1.OwnerInfo{}
 	objectKey := client.ObjectKey{
@@ -142,6 +144,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return result, client.IgnoreNotFound(err)
 	}
 
+	lgr.Info("Get generator config")
 	// Get generator config
 	if atomGeneratorConfig, err := getGeneratorConfig(atom, ownerInfo); err != nil {
 		lgr.Error(err, "unable to get generator config", "error", err)
@@ -149,7 +152,9 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		atom.Spec.Service.GeneratorConfig = atomGeneratorConfig
 	}
 
+	lgr.Info("Get object full name")
 	fullName := getObjectFullName(r.Client, atom)
+	lgr.Info("Finalize if necessary")
 	shouldContinue, err := finalizeIfNecessary(ctx, r.Client, atom, finalizerName, func() error {
 		lgr.Info("deleting resources", "name", fullName)
 		return r.deleteAllForAtom(ctx, atom)
@@ -184,7 +189,7 @@ func (r *AtomReconciler) logAndUpdateStatusError(ctx context.Context, atom *pdok
 }
 
 func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdoknlv3.Atom) (operationResults map[string]controllerutil.OperationResult, err error) {
-	operationResults = make(map[string]controllerutil.OperationResult, 7)
+	operationResults = make(map[string]controllerutil.OperationResult, 30) // Todo determine size
 	c := r.Client
 
 	// region Create or update ConfigMap
@@ -245,8 +250,8 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	for _, datasetFeed := range atom.Spec.DatasetFeeds {
 		for _, entry := range datasetFeed.Entries {
 			for _, downloadLink := range entry.DownloadLinks {
-				downloadLinkNr++
 				downloadLinkMiddleware := getBareDownloadLinkMiddleware(atom, downloadLinkNr)
+				downloadLinkNr++
 				operationResults[getObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
 					return r.mutateDownloadLinkMiddleware(atom, &downloadLink, downloadLinkMiddleware)
 				})
