@@ -171,6 +171,7 @@ type AtomStatus struct {
 // +kubebuilder:subresource:status
 // versionName=v3
 // +kubebuilder:storageversion
+// +kubebuilder:resource:categories=pdok
 
 // Atom is the Schema for the atoms API.
 type Atom struct {
