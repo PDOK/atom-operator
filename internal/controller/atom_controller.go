@@ -189,7 +189,7 @@ func (r *AtomReconciler) logAndUpdateStatusError(ctx context.Context, atom *pdok
 }
 
 func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdoknlv3.Atom) (operationResults map[string]controllerutil.OperationResult, err error) {
-	operationResults = make(map[string]controllerutil.OperationResult, 30) // Todo determine size
+	operationResults = make(map[string]controllerutil.OperationResult)
 	c := r.Client
 
 	// region Create or update ConfigMap
@@ -712,18 +712,15 @@ func getGeneratorConfig(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerIn
 }
 
 func getMatchRuleForIndex(atom *pdoknlv3.Atom) string {
-	// Todo use GetBaseURLHost()
-	return "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && Path(`/" + atom.GetURI() + "/index.xml`)"
+	return "Host(" + pdoknlv3.GetHost() + ") && Path(`/" + atom.GetURI() + "/index.xml`)"
 }
 
 func getMatchRuleForDownloads(atom *pdoknlv3.Atom) string {
-	// Todo use GetBaseURLHost()
-	return "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && PathPrefix(`/" + atom.GetURI() + "/downloads/`)"
+	return "Host(" + pdoknlv3.GetHost() + ") && PathPrefix(`/" + atom.GetURI() + "/downloads/`)"
 }
 
 func getMatchRuleForDatasetFeed(atom *pdoknlv3.Atom, datasetFeed *pdoknlv3.DatasetFeed) string {
-	// Todo use GetBaseURLHost()
-	return "Host(`localhost`) || Host(`kangaroo.test.pdok.nl`) && Path(/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml"
+	return "Host(" + pdoknlv3.GetHost() + ") && Path(/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml"
 }
 
 func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Route {
@@ -778,12 +775,10 @@ func (r *AtomReconciler) logAndUpdateStatusFinished(ctx context.Context, atom *p
 
 func (r *AtomReconciler) updateStatus(ctx context.Context, atom *pdoknlv3.Atom, conditions []metav1.Condition, operationResults map[string]controllerutil.OperationResult) {
 	lgr := log.FromContext(ctx)
-	lgr.Info("updateStatus 1", "atom", atom)
 	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(atom), atom); err != nil {
 		log.FromContext(ctx).Error(err, "unable to update status")
 		return
 	}
-	lgr.Info("updateStatus 2", "atom", atom)
 
 	changed := false
 	for _, condition := range conditions {

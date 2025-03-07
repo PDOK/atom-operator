@@ -40,7 +40,7 @@ import (
 func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
-		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
+		"source: %s/%s", src.Namespace, src.Name)
 
 	// ObjectMeta
 	dst.ObjectMeta = src.ObjectMeta
@@ -52,9 +52,9 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 	// Service
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(pdoknlv3.GetBaseURLHost(), src.Spec.General),
+		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), src.Spec.General),
 		Lang:         "nl",
-		Stylesheet:   pdoknlv3.GetBaseURLHost() + "/atom/style/style.xsl",
+		Stylesheet:   pdoknlv3.GetBaseURL() + "/atom/style/style.xsl",
 		Title:        src.Spec.Service.Title,
 		Subtitle:     src.Spec.Service.Subtitle,
 		OwnerInfoRef: "pdok",
@@ -176,7 +176,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertFrom: Converting Atom from Hub version v3 to Spoke version v2beta1;"+
-		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
+		"source: %s/%s", src.Namespace, src.Name)
 
 	// ObjectMeta
 	dst.ObjectMeta = src.ObjectMeta

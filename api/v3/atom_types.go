@@ -34,10 +34,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// BaseURLHost is accessed by other api versions (i.e. v2beta1)
-var baseURLHost string
-
-// BlobEndpoint is needed for atom services
+var baseURL string
+var host string
 var blobEndpoint string
 
 // AtomSpec defines the desired state of Atom.
@@ -195,16 +193,24 @@ func init() {
 	SchemeBuilder.Register(&Atom{}, &AtomList{})
 }
 
-func SetBaseURLHost(host string) {
-	baseURLHost = strings.TrimSuffix(host, "/")
+func SetBaseURL(atomBaseUrl string) {
+	baseURL = strings.TrimSuffix(atomBaseUrl, "/")
 }
 
-func GetBaseURLHost() string {
-	return baseURLHost
+func GetBaseURL() string {
+	return baseURL
 }
 
-func SetBlobEndpoint(endpoint string) {
-	blobEndpoint = endpoint
+func SetHost(atomHost string) {
+	host = strings.TrimSuffix(atomHost, "/")
+}
+
+func GetHost() string {
+	return host
+}
+
+func SetBlobEndpoint(atomBlobEndpoint string) {
+	blobEndpoint = atomBlobEndpoint
 }
 
 func GetBlobEndpoint() string {
