@@ -720,7 +720,7 @@ func getMatchRuleForDownloads(atom *pdoknlv3.Atom) string {
 }
 
 func getMatchRuleForDatasetFeed(atom *pdoknlv3.Atom, datasetFeed *pdoknlv3.DatasetFeed) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml`)"
 }
 
 func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Route {

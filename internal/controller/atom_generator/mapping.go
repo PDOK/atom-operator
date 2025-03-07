@@ -38,7 +38,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 	}
 
 	atomGeneratorConfig.Feeds = []atom_feed.Feed{}
-	indexFeed := atom_feed.Feed{
+	serviceFeed := atom_feed.Feed{
 		//XMLName:       Name{"http://www.w3.org/2005/Atom", "feed"},
 		XMLStylesheet: &xmlSheet,
 		Xmlns:         "http://www.w3.org/2005/Atom",
@@ -60,10 +60,10 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 		},
 		Rights:  atom.Spec.Service.Rights,
 		Updated: &latestUpdated,
-		Author:  getIndexAuthor(ownerInfo.Spec.Atom.Author),
-		Entry:   getIndexEntries(atom, language, ownerInfo, &latestUpdated),
+		Author:  getServiceAuthor(ownerInfo.Spec.Atom.Author),
+		Entry:   getServiceEntries(atom, language, ownerInfo, &latestUpdated),
 	}
-	atomGeneratorConfig.Feeds = append(atomGeneratorConfig.Feeds, indexFeed)
+	atomGeneratorConfig.Feeds = append(atomGeneratorConfig.Feeds, serviceFeed)
 
 	for _, datasetFeed := range atom.Spec.DatasetFeeds {
 
@@ -104,15 +104,15 @@ func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
 	return updateTime.Format(time.RFC3339), nil
 }
 
-func getIndexEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo, latestUpdated *string) []atom_feed.Entry {
+func getServiceEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo, latestUpdated *string) []atom_feed.Entry {
 	var retEntriesArray []atom_feed.Entry
 	for _, datasetFeed := range atom.Spec.DatasetFeeds {
 		datasetEntry := atom_feed.Entry{
-			ID:                                atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + "/index.xml",
+			ID:                                atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml",
 			Title:                             datasetFeed.Title,
 			SpatialDatasetIdentifierCode:      datasetFeed.SpatialDatasetIdentifierCode,
 			SpatialDatasetIdentifierNamespace: datasetFeed.SpatialDatasetIdentifierNamespace,
-			Link:                              getIndexEntryLinks(atom, language, ownerInfo, datasetFeed),
+			Link:                              getServiceEntryLinks(atom, language, ownerInfo, datasetFeed),
 			Updated:                           latestUpdated,
 			Summary:                           datasetFeed.Subtitle,
 			Category:                          []atom_feed.Category{},
@@ -121,44 +121,45 @@ func getIndexEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo
 		if datasetFeed.Entries != nil && len(datasetFeed.Entries) > 0 {
 			datasetEntry.Polygon = getBoundingBoxPolygon(datasetFeed.Entries[0].Polygon.BBox)
 		}
-		retEntriesArray = append(retEntriesArray, datasetEntry)
 
 		for _, entry := range datasetFeed.Entries {
-			singleEntry := atom_feed.Entry{
-				ID:                                entry.TechnicalName,
-				Title:                             entry.Title,
-				Content:                           entry.Content,
-				Summary:                           datasetFeed.Subtitle,
-				Rights:                            atom.Spec.Service.Rights,
-				SpatialDatasetIdentifierCode:      datasetFeed.SpatialDatasetIdentifierCode,
-				SpatialDatasetIdentifierNamespace: datasetFeed.SpatialDatasetIdentifierNamespace,
-				Link:                              getEntryLinksArray(entry),
-			}
-			if entry.Updated != nil {
-				updateTime := entry.Updated.Format(time.RFC3339)
-				singleEntry.Updated = &updateTime
-			}
+			//singleEntry := atom_feed.Entry{
+			//	ID:                                entry.TechnicalName,
+			//	Title:                             entry.Title,
+			//	Content:                           entry.Content,
+			//	Summary:                           datasetFeed.Subtitle,
+			//	Rights:                            atom.Spec.Service.Rights,
+			//	SpatialDatasetIdentifierCode:      datasetFeed.SpatialDatasetIdentifierCode,
+			//	SpatialDatasetIdentifierNamespace: datasetFeed.SpatialDatasetIdentifierNamespace,
+			//	Link:                              getEntryLinksArray(entry),
+			//}
+			//if entry.Updated != nil {
+			//	updateTime := entry.Updated.Format(time.RFC3339)
+			//	singleEntry.Updated = &updateTime
+			//}
 			if entry.SRS != nil {
 				category := getCategory(entry.SRS)
-				singleEntry.Category = []atom_feed.Category{category}
+				//singleEntry.Category = []atom_feed.Category{category}
 
 				// Add category to datasetFeed.category if not yet present
 				if slices.Contains(datasetEntry.Category, category) == false {
 					datasetEntry.Category = append(datasetEntry.Category, category)
 				}
 			}
-			if entry.Polygon != nil {
-				singleEntry.Polygon = getBoundingBoxPolygon(entry.Polygon.BBox)
-			}
+			//if entry.Polygon != nil {
+			//	singleEntry.Polygon = getBoundingBoxPolygon(entry.Polygon.BBox)
+			//}
 
-			retEntriesArray = append(retEntriesArray, singleEntry)
+			//retEntriesArray = append(retEntriesArray, singleEntry)
 		}
+
+		retEntriesArray = append(retEntriesArray, datasetEntry)
 	}
 
 	return retEntriesArray
 }
 
-func getIndexEntryLinks(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo, datasetFeed pdoknlv3.DatasetFeed) []atom_feed.Link {
+func getServiceEntryLinks(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo, datasetFeed pdoknlv3.DatasetFeed) []atom_feed.Link {
 	describedByLinkHref, _ := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.CSW.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
 	describedByLink := atom_feed.Link{
 		Rel:      "describedby",
@@ -180,26 +181,26 @@ func getIndexEntryLinks(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerI
 
 }
 
-func getEntryLinksArray(entry pdoknlv3.Entry) []atom_feed.Link {
-	linksArray := []atom_feed.Link{}
-	for _, link := range entry.DownloadLinks {
-		dataLink := pdoknlv3.GetBlobEndpoint() + "/" + link.Data
-
-		l := atom_feed.Link{
-			Data:    &dataLink,
-			Rel:     link.Rel,
-			Version: link.Version,
-			Time:    link.Time,
-		}
-
-		if link.BBox != nil {
-			bboxString := getBboxString(link.BBox)
-			l.Bbox = &bboxString
-		}
-		linksArray = append(linksArray, l)
-	}
-	return linksArray
-}
+//func getEntryLinksArray(entry pdoknlv3.Entry) []atom_feed.Link {
+//	linksArray := []atom_feed.Link{}
+//	for _, link := range entry.DownloadLinks {
+//		dataLink := pdoknlv3.GetBlobEndpoint() + "/" + link.Data
+//
+//		l := atom_feed.Link{
+//			Data:    &dataLink,
+//			Rel:     link.Rel,
+//			Version: link.Version,
+//			Time:    link.Time,
+//		}
+//
+//		if link.BBox != nil {
+//			bboxString := getBboxString(link.BBox)
+//			l.Bbox = &bboxString
+//		}
+//		linksArray = append(linksArray, l)
+//	}
+//	return linksArray
+//}
 
 func getBboxString(bbox *pdoknlv3.BBox) string {
 	var sb strings.Builder
@@ -229,7 +230,7 @@ func getBoundingBoxPolygon(bbox pdoknlv3.BBox) string {
 	return sb.String()
 }
 
-func getIndexAuthor(author v1.Author) atom_feed.Author {
+func getServiceAuthor(author v1.Author) atom_feed.Author {
 	return atom_feed.Author{
 		Name:  author.Name,
 		Email: author.Email,
