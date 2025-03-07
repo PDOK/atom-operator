@@ -61,7 +61,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 		Rights:  atom.Spec.Service.Rights,
 		Updated: &latestUpdated,
 		Author:  getIndexAuthor(ownerInfo.Spec.Atom.Author),
-		Entry:   getIndexEntries(atom, language, ownerInfo),
+		Entry:   getIndexEntries(atom, language, ownerInfo, &latestUpdated),
 	}
 	atomGeneratorConfig.Feeds = append(atomGeneratorConfig.Feeds, indexFeed)
 
@@ -104,7 +104,7 @@ func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
 	return updateTime.Format(time.RFC3339), nil
 }
 
-func getIndexEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo) []atom_feed.Entry {
+func getIndexEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo, latestUpdated *string) []atom_feed.Entry {
 	var retEntriesArray []atom_feed.Entry
 	for _, datasetFeed := range atom.Spec.DatasetFeeds {
 		datasetEntry := atom_feed.Entry{
@@ -113,6 +113,7 @@ func getIndexEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo
 			SpatialDatasetIdentifierCode:      datasetFeed.SpatialDatasetIdentifierCode,
 			SpatialDatasetIdentifierNamespace: datasetFeed.SpatialDatasetIdentifierNamespace,
 			Link:                              getIndexEntryLinks(atom, language, ownerInfo, datasetFeed),
+			Updated:                           latestUpdated,
 			Summary:                           datasetFeed.Subtitle,
 			Category:                          []atom_feed.Category{},
 		}
