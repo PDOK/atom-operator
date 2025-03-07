@@ -712,15 +712,15 @@ func getGeneratorConfig(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerIn
 }
 
 func getMatchRuleForIndex(atom *pdoknlv3.Atom) string {
-	return "Host(" + pdoknlv3.GetHost() + ") && Path(`/" + atom.GetURI() + "/index.xml`)"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetURI() + "/index.xml`)"
 }
 
 func getMatchRuleForDownloads(atom *pdoknlv3.Atom) string {
-	return "Host(" + pdoknlv3.GetHost() + ") && PathPrefix(`/" + atom.GetURI() + "/downloads/`)"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && PathPrefix(`/" + atom.GetURI() + "/downloads/`)"
 }
 
 func getMatchRuleForDatasetFeed(atom *pdoknlv3.Atom, datasetFeed *pdoknlv3.DatasetFeed) string {
-	return "Host(" + pdoknlv3.GetHost() + ") && Path(/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml"
 }
 
 func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Route {
