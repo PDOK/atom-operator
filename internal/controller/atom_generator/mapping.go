@@ -120,6 +120,7 @@ func getIndexEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo
 		if datasetFeed.Entries != nil && len(datasetFeed.Entries) > 0 {
 			datasetEntry.Polygon = getBoundingBoxPolygon(datasetFeed.Entries[0].Polygon.BBox)
 		}
+		retEntriesArray = append(retEntriesArray, datasetEntry)
 
 		for _, entry := range datasetFeed.Entries {
 			singleEntry := atom_feed.Entry{
