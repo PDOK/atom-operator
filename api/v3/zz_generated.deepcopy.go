@@ -191,6 +191,7 @@ func (in *DatasetFeed) DeepCopyInto(out *DatasetFeed) {
 		copy(*out, *in)
 	}
 	in.DatasetMetadataLinks.DeepCopyInto(&out.DatasetMetadataLinks)
+	out.Author = in.Author
 	if in.Entries != nil {
 		in, out := &in.Entries, &out.Entries
 		*out = make([]Entry, len(*in))
