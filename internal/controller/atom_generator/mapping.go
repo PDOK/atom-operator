@@ -372,6 +372,7 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 			Rights:   atom.Spec.Service.Rights,
 			Category: []atom_feed.Category{getCategory(entry.SRS)},
 			Polygon:  getBoundingBoxPolygon(entry.Polygon.BBox),
+			Summary:  datasetFeed.Subtitle,
 		}
 
 		updated := entry.Updated.Format(time.RFC3339)
@@ -381,7 +382,7 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 		for _, downloadLink := range entry.DownloadLinks {
 			link := atom_feed.Link{
 				Rel:   getDownloadLinkRel(downloadLink, emptyRelCount),
-				Href:  getDownloadLinkHref(downloadLink),
+				Href:  getDownloadLinkHref(downloadLink, atom),
 				Data:  getDownloadLinkData(downloadLink),
 				Title: getDownloadLinkTitle(datasetFeed, entry, downloadLink),
 			}
@@ -417,7 +418,7 @@ func getEmptyRelCount(entry pdoknlv3.Entry) (count int) {
 func getDownloadLinkRel(downloadLink pdoknlv3.DownloadLink, emptyRelCount int) (rel string) {
 	if downloadLink.Rel != "" {
 		rel = downloadLink.Rel
-	} else if emptyRelCount > 0 {
+	} else if emptyRelCount > 1 {
 		rel = "section"
 	} else {
 		rel = "alternate"
@@ -425,8 +426,8 @@ func getDownloadLinkRel(downloadLink pdoknlv3.DownloadLink, emptyRelCount int) (
 	return
 }
 
-func getDownloadLinkHref(downloadLink pdoknlv3.DownloadLink) (href string) {
-	href = pdoknlv3.GetBaseURL() + "/downloads"
+func getDownloadLinkHref(downloadLink pdoknlv3.DownloadLink, atom pdoknlv3.Atom) (href string) {
+	href = atom.Spec.Service.BaseURL + "/downloads"
 	if downloadLink.Version != nil {
 		href += "/" + *downloadLink.Version
 	}
@@ -434,6 +435,8 @@ func getDownloadLinkHref(downloadLink pdoknlv3.DownloadLink) (href string) {
 	return
 }
 
+// Using internal url, atom generator uses this url to determine content-length and
+// content-type of the download and convert it into external url
 func getDownloadLinkData(downloadLink pdoknlv3.DownloadLink) *string {
 	data := pdoknlv3.GetBlobEndpoint() + "/" + downloadLink.Data
 	return &data
