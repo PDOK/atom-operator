@@ -75,6 +75,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				MetadataIdentifier: srcDataset.MetadataIdentifier,
 				Templates:          []string{"csw", "html"},
 			},
+			Author:                            pdoknlv3.Author{Name: src.Spec.Service.Author.Name, Email: src.Spec.Service.Author.Email},
 			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
 			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
 		}

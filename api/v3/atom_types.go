@@ -94,6 +94,7 @@ type DatasetFeed struct {
 	Subtitle                          string       `json:"subtitle,omitempty"`
 	Links                             []Link       `json:"links,omitempty"`
 	DatasetMetadataLinks              MetadataLink `json:"datasetMetadataLinks,omitempty"`
+	Author                            Author       `json:"author,omitempty"`
 	SpatialDatasetIdentifierCode      string       `json:"spatial_dataset_identifier_code,omitempty"`
 	SpatialDatasetIdentifierNamespace string       `json:"spatial_dataset_identifier_namespace,omitempty"`
 	Entries                           []Entry      `json:"entries,omitempty"`
