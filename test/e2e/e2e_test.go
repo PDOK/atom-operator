@@ -214,7 +214,7 @@ var _ = Describe("Manager", Ordered, func() {
 			Eventually(verifyMetricsServerStarted).Should(Succeed())
 
 			By("creating the curl-metrics pod to access the metrics endpoint")
-			overridesFlag := fmt.Sprintf(`--overrides {
+			overridesFlag := fmt.Sprintf(`{
 					"spec": {
 						"containers": [{
 							"name": "curl",
@@ -239,6 +239,7 @@ var _ = Describe("Manager", Ordered, func() {
 			cmd = exec.Command("kubectl", "run", "curl-metrics", "--restart=Never",
 				"--namespace", namespace,
 				"--image=curlimages/curl:latest",
+				"--overrides",
 				overridesFlag,
 			)
 			_, err = utils.Run(cmd)
