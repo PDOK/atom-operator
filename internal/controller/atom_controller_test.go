@@ -375,7 +375,7 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 	obj client.Object
 	key types.NamespacedName
 } {
-	return []struct {
+	structs := []struct {
 		obj client.Object
 		key types.NamespacedName
 	}{
@@ -386,6 +386,15 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 		{obj: &corev1.Service{}, key: types.NamespacedName{Namespace: namespace, Name: getBareService(atom).GetName()}},
 		{obj: &traefikiov1alpha1.IngressRoute{}, key: types.NamespacedName{Namespace: namespace, Name: getBareIngressRoute(atom).GetName()}},
 		{obj: &policyv1.PodDisruptionBudget{}, key: types.NamespacedName{Namespace: namespace, Name: getBarePodDisruptionBudget(atom).GetName()}},
-		// Todo add missing middleware
 	}
+	for index, _ := range atom.GetIndexedDownloadLinks() {
+		extraStruct := struct {
+			obj client.Object
+			key types.NamespacedName
+		}{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareDownloadLinkMiddleware(atom, index).GetName()}}
+
+		structs = append(structs, extraStruct)
+	}
+
+	return structs
 }

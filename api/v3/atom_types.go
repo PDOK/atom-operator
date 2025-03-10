@@ -236,11 +236,14 @@ func (r *Atom) GetURI() (uri string) {
 	return
 }
 
-func (r *Atom) GetNrOfDownloadLinks() (count int) {
+func (r *Atom) GetIndexedDownloadLinks() (downloadLinks map[int8]DownloadLink) {
+	downloadLinks = make(map[int8]DownloadLink)
+	var index int8 = 0
 	for _, datasetFeed := range r.Spec.DatasetFeeds {
 		for _, entry := range datasetFeed.Entries {
-			for range entry.DownloadLinks {
-				count++
+			for _, downloadLink := range entry.DownloadLinks {
+				downloadLinks[index] = downloadLink
+				index++
 			}
 		}
 	}

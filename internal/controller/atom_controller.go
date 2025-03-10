@@ -238,19 +238,13 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	}
 
 	// Create or update extra middleware per downloadLink
-	downloadLinkNr := 0
-	for _, datasetFeed := range atom.Spec.DatasetFeeds {
-		for _, entry := range datasetFeed.Entries {
-			for _, downloadLink := range entry.DownloadLinks {
-				downloadLinkMiddleware := getBareDownloadLinkMiddleware(atom, downloadLinkNr)
-				downloadLinkNr++
-				operationResults[getObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
-					return r.mutateDownloadLinkMiddleware(atom, &downloadLink, downloadLinkMiddleware)
-				})
-				if err != nil {
-					return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, downloadLinkMiddleware), err)
-				}
-			}
+	for index, downloadLink := range atom.GetIndexedDownloadLinks() {
+		downloadLinkMiddleware := getBareDownloadLinkMiddleware(atom, index)
+		operationResults[getObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
+			return r.mutateDownloadLinkMiddleware(atom, &downloadLink, downloadLinkMiddleware)
+		})
+		if err != nil {
+			return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, downloadLinkMiddleware), err)
 		}
 	}
 
@@ -286,7 +280,7 @@ func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.At
 	if err = r.mutateConfigMap(atom, ownerInfo, configMap); err != nil {
 		return
 	}
-	return deleteObjects(ctx, r.Client, []client.Object{
+	objects := []client.Object{
 		configMap,
 		getBareDeployment(atom),
 		getBareService(atom),
@@ -294,9 +288,12 @@ func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.At
 		getBareCorsHeadersMiddleware(atom),
 		getBareIngressRoute(atom),
 		getBarePodDisruptionBudget(atom),
+	}
+	for index, _ := range atom.GetIndexedDownloadLinks() {
+		objects = append(objects, getBareDownloadLinkMiddleware(atom, index))
+	}
 
-		// Todo delete extra middleware, per datasetFeed?
-	})
+	return deleteObjects(ctx, r.Client, objects)
 }
 
 func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
@@ -552,10 +549,10 @@ func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middle
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
-func getBareDownloadLinkMiddleware(obj metav1.Object, dlNumber int) *traefikiov1alpha1.Middleware {
+func getBareDownloadLinkMiddleware(obj metav1.Object, index int8) *traefikiov1alpha1.Middleware {
 	return &traefikiov1alpha1.Middleware{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + downloadsName + "-" + strconv.Itoa(dlNumber),
+			Name: obj.GetName() + "-" + downloadsName + "-" + strconv.Itoa(int(index)),
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 		},
@@ -643,10 +640,10 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 			},
 		},
 	}
-	// Set additional Azure storage middleware per downloadLink
-	for downloadLinkNr := range atom.GetNrOfDownloadLinks() {
+	// Set additional Azure storage middleware per download link
+	for index, _ := range atom.GetIndexedDownloadLinks() {
 		middlewareRef := traefikiov1alpha1.MiddlewareRef{
-			Name:      atom.Name + "-" + downloadsName + "-" + strconv.Itoa(downloadLinkNr),
+			Name:      atom.Name + "-" + downloadsName + "-" + strconv.Itoa(int(index)),
 			Namespace: atom.GetNamespace(),
 		}
 		azureStorageRule.Middlewares = append(azureStorageRule.Middlewares, middlewareRef)
