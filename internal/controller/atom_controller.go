@@ -1,4 +1,5 @@
 /*
+/*
 MIT License
 
 Copyright (c) 2024 Publieke Dienstverlening op de Kaart
@@ -289,7 +290,7 @@ func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.At
 		getBareIngressRoute(atom),
 		getBarePodDisruptionBudget(atom),
 	}
-	for index, _ := range atom.GetIndexedDownloadLinks() {
+	for index := range atom.GetIndexedDownloadLinks() {
 		objects = append(objects, getBareDownloadLinkMiddleware(atom, index))
 	}
 
@@ -340,6 +341,7 @@ func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
 	}
 }
 
+//nolint:funlen
 func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv1.Deployment, configMapName string) error {
 	labels := cloneOrEmptyMap(atom.GetLabels())
 	labels[appLabelKey] = atomName
@@ -641,7 +643,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		},
 	}
 	// Set additional Azure storage middleware per download link
-	for index, _ := range atom.GetIndexedDownloadLinks() {
+	for index := range atom.GetIndexedDownloadLinks() {
 		middlewareRef := traefikiov1alpha1.MiddlewareRef{
 			Name:      atom.Name + "-" + downloadsName + "-" + strconv.Itoa(int(index)),
 			Namespace: atom.GetNamespace(),
