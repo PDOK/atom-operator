@@ -66,9 +66,6 @@ type Service struct {
 	ServiceMetadataLinks MetadataLink `json:"serviceMetadataLinks,omitempty"`
 	Rights               string       `json:"rights,omitempty"`
 	Author               Author       `json:"author,omitempty"`
-
-	// +kubebuilder:validation:Optional
-	GeneratorConfig string `json:"-"` // Skip this field in the CRD schema
 }
 
 // Link represents a link in the service or dataset feed

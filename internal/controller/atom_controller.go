@@ -105,9 +105,9 @@ type AtomReconciler struct {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
+// The Reconcile function compares the state specified by
 // the Atom object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
+// performs operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
@@ -144,27 +144,19 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return result, client.IgnoreNotFound(err)
 	}
 
-	lgr.Info("Get generator config")
-	// Get generator config
-	if atomGeneratorConfig, err := getGeneratorConfig(atom, ownerInfo); err != nil {
-		lgr.Error(err, "unable to get generator config", "error", err)
-	} else {
-		atom.Spec.Service.GeneratorConfig = atomGeneratorConfig
-	}
-
 	lgr.Info("Get object full name")
 	fullName := getObjectFullName(r.Client, atom)
 	lgr.Info("Finalize if necessary")
 	shouldContinue, err := finalizeIfNecessary(ctx, r.Client, atom, finalizerName, func() error {
 		lgr.Info("deleting resources", "name", fullName)
-		return r.deleteAllForAtom(ctx, atom)
+		return r.deleteAllForAtom(ctx, atom, ownerInfo)
 	})
 	if !shouldContinue || err != nil {
 		return result, err
 	}
 
 	lgr.Info("creating resources for atom", "atom", atom)
-	operationResults, err := r.createOrUpdateAllForAtom(ctx, atom)
+	operationResults, err := r.createOrUpdateAllForAtom(ctx, atom, ownerInfo)
 	if err != nil {
 		lgr.Info("failed creating resources for atom", "atom", atom)
 		r.logAndUpdateStatusError(ctx, atom, err)
@@ -188,7 +180,7 @@ func (r *AtomReconciler) logAndUpdateStatusError(ctx context.Context, atom *pdok
 	}}, nil)
 }
 
-func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdoknlv3.Atom) (operationResults map[string]controllerutil.OperationResult, err error) {
+func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo) (operationResults map[string]controllerutil.OperationResult, err error) {
 	operationResults = make(map[string]controllerutil.OperationResult)
 	c := r.Client
 
@@ -196,11 +188,11 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	configMap := getBareConfigMap(atom)
 
 	// mutate (also) before to get the hash suffix in the name
-	if err = r.mutateConfigMap(atom, configMap); err != nil {
+	if err = r.mutateConfigMap(atom, ownerInfo, configMap); err != nil {
 		return operationResults, err
 	}
 	operationResults[getObjectFullName(r.Client, atom)], err = controllerutil.CreateOrUpdate(ctx, r.Client, configMap, func() error {
-		return r.mutateConfigMap(atom, configMap)
+		return r.mutateConfigMap(atom, ownerInfo, configMap)
 	})
 	if err != nil {
 		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, configMap), err)
@@ -288,10 +280,10 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	return operationResults, nil
 }
 
-func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.Atom) (err error) {
+func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo) (err error) {
 	configMap := getBareConfigMap(atom)
 	// mutate (also) before to get the hash suffix in the name
-	if err = r.mutateConfigMap(atom, configMap); err != nil {
+	if err = r.mutateConfigMap(atom, ownerInfo, configMap); err != nil {
 		return
 	}
 	return deleteObjects(ctx, r.Client, []client.Object{
@@ -316,15 +308,21 @@ func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
 	}
 }
 
-func (r *AtomReconciler) mutateConfigMap(atom *pdoknlv3.Atom, configMap *corev1.ConfigMap) error {
+func (r *AtomReconciler) mutateConfigMap(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo, configMap *corev1.ConfigMap) error {
 	labels := cloneOrEmptyMap(atom.GetLabels())
 	labels[appLabelKey] = atomName
 	if err := setImmutableLabels(r.Client, configMap, labels); err != nil {
 		return err
 	}
 
+	if len(configMap.Data) == 0 {
+		generatorConfig, err := getGeneratorConfig(atom, ownerInfo)
+		if err != nil {
+			return err
+		}
+		configMap.Data = map[string]string{configFileName: generatorConfig}
+	}
 	configMap.Immutable = boolPtr(true)
-	configMap.Data = map[string]string{configFileName: atom.Spec.Service.GeneratorConfig}
 
 	if err := ensureSetGVK(r.Client, configMap, configMap); err != nil {
 		return err
