@@ -45,7 +45,7 @@ import (
 	yaml "sigs.k8s.io/yaml/goyaml.v3"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
-	"github.com/pdok/atom-operator/internal/controller/atom_generator"
+	"github.com/pdok/atom-operator/internal/controller/generator"
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 
 	traefikdynamic "github.com/traefik/traefik/v2/pkg/config/dynamic"
@@ -697,7 +697,7 @@ func (r *AtomReconciler) mutatePodDisruptionBudget(atom *pdoknlv3.Atom, podDisru
 }
 
 func getGeneratorConfig(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo) (config string, err error) {
-	atomGeneratorConfig, err := atom_generator.MapAtomV3ToAtomGeneratorConfig(*atom, *ownerInfo)
+	atomGeneratorConfig, err := generator.MapAtomV3ToAtomGeneratorConfig(*atom, *ownerInfo)
 	if err != nil {
 		return "", fmt.Errorf("failed to map the V3 atom to generator config: %w", err)
 	}

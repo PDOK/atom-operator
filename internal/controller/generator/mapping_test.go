@@ -1,4 +1,4 @@
-package atom_generator
+package generator
 
 import (
 	"reflect"
