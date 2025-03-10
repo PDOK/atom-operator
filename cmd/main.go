@@ -48,7 +48,7 @@ import (
 )
 
 const (
-	defaultAtomBaseUrl        = "https://kangaroo.test.pdok.nl"
+	defaultAtomBaseURL        = "https://kangaroo.test.pdok.nl"
 	defaultAtomHost           = "kangaroo.test.pdok.nl"
 	defaultBlobEndpoint       = "https://samercator.blob.core.windows.net"
 	defaultAtomGeneratorImage = "docker.io/pdok/atom-generator:0.6.0"
@@ -71,7 +71,7 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
-//nolint:gocyclo
+//nolint:cyclop,funlen
 func main() {
 	var metricsAddr string
 	var metricsCertPath, metricsCertName, metricsCertKey string
@@ -80,7 +80,7 @@ func main() {
 	var probeAddr string
 	var secureMetrics bool
 	var enableHTTP2 bool
-	var baseUrl string
+	var baseURL string
 	var host string
 	var blobEndpoint string
 	var atomGeneratorImage string
@@ -103,7 +103,7 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-	flag.StringVar(&baseUrl, "atom-baseurl", defaultAtomBaseUrl, "The base url which is used in the atom service.")
+	flag.StringVar(&baseURL, "atom-baseurl", defaultAtomBaseURL, "The base url which is used in the atom service.")
 	flag.StringVar(&host, "atom-host", defaultAtomHost, "The host which is used in the atom service.")
 	flag.StringVar(&blobEndpoint, "blob-endpoint", defaultBlobEndpoint, "The blobstore endpoint used for file downloads.")
 	flag.StringVar(&atomGeneratorImage, "atom-generator-image", defaultAtomGeneratorImage, "The image to use in the Atom generator init-container.")
@@ -116,7 +116,7 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	pdoknlv3.SetBaseURL(baseUrl)
+	pdoknlv3.SetBaseURL(baseURL)
 	pdoknlv3.SetHost(host)
 	pdoknlv3.SetBlobEndpoint(blobEndpoint)
 
@@ -243,7 +243,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	//nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookpdoknlv2beta1.SetupAtomWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")
@@ -251,7 +250,6 @@ func main() {
 		}
 	}
 
-	//nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookpdoknlv3.SetupAtomWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")

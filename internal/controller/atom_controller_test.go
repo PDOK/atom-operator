@@ -36,8 +36,8 @@ import (
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	policyv1 "k8s.io/api/policy/v1"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
+	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -387,7 +387,7 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 		{obj: &traefikiov1alpha1.IngressRoute{}, key: types.NamespacedName{Namespace: namespace, Name: getBareIngressRoute(atom).GetName()}},
 		{obj: &policyv1.PodDisruptionBudget{}, key: types.NamespacedName{Namespace: namespace, Name: getBarePodDisruptionBudget(atom).GetName()}},
 	}
-	for index, _ := range atom.GetIndexedDownloadLinks() {
+	for index := range atom.GetIndexedDownloadLinks() {
 		extraStruct := struct {
 			obj client.Object
 			key types.NamespacedName

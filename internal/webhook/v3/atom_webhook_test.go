@@ -25,8 +25,8 @@ SOFTWARE.
 package v3
 
 import (
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2" //nolint:revive
+	. "github.com/onsi/gomega"    //nolint:revive
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	// TODO (user): Add any additional imports if needed

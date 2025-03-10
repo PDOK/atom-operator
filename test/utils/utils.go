@@ -197,7 +197,7 @@ func GetProjectDir() (string, error) {
 	if err != nil {
 		return wd, err
 	}
-	wd = strings.Replace(wd, "/test/e2e", "", -1)
+	wd = strings.ReplaceAll(wd, "/test/e2e", "")
 	return wd, nil
 }
 
@@ -205,7 +205,6 @@ func GetProjectDir() (string, error) {
 // of the target content. The target content may span multiple lines.
 func UncommentCode(filename, target, prefix string) error {
 	// false positive
-	//nolint:gosec
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		return err
