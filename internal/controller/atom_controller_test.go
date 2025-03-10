@@ -34,6 +34,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	policyv1 "k8s.io/api/policy/v1"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
@@ -67,6 +68,9 @@ var fullAtom = pdoknlv3.Atom{
 		},
 	},
 	Spec: pdoknlv3.AtomSpec{
+		Lifecycle: smoothoperatormodel.Lifecycle{
+			TTLInDays: int32Ptr(999),
+		},
 		Service: pdoknlv3.Service{
 			BaseURL:      "https://my.test-resource.test/atom",
 			Lang:         "test lang",
@@ -97,7 +101,7 @@ var fullAtom = pdoknlv3.Atom{
 						DownloadLinks: []pdoknlv3.DownloadLink{
 							{
 								Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
-								BBox: &pdoknlv3.BBox{
+								BBox: &smoothoperatormodel.BBox{
 									MinX: "482.06",
 									MinY: "284182.97",
 									MaxX: "306602.42",
@@ -107,7 +111,7 @@ var fullAtom = pdoknlv3.Atom{
 						},
 						Updated: &updated,
 						Polygon: &pdoknlv3.Polygon{
-							BBox: pdoknlv3.BBox{
+							BBox: smoothoperatormodel.BBox{
 								MinX: "482.06",
 								MinY: "284182.97",
 								MaxX: "306602.42",

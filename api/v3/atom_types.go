@@ -28,9 +28,8 @@ import (
 	"fmt"
 	"strings"
 
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	corev1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,19 +39,14 @@ var blobEndpoint string
 
 // AtomSpec defines the desired state of Atom.
 type AtomSpec struct {
-	Lifecycle    Lifecycle     `json:"lifecycle,omitempty"`
-	Service      Service       `json:"service"`
-	DatasetFeeds []DatasetFeed `json:"datasetFeeds,omitempty"`
+	Lifecycle    smoothoperatormodel.Lifecycle `json:"lifecycle,omitempty"`
+	Service      Service                       `json:"service"`
+	DatasetFeeds []DatasetFeed                 `json:"datasetFeeds,omitempty"`
 	//+kubebuilder:validation:Type=object
 	//+kubebuilder:validation:Schemaless
 	//+kubebuilder:pruning:PreserveUnknownFields
 	// Optional strategic merge patch for the pod in the deployment. E.g. to patch the resources or add extra env vars.
 	PodSpecPatch *corev1.PodSpec `json:"podSpecPatch,omitempty"`
-}
-
-// todo: move to higher level (operator-support repo)
-type Lifecycle struct {
-	TTLInDays *int32 `json:"ttlInDays,omitempty"`
 }
 
 // Service defines the service configuration for the Atom feed
@@ -116,50 +110,22 @@ type Entry struct {
 
 // DownloadLink specifies download information for entries
 type DownloadLink struct {
-	Data    string  `json:"data"`
-	Rel     string  `json:"rel,omitempty"`
-	Version *string `json:"version,omitempty"`
-	Time    *string `json:"time,omitempty"`
-	BBox    *BBox   `json:"bbox,omitempty"`
+	Data    string                    `json:"data"`
+	Rel     string                    `json:"rel,omitempty"`
+	Version *string                   `json:"version,omitempty"`
+	Time    *string                   `json:"time,omitempty"`
+	BBox    *smoothoperatormodel.BBox `json:"bbox,omitempty"`
 }
 
 // Polygon describes the bounding box of an entry or download
 type Polygon struct {
-	BBox BBox `json:"bbox"`
-}
-
-// BBox defines a bounding box with coordinates
-type BBox struct {
-	// Linksboven X coördinaat
-	// +kubebuilder:validation:Pattern="^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
-	MinX string `json:"minx"`
-	// Rechtsonder X coördinaat
-	// +kubebuilder:validation:Pattern="^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
-	MaxX string `json:"maxx"`
-	// Linksboven Y coördinaat
-	// +kubebuilder:validation:Pattern="^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
-	MinY string `json:"miny"`
-	// Rechtsonder Y coördinaat
-	// +kubebuilder:validation:Pattern="^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$"
-	MaxY string `json:"maxy"`
+	BBox smoothoperatormodel.BBox `json:"bbox"`
 }
 
 // SRS describes the Spatial Reference System for an entry
 type SRS struct {
 	URI  string `json:"uri"`
 	Name string `json:"name"`
-}
-
-// AtomStatus defines the observed state of Atom.
-type AtomStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Each condition contains details for one aspect of the current state of this Atom.
-	// Known .status.conditions.type are: "Reconciled"
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-	// The result of creating or updating of each derived resource for this Atom.
-	OperationResults map[string]controllerutil.OperationResult `json:"operationResults,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -174,8 +140,8 @@ type Atom struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtomSpec   `json:"spec,omitempty"`
-	Status AtomStatus `json:"status,omitempty"`
+	Spec   AtomSpec                           `json:"spec,omitempty"`
+	Status smoothoperatormodel.OperatorStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true

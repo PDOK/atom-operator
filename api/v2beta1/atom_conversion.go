@@ -30,6 +30,7 @@ import (
 	"strconv"
 	"time"
 
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
@@ -107,7 +108,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 					Name: srcDownload.Srs.Code,
 				},
 				Polygon: &pdoknlv3.Polygon{
-					BBox: pdoknlv3.BBox{
+					BBox: smoothoperatormodel.BBox{
 						MinX: GetFloat32AsString(srcDataset.Bbox.Minx),
 						MinY: GetFloat32AsString(srcDataset.Bbox.Miny),
 						MaxX: GetFloat32AsString(srcDataset.Bbox.Maxx),
@@ -152,7 +153,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 					dstDownloadLink.Version = srcLink.Version
 				}
 				if srcLink.Bbox != nil {
-					dstDownloadLink.BBox = &pdoknlv3.BBox{
+					dstDownloadLink.BBox = &smoothoperatormodel.BBox{
 						MinX: GetFloat32AsString(srcLink.Bbox.Minx),
 						MinY: GetFloat32AsString(srcLink.Bbox.Miny),
 						MaxX: GetFloat32AsString(srcLink.Bbox.Maxx),

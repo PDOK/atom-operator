@@ -112,7 +112,7 @@ func getServiceEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerIn
 		}
 		// Take the polygon bbox of the first entry, assuming all are equal
 		if len(datasetFeed.Entries) > 0 {
-			datasetEntry.Polygon = getBoundingBoxPolygon(datasetFeed.Entries[0].Polygon.BBox)
+			datasetEntry.Polygon = datasetFeed.Entries[0].Polygon.BBox.ToPolygon()
 		}
 
 		// Collect all categories
@@ -154,32 +154,11 @@ func getServiceEntryLinks(atom pdoknlv3.Atom, language string, ownerInfo v1.Owne
 
 }
 
-func getBboxString(bbox *pdoknlv3.BBox) string {
-	var sb strings.Builder
-	sb.WriteString(bbox.MinX + " " + bbox.MinY + " " + bbox.MaxX + " " + bbox.MaxY)
-	return sb.String()
-}
-
 func getCategory(srs *pdoknlv3.SRS) atomfeed.Category {
 	return atomfeed.Category{
 		Term:  srs.URI,
 		Label: srs.Name,
 	}
-}
-
-func getBoundingBoxPolygon(bbox pdoknlv3.BBox) string {
-	var sb strings.Builder
-	// punt links beneden start van een polygon
-	sb.WriteString(bbox.MinX + " " + bbox.MinY + " ")
-	// punt links boven start van een polygon
-	sb.WriteString(bbox.MinX + " " + bbox.MaxY + " ")
-	// punt rechts boven start van een polygon
-	sb.WriteString(bbox.MaxX + " " + bbox.MaxY + " ")
-	// punt rechts beneden start van een polygon
-	sb.WriteString(bbox.MaxX + " " + bbox.MinY + " ")
-	// punt links beneden. eninde van een polygon is gelijk aan de start
-	sb.WriteString(bbox.MinX + " " + bbox.MinY)
-	return sb.String()
 }
 
 func getServiceAuthor(author v1.Author) atomfeed.Author {
@@ -323,7 +302,7 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 			Link:     []atomfeed.Link{},
 			Rights:   atom.Spec.Service.Rights,
 			Category: []atomfeed.Category{getCategory(entry.SRS)},
-			Polygon:  getBoundingBoxPolygon(entry.Polygon.BBox),
+			Polygon:  entry.Polygon.BBox.ToPolygon(),
 			Summary:  escapeQuotes(datasetFeed.Subtitle),
 		}
 
@@ -346,7 +325,7 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 				link.Time = downloadLink.Time
 			}
 			if downloadLink.BBox != nil {
-				bboxString := getBboxString(downloadLink.BBox)
+				bboxString := downloadLink.BBox.ToExtent()
 				link.Bbox = &bboxString
 			}
 

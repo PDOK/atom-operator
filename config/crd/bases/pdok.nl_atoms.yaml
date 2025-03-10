@@ -518,11 +518,12 @@ spec:
                   type: object
                 type: array
               lifecycle:
-                description: 'todo: move to higher level (operator-support repo)'
                 properties:
                   ttlInDays:
                     format: int32
                     type: integer
+                required:
+                - ttlInDays
                 type: object
               podSpecPatch:
                 description: Optional strategic merge patch for the pod in the deployment.
@@ -580,7 +581,7 @@ spec:
             - service
             type: object
           status:
-            description: AtomStatus defines the observed state of Atom.
+            description: OperatorStatus defines the observed state of an Atom/WFS/WMS/....
             properties:
               conditions:
                 description: |-
