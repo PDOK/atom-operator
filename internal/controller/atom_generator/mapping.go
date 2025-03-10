@@ -46,12 +46,9 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 		InspireDls:    "http://inspire.ec.europa.eu/schemas/inspire_dls/1.0",
 		Lang:          &language,
 		ID:            atom.Spec.Service.BaseURL + "/index.xml",
-		Title:         atom.Spec.Service.Title,
-		Subtitle:      atom.Spec.Service.Subtitle,
+		Title:         escapeQuotes(atom.Spec.Service.Title),
+		Subtitle:      escapeQuotes(atom.Spec.Service.Subtitle),
 		// Feed Links
-		//Self:        &selfLink,
-		//Describedby: &describedbyLink,
-		//Search: &searchLink,
 		Link: []atom_feed.Link{
 			selfLink,
 			describedbyLink,
@@ -69,8 +66,8 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 
 		dsFeed := atom_feed.Feed{
 			ID:            atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml",
-			Title:         datasetFeed.Title,
-			Subtitle:      datasetFeed.Subtitle,
+			Title:         escapeQuotes(datasetFeed.Title),
+			Subtitle:      escapeQuotes(datasetFeed.Subtitle),
 			Lang:          &language,
 			Link:          getDatasetLinks(atom, ownerInfo, datasetFeed),
 			Rights:        atom.Spec.Service.Rights,
@@ -109,12 +106,12 @@ func getServiceEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerIn
 	for _, datasetFeed := range atom.Spec.DatasetFeeds {
 		datasetEntry := atom_feed.Entry{
 			ID:                                atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml",
-			Title:                             datasetFeed.Title,
+			Title:                             escapeQuotes(datasetFeed.Title),
 			SpatialDatasetIdentifierCode:      datasetFeed.SpatialDatasetIdentifierCode,
 			SpatialDatasetIdentifierNamespace: datasetFeed.SpatialDatasetIdentifierNamespace,
 			Link:                              getServiceEntryLinks(atom, language, ownerInfo, datasetFeed),
 			Updated:                           latestUpdated,
-			Summary:                           datasetFeed.Subtitle,
+			Summary:                           escapeQuotes(datasetFeed.Subtitle),
 			Category:                          []atom_feed.Category{},
 		}
 		// Take the polygon bbox of the first entry, assuming all are equal
@@ -248,7 +245,7 @@ func getSelfLink(atom pdoknlv3.Atom, language string) atom_feed.Link {
 	return atom_feed.Link{
 		Rel:      "self",
 		Href:     atom.Spec.Service.BaseURL + "/index.xml",
-		Title:    strings.Replace(atom.Spec.Service.Title, "\"", "\\\"", -1),
+		Title:    escapeQuotes(atom.Spec.Service.Title),
 		Type:     "application/atom+xml",
 		Hreflang: &language,
 	}
@@ -350,7 +347,7 @@ func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo, datasetFeed pdo
 		linkDescribedbyLink := atom_feed.Link{
 			Rel:      "describedby",
 			Href:     link.Href,
-			Title:    link.Title,
+			Title:    escapeQuotes(link.Title),
 			Type:     link.Type,
 			Hreflang: &link.Hreflang,
 		}
@@ -366,13 +363,13 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 
 		datasetEntry := atom_feed.Entry{
 			ID:       atom.Spec.Service.BaseURL + "/" + entry.TechnicalName + ".xml",
-			Title:    entry.Title,
+			Title:    escapeQuotes(entry.Title),
 			Content:  entry.Content,
 			Link:     []atom_feed.Link{},
 			Rights:   atom.Spec.Service.Rights,
 			Category: []atom_feed.Category{getCategory(entry.SRS)},
 			Polygon:  getBoundingBoxPolygon(entry.Polygon.BBox),
-			Summary:  datasetFeed.Subtitle,
+			Summary:  escapeQuotes(datasetFeed.Subtitle),
 		}
 
 		updated := entry.Updated.Format(time.RFC3339)
@@ -454,4 +451,8 @@ func getDownloadLinkTitle(datasetFeed pdoknlv3.DatasetFeed, entry pdoknlv3.Entry
 	}
 	title += downloadLink.GetBlobName()
 	return
+}
+
+func escapeQuotes(s string) string {
+	return strings.Replace(s, "\"", "\\\"", -1)
 }
