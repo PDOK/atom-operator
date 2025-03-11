@@ -25,7 +25,7 @@ feeds:
         version: null
         time: null
         bbox: null
-      - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+      - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
         data: null
         rel: describedby
         type: application/xml
@@ -35,7 +35,7 @@ feeds:
         version: null
         time: null
         bbox: null
-      - href: https://www.ngr.nl/geonetwork/opensearch/dut/7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38/OpenSearchDescription.xml
+      - href: https://www.ngr.nl/geonetwork/opensearch/dut/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx/OpenSearchDescription.xml
         data: null
         rel: search
         type: application/xml
@@ -45,7 +45,7 @@ feeds:
         version: null
         time: null
         bbox: null
-      - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+      - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
         data: null
         rel: related
         type: text/html
@@ -66,7 +66,7 @@ feeds:
         content: ""
         summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
         link:
-          - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+          - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
             data: null
             rel: describedby
             type: application/xml
@@ -130,7 +130,7 @@ feeds:
         version: null
         time: null
         bbox: null
-      - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+      - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
         data: null
         rel: describedby
         type: text.html
@@ -140,7 +140,7 @@ feeds:
         version: null
         time: null
         bbox: null
-      - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+      - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
         data: null
         rel: ""
         type: text.html
