@@ -466,7 +466,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 											},
 										},
 										Polygon: getTestPolygon(),
-										Updated: &metav1.Time{getUpdatedDate()},
+										Updated: &metav1.Time{Time: getUpdatedDate()},
 										SRS: &pdoknlv3.SRS{
 											Name: "Amersfoort / RD New",
 											URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
@@ -535,7 +535,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 											},
 										},
 										Polygon: getTestPolygon(),
-										Updated: &metav1.Time{getUpdatedDate()},
+										Updated: &metav1.Time{Time: getUpdatedDate()},
 										SRS: &pdoknlv3.SRS{
 											Name: "Amersfoort / RD New",
 											URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
