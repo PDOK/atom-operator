@@ -1,0 +1,180 @@
+feeds:
+  - xmlname:
+      space: ""
+      local: ""
+    stylesheet: /atom/style/style.xsl
+    xmlns: http://www.w3.org/2005/Atom
+    georss: http://www.georss.org/georss
+    inspire_dls: http://inspire.ec.europa.eu/schemas/inspire_dls/1.0
+    lang: nl
+    id: /index.xml
+    title: ""
+    subtitle: ""
+    self: null
+    describedby: null
+    search: null
+    up: null
+    link:
+      - href: /index.xml
+        data: null
+        rel: self
+        type: application/atom+xml
+        hreflang: nl
+        length: ""
+        title: ""
+        version: null
+        time: null
+        bbox: null
+      - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+        data: null
+        rel: describedby
+        type: application/xml
+        hreflang: nl
+        length: ""
+        title: ""
+        version: null
+        time: null
+        bbox: null
+      - href: https://www.ngr.nl/geonetwork/opensearch/dut/7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38/OpenSearchDescription.xml
+        data: null
+        rel: search
+        type: application/xml
+        hreflang: nl
+        length: ""
+        title: ""
+        version: null
+        time: null
+        bbox: null
+      - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+        data: null
+        rel: related
+        type: text/html
+        hreflang: nl
+        length: ""
+        title: ""
+        version: null
+        time: null
+        bbox: null
+    rights: ""
+    updated: "2025-03-05T06:05:05+01:00"
+    author:
+      name: ""
+      email: ""
+    entry:
+      - id: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml
+        title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
+        content: ""
+        summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
+        link:
+          - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+            data: null
+            rel: describedby
+            type: application/xml
+            hreflang: nl
+            length: ""
+            title: ""
+            version: null
+            time: null
+            bbox: null
+          - href: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml
+            data: null
+            rel: alternate
+            type: application/atom+xml
+            hreflang: null
+            length: ""
+            title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
+            version: null
+            time: null
+            bbox: null
+        rights: ""
+        updated: "2025-03-05T06:05:05+01:00"
+        polygon: 1 1 1 2 2 2 2 1 1 1
+        category:
+          - term: https://www.opengis.net/def/crs/EPSG/0/28992
+            label: Amersfoort / RD New
+        spatial_dataset_identifier_code: d893c05b-907e-47f2-9cbd-ceb08e68732c
+        spatial_dataset_identifier_namespace: http://www.pdok.nl
+  - xmlname:
+      space: ""
+      local: ""
+    stylesheet: /atom/style/style.xsl
+    xmlns: ""
+    georss: ""
+    inspire_dls: ""
+    lang: nl
+    id: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml
+    title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
+    subtitle: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
+    self: null
+    describedby: null
+    search: null
+    up: null
+    link:
+      - href: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml
+        data: null
+        rel: self
+        type: ""
+        hreflang: null
+        length: ""
+        title: ""
+        version: null
+        time: null
+        bbox: null
+      - href: /index.xml
+        data: null
+        rel: up
+        type: application/atom+xml
+        hreflang: null
+        length: ""
+        title: Top Atom Download Service Feed
+        version: null
+        time: null
+        bbox: null
+      - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+        data: null
+        rel: describedby
+        type: text.html
+        hreflang: null
+        length: ""
+        title: ""
+        version: null
+        time: null
+        bbox: null
+      - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38
+        data: null
+        rel: ""
+        type: text.html
+        hreflang: null
+        length: ""
+        title: NGR pagina voor deze dataset
+        version: null
+        time: null
+        bbox: null
+    rights: ""
+    author:
+      name: owner
+      email: info@test.com
+    entry:
+      - id: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml.xml
+        title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie
+        content: Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).
+        summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
+        link:
+          - href: /downloads/dataset-1-file
+            data: /http://localazurite.blob.azurite/bucket/key1/dataset-1-file
+            rel: alternate
+            type: ""
+            hreflang: null
+            length: ""
+            title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie-dataset-1-file
+            version: null
+            time: null
+            bbox: null
+        rights: ""
+        updated: "2025-03-05T06:05:05+01:00"
+        polygon: 1 1 1 2 2 2 2 1 1 1
+        category:
+          - term: https://www.opengis.net/def/crs/EPSG/0/28992
+            label: Amersfoort / RD New
+        spatial_dataset_identifier_code: ""
+        spatial_dataset_identifier_namespace: ""

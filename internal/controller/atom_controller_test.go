@@ -26,7 +26,10 @@ package controller
 
 import (
 	"context"
+	"os"
+	"testing"
 	"time"
+	"unicode"
 
 	"github.com/pkg/errors"
 	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
@@ -401,4 +404,209 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 	}
 
 	return structs
+}
+
+func Test_getGeneratorConfig(t *testing.T) {
+	type args struct {
+		atom      *pdoknlv3.Atom
+		ownerInfo *smoothoperatorv1.OwnerInfo
+	}
+	tests := []struct {
+		name       string
+		args       args
+		wantConfig string
+		wantErr    bool
+	}{
+		// TODO: Add test cases.
+		{
+			name: "error_empty_scenario_01",
+			args: args{
+				atom:      &pdoknlv3.Atom{},
+				ownerInfo: &smoothoperatorv1.OwnerInfo{},
+			},
+			wantConfig: "",
+			wantErr:    true,
+		},
+		{
+			name: "succesfull_scenario_02",
+			args: args{
+				atom: &pdoknlv3.Atom{
+					Spec: pdoknlv3.AtomSpec{
+						Lifecycle: smoothoperatormodel.Lifecycle{},
+						Service: pdoknlv3.Service{
+							ServiceMetadataLinks: pdoknlv3.MetadataLink{
+								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38",
+								Templates:          []string{"csw", "opensearch", "html"},
+							},
+						},
+						DatasetFeeds: []pdoknlv3.DatasetFeed{
+							{
+								TechnicalName: "https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml",
+								Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
+								Subtitle:      "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
+								//Links:         []pdoknlv3.Link{},
+								DatasetMetadataLinks: pdoknlv3.MetadataLink{
+									MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
+									Templates:          []string{"csw", "html"},
+								},
+								Author: pdoknlv3.Author{
+									Name:  "owner",
+									Email: "info@test.com",
+								},
+								SpatialDatasetIdentifierCode:      "d893c05b-907e-47f2-9cbd-ceb08e68732c",
+								SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+								Entries: []pdoknlv3.Entry{
+									{
+										TechnicalName: "https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
+										Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
+										Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).",
+										DownloadLinks: []pdoknlv3.DownloadLink{
+											{
+												Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
+											},
+										},
+										Polygon: getTestPolygon(),
+										Updated: &metav1.Time{getUpdatedDate()},
+										SRS: &pdoknlv3.SRS{
+											Name: "Amersfoort / RD New",
+											URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				ownerInfo: &smoothoperatorv1.OwnerInfo{
+					Spec: smoothoperatorv1.OwnerInfoSpec{
+						MetadataUrls: smoothoperatorv1.MetadataUrls{
+							CSW: smoothoperatorv1.MetadataURL{
+								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id={{identifier}}",
+							},
+							OpenSearch: smoothoperatorv1.MetadataURL{
+								HrefTemplate: "https://www.ngr.nl/geonetwork/opensearch/dut/{{identifier}}/OpenSearchDescription.xml",
+							},
+							HTML: smoothoperatorv1.MetadataURL{
+								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/{{identifier}}",
+							},
+						},
+					},
+				},
+			},
+			wantConfig: "feeds:\n    - xmlname:\n        space: \"\"\n        local: \"\"\n      stylesheet: /atom/style/style.xsl\n      xmlns: http://www.w3.org/2005/Atom\n      georss: http://www.georss.org/georss\n      inspire_dls: http://inspire.ec.europa.eu/schemas/inspire_dls/1.0\n      lang: nl\n      id: /index.xml\n      title: \"\"\n      subtitle: \"\"\n      self: null\n      describedby: null\n      search: null\n      up: null\n      link:\n        - href: /index.xml\n          data: null\n          rel: self\n          type: application/atom+xml\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38\n          data: null\n          rel: describedby\n          type: application/xml\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/opensearch/dut/7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38/OpenSearchDescription.xml\n          data: null\n          rel: search\n          type: application/xml\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38\n          data: null\n          rel: related\n          type: text/html\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n      rights: \"\"\n      updated: \"2025-03-05T06:05:05+01:00\"\n      author:\n        name: \"\"\n        email: \"\"\n      entry:\n        - id: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml\n          title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n          content: \"\"\n          summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n          link:\n            - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38\n              data: null\n              rel: describedby\n              type: application/xml\n              hreflang: nl\n              length: \"\"\n              title: \"\"\n              version: null\n              time: null\n              bbox: null\n            - href: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml\n              data: null\n              rel: alternate\n              type: application/atom+xml\n              hreflang: null\n              length: \"\"\n              title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n              version: null\n              time: null\n              bbox: null\n          rights: \"\"\n          updated: \"2025-03-05T06:05:05+01:00\"\n          polygon: 1 1 1 2 2 2 2 1 1 1\n          category:\n            - term: https://www.opengis.net/def/crs/EPSG/0/28992\n              label: Amersfoort / RD New\n          spatial_dataset_identifier_code: d893c05b-907e-47f2-9cbd-ceb08e68732c\n          spatial_dataset_identifier_namespace: http://www.pdok.nl\n    - xmlname:\n        space: \"\"\n        local: \"\"\n      stylesheet: /atom/style/style.xsl\n      xmlns: \"\"\n      georss: \"\"\n      inspire_dls: \"\"\n      lang: nl\n      id: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml\n      title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n      subtitle: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n      self: null\n      describedby: null\n      search: null\n      up: null\n      link:\n        - href: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml\n          data: null\n          rel: self\n          type: \"\"\n          hreflang: null\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: /index.xml\n          data: null\n          rel: up\n          type: application/atom+xml\n          hreflang: null\n          length: \"\"\n          title: Top Atom Download Service Feed\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38\n          data: null\n          rel: describedby\n          type: text.html\n          hreflang: null\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38\n          data: null\n          rel: \"\"\n          type: text.html\n          hreflang: null\n          length: \"\"\n          title: NGR pagina voor deze dataset\n          version: null\n          time: null\n          bbox: null\n      rights: \"\"\n      author:\n        name: owner\n        email: info@test.com\n      entry:\n        - id: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml.xml\n          title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie\n          content: Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).\n          summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n          link:\n            - href: /downloads/dataset-1-file\n              data: /http://localazurite.blob.azurite/bucket/key1/dataset-1-file\n              rel: alternate\n              type: \"\"\n              hreflang: null\n              length: \"\"\n              title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie-dataset-1-file\n              version: null\n              time: null\n              bbox: null\n          rights: \"\"\n          updated: \"2025-03-05T06:05:05+01:00\"\n          polygon: 1 1 1 2 2 2 2 1 1 1\n          category:\n            - term: https://www.opengis.net/def/crs/EPSG/0/28992\n              label: Amersfoort / RD New\n          spatial_dataset_identifier_code: \"\"\n          spatial_dataset_identifier_namespace: \"\"\n",
+			wantErr:    false,
+		},
+		{
+			name: "succesfull_scenario_03",
+			args: args{
+				atom: &pdoknlv3.Atom{
+					Spec: pdoknlv3.AtomSpec{
+						Lifecycle: smoothoperatormodel.Lifecycle{},
+						Service: pdoknlv3.Service{
+							ServiceMetadataLinks: pdoknlv3.MetadataLink{
+								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-bfb0316f4f38",
+								Templates:          []string{"csw", "opensearch", "html"},
+							},
+						},
+						DatasetFeeds: []pdoknlv3.DatasetFeed{
+							{
+								TechnicalName: "https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml",
+								Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
+								Subtitle:      "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
+								//Links:         []pdoknlv3.Link{},
+								DatasetMetadataLinks: pdoknlv3.MetadataLink{
+									MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
+									Templates:          []string{"csw", "html"},
+								},
+								Author: pdoknlv3.Author{
+									Name:  "owner",
+									Email: "info@test.com",
+								},
+								SpatialDatasetIdentifierCode:      "d893c05b-907e-47f2-9cbd-ceb08e68732c",
+								SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+								Entries: []pdoknlv3.Entry{
+									{
+										TechnicalName: "https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
+										Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
+										Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).",
+										DownloadLinks: []pdoknlv3.DownloadLink{
+											{
+												Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
+											},
+										},
+										Polygon: getTestPolygon(),
+										Updated: &metav1.Time{getUpdatedDate()},
+										SRS: &pdoknlv3.SRS{
+											Name: "Amersfoort / RD New",
+											URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+				ownerInfo: &smoothoperatorv1.OwnerInfo{
+					Spec: smoothoperatorv1.OwnerInfoSpec{
+						MetadataUrls: smoothoperatorv1.MetadataUrls{
+							CSW: smoothoperatorv1.MetadataURL{
+								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id={{identifier}}",
+							},
+							OpenSearch: smoothoperatorv1.MetadataURL{
+								HrefTemplate: "https://www.ngr.nl/geonetwork/opensearch/dut/{{identifier}}/OpenSearchDescription.xml",
+							},
+							HTML: smoothoperatorv1.MetadataURL{
+								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/{{identifier}}",
+							},
+						},
+					},
+				},
+			},
+			wantConfig: readTestFile("generatorConfigData_testdata.yaml"),
+			wantErr:    false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotConfig, err := getGeneratorConfig(tt.args.atom, tt.args.ownerInfo)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getGeneratorConfig() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if removeSpace(gotConfig) != removeSpace(tt.wantConfig) {
+				t.Errorf("getGeneratorConfig() gotConfig = %v, want %v", gotConfig, tt.wantConfig)
+			}
+		})
+	}
+}
+
+func readTestFile(fileName string) string {
+	dat, _ := os.ReadFile(fileName)
+
+	return string(dat)
+}
+
+func getTestPolygon() *pdoknlv3.Polygon {
+	return &pdoknlv3.Polygon{
+		BBox: smoothoperatormodel.BBox{
+			MinX: "1",
+			MinY: "1",
+			MaxX: "2",
+			MaxY: "2",
+		},
+	}
+}
+
+func getUpdatedDate() time.Time {
+	return metav1.Date(2025, time.March, 5, 5, 5, 5, 0, time.UTC).Local()
+}
+
+func removeSpace(s string) string {
+	rr := make([]rune, 0, len(s))
+	for _, r := range s {
+		if !unicode.IsSpace(r) {
+			rr = append(rr, r)
+		}
+	}
+	return string(rr)
 }
