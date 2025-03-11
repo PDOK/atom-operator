@@ -9,6 +9,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega v1.35.1
 	github.com/pdok/atom-generator v0.6.0
+	github.com/pdok/smooth-operator v0.0.2-0.20250311095154-eb6e739e9d75
 	github.com/pkg/errors v0.9.1
 	github.com/traefik/traefik/v2 v2.11.20
 	golang.org/x/tools v0.28.0
@@ -68,7 +69,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/pdok/smooth-operator v0.0.2-0.20250310180832-24bb55f66d80 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect

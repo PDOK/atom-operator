@@ -354,15 +354,13 @@ spec:
                     the Atom service
                   properties:
                     author:
-                      description: Author specifies the author or owner information
+                      description: Author represents the author or owner of the service
+                        or dataset
                       properties:
                         email:
                           type: string
                         name:
                           type: string
-                      required:
-                      - email
-                      - name
                       type: object
                     datasetMetadataLinks:
                       description: MetadataLink represents a link in the service or
@@ -535,15 +533,13 @@ spec:
                   feed
                 properties:
                   author:
-                    description: Author specifies the author or owner information
+                    description: Author represents the author or owner of the service
+                      or dataset
                     properties:
                       email:
                         type: string
                       name:
                         type: string
-                    required:
-                    - email
-                    - name
                     type: object
                   baseUrl:
                     type: string
