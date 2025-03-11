@@ -61,7 +61,7 @@ feeds:
       name: ""
       email: ""
     entry:
-      - id: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml
+      - id: /https://service.pdok.nl/test/atom/index.xml.xml
         title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
         content: ""
         summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
@@ -76,7 +76,7 @@ feeds:
             version: null
             time: null
             bbox: null
-          - href: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml
+          - href: /https://service.pdok.nl/test/atom/index.xml.xml
             data: null
             rel: alternate
             type: application/atom+xml
@@ -102,7 +102,7 @@ feeds:
     georss: ""
     inspire_dls: ""
     lang: nl
-    id: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml
+    id: /https://service.pdok.nl/test/atom/index.xml.xml
     title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
     subtitle: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
     self: null
@@ -110,7 +110,7 @@ feeds:
     search: null
     up: null
     link:
-      - href: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/index.xml.xml
+      - href: /https://service.pdok.nl/test/atom/index.xml.xml
         data: null
         rel: self
         type: ""
@@ -155,7 +155,7 @@ feeds:
       name: owner
       email: info@test.com
     entry:
-      - id: /https://service.pdok.nl/bzk/geologie/bro-geotechnisch-sondeeronderzoek/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml.xml
+      - id: /https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml.xml
         title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie
         content: Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).
         summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
