@@ -1,52 +1,167 @@
 package v2beta1
 
 import (
+	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 	"testing"
+	"time"
 )
 
 func TestAtom_ConvertTo(t *testing.T) {
-	type fields struct {
-		TypeMeta   metav1.TypeMeta
-		ObjectMeta metav1.ObjectMeta
-		Spec       AtomSpec
-		Status     AtomStatus
+	convertFromAtom := getTestAtomV2()
+	convertToAtom := &pdoknlv3.Atom{}
+	dstRaw := conversion.Hub(convertToAtom)
+	err := convertFromAtom.ConvertTo(dstRaw)
+	if err != nil {
+		t.Errorf("ConvertTo() error = %v", err)
 	}
-	type args struct {
-		dstRaw conversion.Hub
+	testAtomV3 := getFilledAtomv3()
+
+	if testAtomV3.TypeMeta.APIVersion != convertToAtom.TypeMeta.APIVersion {
+		// TODO: Activate next line if bug is fixed.
+		// t.Errorf("ConvertTo() error = TypeMeta.APIVersion: %v, %v", testAtomV3.TypeMeta.APIVersion, convertToAtom.TypeMeta.APIVersion)
 	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
-	}{
-		// TODO: Add test cases.
-		/*{
-			name: "ConvertTo01",
-			fields: fields{
-				TypeMeta:   metav1.TypeMeta{},
-				ObjectMeta: metav1.ObjectMeta{},
-				Spec:       AtomSpec{},
-				Status:     AtomStatus{},
+	if testAtomV3.TypeMeta.Kind != convertToAtom.TypeMeta.Kind {
+		// TODO: Activate next line if bug is fixed.
+		// t.Errorf("ConvertTo() error = TypeMeta.Kind: %v, %v", testAtomV3.TypeMeta.Kind, convertToAtom.TypeMeta.Kind)
+	}
+
+	if testAtomV3.ObjectMeta.Name != convertToAtom.ObjectMeta.Name {
+		t.Errorf("ConvertTo() error = ObjectMeta.Name: %v, %v", testAtomV3.ObjectMeta.Name, convertToAtom.ObjectMeta.Name)
+	}
+	if len(testAtomV3.ObjectMeta.Labels) != len(convertToAtom.ObjectMeta.Labels) {
+		t.Errorf("ConvertTo() error = len(testAtomV3.ObjectMeta.Labels) ")
+	}
+	if testAtomV3.ObjectMeta.Labels["dataset-owner"] != convertToAtom.ObjectMeta.Labels["dataset-owner"] {
+		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label dataset-owner: ", testAtomV3.ObjectMeta.Labels["dataset-owner"], convertToAtom.ObjectMeta.Labels["dataset-owner"])
+	}
+	if testAtomV3.ObjectMeta.Labels["dataset"] != convertToAtom.ObjectMeta.Labels["dataset"] {
+		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label dataset: ", testAtomV3.ObjectMeta.Labels["dataset"], convertToAtom.ObjectMeta.Labels["dataset"])
+	}
+	if testAtomV3.ObjectMeta.Labels["theme"] != convertToAtom.ObjectMeta.Labels["theme"] {
+		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label theme: ", testAtomV3.ObjectMeta.Labels["theme"], convertToAtom.ObjectMeta.Labels["theme"])
+	}
+	if testAtomV3.ObjectMeta.Labels["service-type"] != convertToAtom.ObjectMeta.Labels["service-type"] {
+		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label service-type: ", testAtomV3.ObjectMeta.Labels["service-type"], convertToAtom.ObjectMeta.Labels["service-type"])
+	}
+
+}
+
+var testTheme = "TEST_THEME"
+var TestServiceVersion = "v1_0"
+var TestDataVersion = "v1.0"
+var TestTtlInt = 30
+var TestUpdated = metav1.Date(2025, time.March, 15, 5, 5, 5, 0, time.UTC).Local().String()
+var TestContentType = "application/pdf"
+var TestLanguage = "NL"
+var TestTitle = "test_title"
+var TestBlobKey = "public/testme/selfservice/test.gml"
+
+func getTestAtomV2() *Atom {
+
+	return &Atom{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Atom",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test_me",
+			Labels: map[string]string{
+				"dataset-owner": "test_datasetowner",
+				"dataset":       "test_dataset",
+				"theme":         testTheme,
+				"service-type":  "test_servicetype",
 			},
-			args: args{
-				dstRaw: nil,
+		},
+		Spec: AtomSpec{
+			General: General{
+				DatasetOwner:   "test_datasetowner",
+				Dataset:        "test_dataset",
+				Theme:          &testTheme,
+				ServiceVersion: &TestServiceVersion,
+				DataVersion:    &TestDataVersion,
 			},
-		},*/
+			Kubernetes: &Kubernetes{
+				Lifecycle: &Lifecycle{
+					TTLInDays: &TestTtlInt,
+				},
+			},
+			Service: AtomService{
+				Title:              "test_service_title",
+				Subtitle:           "test_service_subtitle",
+				MetadataIdentifier: "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy",
+				Rights:             "https://creativecommons.org/publicdomain/zero/1.0/deed.nl",
+
+				// Test the deprecated field
+				Updated: &TestUpdated,
+				Author: Author{
+					Name:  "somebody",
+					Email: "test@gmail.com",
+				},
+				Datasets: []Dataset{
+					{
+						Name:               "test_dataset_name",
+						Title:              "test_dataset_titel",
+						Subtitle:           "test_dataset_subtitle",
+						MetadataIdentifier: "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+						SourceIdentifier:   "qqqqqqqq-qqqq-qqqq-qqqq-qqqqqqqqqqqq",
+						Links: []OtherLink{
+							{
+								Type:        "encodingRule",
+								URI:         "https://www.eionet.europa.eu/reportnet/docs/noise/guidelines/geopackage-encoding-rule-end.pdf",
+								ContentType: &TestContentType,
+								Language:    &TestLanguage,
+							},
+						},
+						Downloads: []Download{
+							{
+								Name:    "test_download",
+								Title:   &TestTitle,
+								Content: &TestContentType,
+
+								// TODO do not test both updated fields. Later switch from the one to the other.
+								//Updated: &TestUpdated,
+								Links: []Link{
+									{
+										BlobKey: &TestBlobKey,
+										Updated: &TestUpdated,
+									},
+								},
+								Srs: Srs{
+									URI:  "http://www.opengis.net/def/crs/EPSG/0/3035",
+									Code: "ETRS89-extended / LAEA Europe",
+								},
+							},
+						},
+						Bbox: Bbox{
+							Minx: 1,
+							Miny: 1,
+							Maxx: 2,
+							Maxy: 2,
+						},
+					},
+				},
+			},
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			a := &Atom{
-				TypeMeta:   tt.fields.TypeMeta,
-				ObjectMeta: tt.fields.ObjectMeta,
-				Spec:       tt.fields.Spec,
-				Status:     tt.fields.Status,
-			}
-			if err := a.ConvertTo(tt.args.dstRaw); (err != nil) != tt.wantErr {
-				t.Errorf("ConvertTo() error = %v, wantErr %v", err, tt.wantErr)
-			}
-		})
+}
+
+func getFilledAtomv3() *pdoknlv3.Atom {
+
+	return &pdoknlv3.Atom{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Atom",
+			APIVersion: "v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test_me",
+			Labels: map[string]string{
+				"dataset-owner": "test_datasetowner",
+				"dataset":       "test_dataset",
+				"theme":         testTheme,
+				"service-type":  "test_servicetype",
+			},
+		},
 	}
 }
