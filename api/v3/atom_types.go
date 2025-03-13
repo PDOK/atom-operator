@@ -51,15 +51,15 @@ type AtomSpec struct {
 
 // Service defines the service configuration for the Atom feed
 type Service struct {
-	BaseURL              string       `json:"baseUrl"`
-	Lang                 string       `json:"lang,omitempty"`
-	Stylesheet           string       `json:"stylesheet,omitempty"`
-	Title                string       `json:"title"`
-	Subtitle             string       `json:"subtitle,omitempty"`
-	OwnerInfoRef         string       `json:"ownerInfoRef"`
-	ServiceMetadataLinks MetadataLink `json:"serviceMetadataLinks,omitempty"`
-	Rights               string       `json:"rights,omitempty"`
-	Author               Author       `json:"author,omitempty"`
+	BaseURL              string                     `json:"baseUrl"`
+	Lang                 string                     `json:"lang,omitempty"`
+	Stylesheet           string                     `json:"stylesheet,omitempty"`
+	Title                string                     `json:"title"`
+	Subtitle             string                     `json:"subtitle,omitempty"`
+	OwnerInfoRef         string                     `json:"ownerInfoRef"`
+	ServiceMetadataLinks MetadataLink               `json:"serviceMetadataLinks,omitempty"`
+	Rights               string                     `json:"rights,omitempty"`
+	Author               smoothoperatormodel.Author `json:"author,omitempty"`
 }
 
 // Link represents a link in the service or dataset feed
@@ -72,23 +72,17 @@ type Link struct {
 	Title    string `json:"title,omitempty"`
 }
 
-// Author specifies the author or owner information
-type Author struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
 // DatasetFeed represents individual dataset feeds within the Atom service
 type DatasetFeed struct {
-	TechnicalName                     string       `json:"technicalName"`
-	Title                             string       `json:"title"`
-	Subtitle                          string       `json:"subtitle,omitempty"`
-	Links                             []Link       `json:"links,omitempty"`
-	DatasetMetadataLinks              MetadataLink `json:"datasetMetadataLinks,omitempty"`
-	Author                            Author       `json:"author,omitempty"`
-	SpatialDatasetIdentifierCode      string       `json:"spatial_dataset_identifier_code,omitempty"`      //nolint:tagliatelle // This is according to Atom spec
-	SpatialDatasetIdentifierNamespace string       `json:"spatial_dataset_identifier_namespace,omitempty"` //nolint:tagliatelle // This is according to Atom spec
-	Entries                           []Entry      `json:"entries,omitempty"`
+	TechnicalName                     string                     `json:"technicalName"`
+	Title                             string                     `json:"title"`
+	Subtitle                          string                     `json:"subtitle,omitempty"`
+	Links                             []Link                     `json:"links,omitempty"`
+	DatasetMetadataLinks              MetadataLink               `json:"datasetMetadataLinks,omitempty"`
+	Author                            smoothoperatormodel.Author `json:"author,omitempty"`
+	SpatialDatasetIdentifierCode      string                     `json:"spatial_dataset_identifier_code,omitempty"`      //nolint:tagliatelle // This is according to Atom spec
+	SpatialDatasetIdentifierNamespace string                     `json:"spatial_dataset_identifier_namespace,omitempty"` //nolint:tagliatelle // This is according to Atom spec
+	Entries                           []Entry                    `json:"entries,omitempty"`
 }
 
 // MetadataLink represents a link in the service or dataset feed

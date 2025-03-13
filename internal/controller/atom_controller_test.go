@@ -203,7 +203,7 @@ var _ = Describe("Atom Controller", func() {
 							},
 						},
 						Atom: smoothoperatorv1.Atom{
-							Author: smoothoperatorv1.Author{
+							Author: smoothoperatormodel.Author{
 								Name:  "pdok",
 								Email: "pdokbeheer@kadaster.nl",
 							},

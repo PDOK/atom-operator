@@ -10,6 +10,7 @@ import (
 	atomfeed "github.com/pdok/atom-generator/feeds"
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	v1 "github.com/pdok/smooth-operator/api/v1"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -161,14 +162,14 @@ func getCategory(srs *pdoknlv3.SRS) atomfeed.Category {
 	}
 }
 
-func getServiceAuthor(author v1.Author) atomfeed.Author {
+func getServiceAuthor(author smoothoperatormodel.Author) atomfeed.Author {
 	return atomfeed.Author{
 		Name:  author.Name,
 		Email: author.Email,
 	}
 }
 
-func getDatasetAuthor(author pdoknlv3.Author) atomfeed.Author {
+func getDatasetAuthor(author smoothoperatormodel.Author) atomfeed.Author {
 	return atomfeed.Author{
 		Name:  author.Name,
 		Email: author.Email,
