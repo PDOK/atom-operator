@@ -449,7 +449,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 									MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
 									Templates:          []string{"csw", "html"},
 								},
-								Author: pdoknlv3.Author{
+								Author: smoothoperatormodel.Author{
 									Name:  "owner",
 									Email: "info@test.com",
 								},
@@ -518,7 +518,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 									MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
 									Templates:          []string{"csw", "html"},
 								},
-								Author: pdoknlv3.Author{
+								Author: smoothoperatormodel.Author{
 									Name:  "owner",
 									Email: "info@test.com",
 								},
