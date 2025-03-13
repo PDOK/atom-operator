@@ -2,10 +2,11 @@ package v2beta1
 
 import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
+	"sync/atomic"
 	"testing"
-	"time"
 )
 
 func TestAtom_ConvertTo(t *testing.T) {
@@ -45,14 +46,18 @@ func TestAtom_ConvertTo(t *testing.T) {
 	if testAtomV3.ObjectMeta.Labels["service-type"] != convertToAtom.ObjectMeta.Labels["service-type"] {
 		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label service-type: ", testAtomV3.ObjectMeta.Labels["service-type"], convertToAtom.ObjectMeta.Labels["service-type"])
 	}
+	if atomic.LoadInt32(testAtomV3.Spec.Lifecycle.TTLInDays) != atomic.LoadInt32(convertToAtom.Spec.Lifecycle.TTLInDays) {
+		t.Errorf("ConvertTo() error = %v, expected: %d, got: %d", "TTLInDays: ", atomic.LoadInt32(testAtomV3.Spec.Lifecycle.TTLInDays), atomic.LoadInt32(convertToAtom.Spec.Lifecycle.TTLInDays))
+	}
 
 }
 
 var testTheme = "TEST_THEME"
 var TestServiceVersion = "v1_0"
 var TestDataVersion = "v1.0"
-var TestTtlInt = 30
-var TestUpdated = metav1.Date(2025, time.March, 15, 5, 5, 5, 0, time.UTC).Local().String()
+var TestTtlInt int = 30
+var TestTtlInt32 int32 = 30
+var TestUpdated = "2025-03-13T15:04:05Z"
 var TestContentType = "application/pdf"
 var TestLanguage = "NL"
 var TestTitle = "test_title"
@@ -94,7 +99,7 @@ func getTestAtomV2() *Atom {
 				Rights:             "https://creativecommons.org/publicdomain/zero/1.0/deed.nl",
 
 				// Test the deprecated field
-				Updated: &TestUpdated,
+				//Updated: &TestUpdated,
 				Author: Author{
 					Name:  "somebody",
 					Email: "test@gmail.com",
@@ -121,7 +126,7 @@ func getTestAtomV2() *Atom {
 								Content: &TestContentType,
 
 								// TODO do not test both updated fields. Later switch from the one to the other.
-								//Updated: &TestUpdated,
+								Updated: &TestUpdated,
 								Links: []Link{
 									{
 										BlobKey: &TestBlobKey,
@@ -161,6 +166,11 @@ func getFilledAtomv3() *pdoknlv3.Atom {
 				"dataset":       "test_dataset",
 				"theme":         testTheme,
 				"service-type":  "test_servicetype",
+			},
+		},
+		Spec: pdoknlv3.AtomSpec{
+			Lifecycle: smoothoperatormodel.Lifecycle{
+				TTLInDays: &TestTtlInt32,
 			},
 		},
 	}

@@ -133,7 +133,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 			parsedUpdatedTime, err := time.Parse(time.RFC3339, updated)
 			if err != nil {
-				log.Printf("Error parsing updated time: %v", err)
+				log.Printf("Error parsing updated time: %v \n %v", err, parsedUpdatedTime)
 				dstEntry.Updated = nil
 			}
 			updatedTime := metav1.NewTime(parsedUpdatedTime)
