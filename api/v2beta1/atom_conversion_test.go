@@ -1,12 +1,13 @@
 package v2beta1
 
 import (
+	"sync/atomic"
+	"testing"
+
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
-	"sync/atomic"
-	"testing"
 )
 
 func TestAtom_ConvertTo(t *testing.T) {
@@ -19,14 +20,14 @@ func TestAtom_ConvertTo(t *testing.T) {
 	}
 	testAtomV3 := getFilledAtomv3()
 
-	if testAtomV3.TypeMeta.APIVersion != convertToAtom.TypeMeta.APIVersion {
+	/*if testAtomV3.TypeMeta.APIVersion != convertToAtom.TypeMeta.APIVersion {
 		// TODO: Activate next line if bug is fixed.
 		// t.Errorf("ConvertTo() error = TypeMeta.APIVersion: %v, %v", testAtomV3.TypeMeta.APIVersion, convertToAtom.TypeMeta.APIVersion)
 	}
 	if testAtomV3.TypeMeta.Kind != convertToAtom.TypeMeta.Kind {
 		// TODO: Activate next line if bug is fixed.
 		// t.Errorf("ConvertTo() error = TypeMeta.Kind: %v, %v", testAtomV3.TypeMeta.Kind, convertToAtom.TypeMeta.Kind)
-	}
+	}*/
 
 	if testAtomV3.ObjectMeta.Name != convertToAtom.ObjectMeta.Name {
 		t.Errorf("ConvertTo() error = ObjectMeta.Name: %v, %v", testAtomV3.ObjectMeta.Name, convertToAtom.ObjectMeta.Name)
@@ -55,8 +56,8 @@ func TestAtom_ConvertTo(t *testing.T) {
 var testTheme = "TEST_THEME"
 var TestServiceVersion = "v1_0"
 var TestDataVersion = "v1.0"
-var TestTtlInt int = 30
-var TestTtlInt32 int32 = 30
+var TestTTLInt = 30
+var TestTTLInt32 int32 = 30
 var TestUpdated = "2025-03-13T15:04:05Z"
 var TestContentType = "application/pdf"
 var TestLanguage = "NL"
@@ -89,7 +90,7 @@ func getTestAtomV2() *Atom {
 			},
 			Kubernetes: &Kubernetes{
 				Lifecycle: &Lifecycle{
-					TTLInDays: &TestTtlInt,
+					TTLInDays: &TestTTLInt,
 				},
 			},
 			Service: AtomService{
@@ -170,7 +171,7 @@ func getFilledAtomv3() *pdoknlv3.Atom {
 		},
 		Spec: pdoknlv3.AtomSpec{
 			Lifecycle: smoothoperatormodel.Lifecycle{
-				TTLInDays: &TestTtlInt32,
+				TTLInDays: &TestTTLInt32,
 			},
 		},
 	}
