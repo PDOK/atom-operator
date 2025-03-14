@@ -25,15 +25,9 @@ SOFTWARE.
 package v3
 
 import (
-	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
 	pdoknlv2beta1 "github.com/pdok/atom-operator/api/v2beta1"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
-
-// nolint:unused
-// log is for logging in this package.
-var atomlog = logf.Log.WithName("atom-resource")
 
 // SetupAtomWebhookWithManager registers the webhook for Atom in the manager.
 func SetupAtomWebhookWithManager(mgr ctrl.Manager) error {

@@ -28,9 +28,9 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
@@ -38,36 +38,38 @@ import (
 )
 
 // ConvertTo converts this Atom (v2beta1) to the Hub version (v3).
-func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
+//
+//nolint:cyclop,funlen
+func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
-		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
+		"source: %s/%s", a.Namespace, a.Name)
 
 	// ObjectMeta
-	dst.ObjectMeta = src.ObjectMeta
+	dst.ObjectMeta = a.ObjectMeta
 
 	// Lifecycle
-	if src.Spec.Kubernetes != nil && src.Spec.Kubernetes.Lifecycle != nil && src.Spec.Kubernetes.Lifecycle.TTLInDays != nil {
-		dst.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*src.Spec.Kubernetes.Lifecycle.TTLInDays))
+	if a.Spec.Kubernetes != nil && a.Spec.Kubernetes.Lifecycle != nil && a.Spec.Kubernetes.Lifecycle.TTLInDays != nil {
+		dst.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*a.Spec.Kubernetes.Lifecycle.TTLInDays)) //nolint:gosec
 	}
 
 	// Service
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(pdoknlv3.GetAtomBaseURLHost(), src.Spec.General),
+		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), a.Spec.General),
 		Lang:         "nl",
-		Stylesheet:   "https://service.pdok.nl/atom/style/style.xsl",
-		Title:        src.Spec.Service.Title,
-		Subtitle:     src.Spec.Service.Subtitle,
+		Stylesheet:   pdoknlv3.GetBaseURL() + "/atom/style/style.xsl",
+		Title:        a.Spec.Service.Title,
+		Subtitle:     a.Spec.Service.Subtitle,
 		OwnerInfoRef: "pdok",
 		ServiceMetadataLinks: pdoknlv3.MetadataLink{
-			MetadataIdentifier: src.Spec.Service.MetadataIdentifier,
+			MetadataIdentifier: a.Spec.Service.MetadataIdentifier,
 			Templates:          []string{"csw", "opensearch", "html"},
 		},
-		Rights: src.Spec.Service.Rights,
+		Rights: a.Spec.Service.Rights,
 	}
 
 	dst.Spec.DatasetFeeds = []pdoknlv3.DatasetFeed{}
-	for _, srcDataset := range src.Spec.Service.Datasets {
+	for _, srcDataset := range a.Spec.Service.Datasets {
 		dstDatasetFeed := pdoknlv3.DatasetFeed{
 			TechnicalName: srcDataset.Name,
 			Title:         srcDataset.Title,
@@ -76,6 +78,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				MetadataIdentifier: srcDataset.MetadataIdentifier,
 				Templates:          []string{"csw", "html"},
 			},
+			Author:                            smoothoperatormodel.Author{Name: a.Spec.Service.Author.Name, Email: a.Spec.Service.Author.Email}, // Todo
 			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
 			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
 		}
@@ -105,7 +108,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 					Name: srcDownload.Srs.Code,
 				},
 				Polygon: &pdoknlv3.Polygon{
-					BBox: pdoknlv3.BBox{
+					BBox: smoothoperatormodel.BBox{
 						MinX: GetFloat32AsString(srcDataset.Bbox.Minx),
 						MinY: GetFloat32AsString(srcDataset.Bbox.Miny),
 						MaxX: GetFloat32AsString(srcDataset.Bbox.Maxx),
@@ -120,15 +123,21 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			if srcDownload.Content != nil {
 				dstEntry.Content = *srcDownload.Content
 			}
+
+			var updated string
 			if srcDownload.Updated != nil {
-				parsedUpdatedTime, err := time.Parse(time.RFC3339, *srcDownload.Updated)
-				if err != nil {
-					log.Printf("Error parsing updated time: %v", err)
-					dstEntry.Updated = nil
-				}
-				updatedTime := metav1.NewTime(parsedUpdatedTime)
-				dstEntry.Updated = &updatedTime
+				updated = *srcDownload.Updated
+			} else if a.Spec.Service.Updated != nil {
+				updated = *a.Spec.Service.Updated
 			}
+
+			parsedUpdatedTime, err := time.Parse(time.RFC3339, updated)
+			if err != nil {
+				log.Printf("Error parsing updated time: %v", err)
+				dstEntry.Updated = nil
+			}
+			updatedTime := metav1.NewTime(parsedUpdatedTime)
+			dstEntry.Updated = &updatedTime
 
 			// Map the links
 			for _, srcLink := range srcDownload.Links {
@@ -144,7 +153,7 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 					dstDownloadLink.Version = srcLink.Version
 				}
 				if srcLink.Bbox != nil {
-					dstDownloadLink.BBox = &pdoknlv3.BBox{
+					dstDownloadLink.BBox = &smoothoperatormodel.BBox{
 						MinX: GetFloat32AsString(srcLink.Bbox.Minx),
 						MinY: GetFloat32AsString(srcLink.Bbox.Miny),
 						MaxX: GetFloat32AsString(srcLink.Bbox.Maxx),
@@ -168,16 +177,18 @@ func (src *Atom) ConvertTo(dstRaw conversion.Hub) error {
 }
 
 // ConvertFrom converts the Hub version (v3) to this Atom (v2beta1).
-func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
+//
+//nolint:funlen
+func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertFrom: Converting Atom from Hub version v3 to Spoke version v2beta1;"+
-		"source: %s/%s, target: %s/%s", src.Namespace, src.Name, dst.Namespace, dst.Name)
+		"source: %s/%s", src.Namespace, src.Name)
 
 	// ObjectMeta
-	dst.ObjectMeta = src.ObjectMeta
+	a.ObjectMeta = src.ObjectMeta
 
 	// General
-	dst.Spec.General = General{
+	a.Spec.General = General{
 		Dataset:      src.ObjectMeta.Labels["dataset"],
 		DatasetOwner: src.ObjectMeta.Labels["dataset-owner"],
 		DataVersion:  nil,
@@ -185,16 +196,16 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 
 	serviceVersion, ok := src.ObjectMeta.Labels["service-version"]
 	if ok {
-		dst.Spec.General.ServiceVersion = &serviceVersion
+		a.Spec.General.ServiceVersion = &serviceVersion
 	}
 
 	theme, ok := src.ObjectMeta.Labels["theme"]
 	if ok {
-		dst.Spec.General.Theme = &theme
+		a.Spec.General.Theme = &theme
 	}
 
 	// Service
-	dst.Spec.Service = AtomService{
+	a.Spec.Service = AtomService{
 		Title:    src.Spec.Service.Title,
 		Subtitle: src.Spec.Service.Subtitle,
 		Rights:   src.Spec.Service.Rights,
@@ -206,7 +217,7 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	}
 
 	// Datasets
-	dst.Spec.Service.Datasets = []Dataset{}
+	a.Spec.Service.Datasets = []Dataset{}
 	for _, srcDatasetFeed := range src.Spec.DatasetFeeds {
 		dstDataset := Dataset{
 			Name:             srcDatasetFeed.TechnicalName,
@@ -281,15 +292,15 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 
 			dstDataset.Downloads = append(dstDataset.Downloads, dstDownload)
 		}
-		dst.Spec.Service.Datasets = append(dst.Spec.Service.Datasets, dstDataset)
+		a.Spec.Service.Datasets = append(a.Spec.Service.Datasets, dstDataset)
 	}
 
 	// Kubernetes
-	dst.Spec.Kubernetes = &Kubernetes{
+	a.Spec.Kubernetes = &Kubernetes{
 		Lifecycle: &Lifecycle{},
 	}
 	if src.Spec.Lifecycle.TTLInDays != nil {
-		dst.Spec.Kubernetes.Lifecycle.TTLInDays = GetIntPointer(int(*src.Spec.Lifecycle.TTLInDays))
+		a.Spec.Kubernetes.Lifecycle.TTLInDays = GetIntPointer(int(*src.Spec.Lifecycle.TTLInDays))
 	}
 
 	return nil
@@ -298,15 +309,15 @@ func (dst *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 func createBaseURL(host string, general General) (baseURL string) {
 	atomURI := fmt.Sprintf("%s/%s", general.DatasetOwner, general.Dataset)
 	if general.Theme != nil {
-		atomURI += fmt.Sprintf("/%s", *general.Theme)
+		atomURI += "/" + *general.Theme
 	}
 	atomURI += "/atom"
 
 	if general.ServiceVersion != nil {
-		atomURI += fmt.Sprintf("/%s", *general.ServiceVersion)
+		atomURI += "/" + *general.ServiceVersion
 	}
 
-	baseURL = fmt.Sprintf("%s/%s/index.xml", strings.TrimSuffix(host, "/"), atomURI)
+	baseURL = fmt.Sprintf("%s/%s", host, atomURI)
 	return
 }
 

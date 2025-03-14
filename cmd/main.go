@@ -18,6 +18,7 @@ package main
 
 import (
 	"crypto/tls"
+	"errors"
 	"flag"
 	"os"
 	"path/filepath"
@@ -26,6 +27,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	smoothoperator1 "github.com/pdok/smooth-operator/api/v1"
 	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -46,6 +48,11 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
+const (
+	defaultAtomGeneratorImage = "docker.io/pdok/atom-generator:0.6.0"
+	defaultLighttpdImage      = "docker.io/pdok/lighttpd:1.4.67"
+)
+
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -57,11 +64,12 @@ func init() {
 	utilruntime.Must(pdoknlv3.AddToScheme(scheme))
 	utilruntime.Must(pdoknlv2beta1.AddToScheme(scheme))
 	utilruntime.Must(traefikiov1alpha1.AddToScheme(scheme))
+	utilruntime.Must(smoothoperator1.AddToScheme(scheme))
 
 	// +kubebuilder:scaffold:scheme
 }
 
-// nolint:gocyclo
+//nolint:cyclop,funlen
 func main() {
 	var metricsAddr string
 	var metricsCertPath, metricsCertName, metricsCertKey string
@@ -70,7 +78,11 @@ func main() {
 	var probeAddr string
 	var secureMetrics bool
 	var enableHTTP2 bool
-	var atomBaseURLHost string
+	var baseURL string
+	var host string
+	var blobEndpoint string
+	var atomGeneratorImage string
+	var lighttpdImage string
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -89,9 +101,11 @@ func main() {
 	flag.StringVar(&metricsCertKey, "metrics-cert-key", "tls.key", "The name of the metrics server key file.")
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
-
-	flag.StringVar(&atomBaseURLHost, "atom-baseurl-host", "http://localhost:32788/",
-		"The host which is used to create the Atom BaseURL.")
+	flag.StringVar(&baseURL, "atom-baseurl", "", "The base url which is used in the atom service.")
+	flag.StringVar(&host, "atom-host", "", "The host which is used in the atom service.")
+	flag.StringVar(&blobEndpoint, "blob-endpoint", "", "The blobstore endpoint used for file downloads.")
+	flag.StringVar(&atomGeneratorImage, "atom-generator-image", defaultAtomGeneratorImage, "The image to use in the Atom generator init-container.")
+	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -100,7 +114,23 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	pdoknlv3.SetAtomBaseURLHost(atomBaseURLHost)
+	if baseURL == "" {
+		setupLog.Error(errors.New("baseURL is required"), "A value for baseURL must be specified.")
+		os.Exit(1)
+	}
+	pdoknlv3.SetBaseURL(baseURL)
+
+	if host == "" {
+		setupLog.Error(errors.New("host is required"), "A value for host must be specified.")
+		os.Exit(1)
+	}
+	pdoknlv3.SetHost(host)
+
+	if blobEndpoint == "" {
+		setupLog.Error(errors.New("blobEndpoint is required"), "A value for blobEndpoint must be specified.")
+		os.Exit(1)
+	}
+	pdoknlv3.SetBlobEndpoint(blobEndpoint)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -216,14 +246,15 @@ func main() {
 	}
 
 	if err = (&controller.AtomReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:             mgr.GetClient(),
+		Scheme:             mgr.GetScheme(),
+		AtomGeneratorImage: atomGeneratorImage,
+		LighttpdImage:      lighttpdImage,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Atom")
 		os.Exit(1)
 	}
 
-	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookpdoknlv2beta1.SetupAtomWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")
@@ -231,7 +262,6 @@ func main() {
 		}
 	}
 
-	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookpdoknlv3.SetupAtomWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")

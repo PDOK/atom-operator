@@ -7,6 +7,7 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
   - services
   verbs:
   - create
@@ -53,9 +54,47 @@ rules:
   - patch
   - update
 - apiGroups:
+  - pdok.nl
+  resources:
+  - ownerinfoes
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pdok.nl
+  resources:
+  - ownerinfoes/status
+  verbs:
+  - get
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - delete
+  - list
+  - update
+  - watch
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets/status
+  verbs:
+  - get
+  - update
+- apiGroups:
   - traefik.io
   resources:
   - ingressroutes
+  - middlewares
   verbs:
   - create
   - delete

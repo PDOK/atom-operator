@@ -33,11 +33,12 @@ import (
 	"path/filepath"
 	"testing"
 
+	smoothoperator1 "github.com/pdok/smooth-operator/api/v1"
 	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	"golang.org/x/tools/go/packages"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
+	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -54,7 +55,6 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	ctx       context.Context
 	cancel    context.CancelFunc
 	testEnv   *envtest.Environment
 	cfg       *rest.Config
@@ -70,7 +70,7 @@ func TestControllers(t *testing.T) {
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	ctx, cancel = context.WithCancel(context.TODO())
+	_, cancel = context.WithCancel(context.TODO())
 
 	var err error
 	err = pdoknlv3.AddToScheme(scheme.Scheme)
@@ -79,10 +79,15 @@ var _ = BeforeSuite(func() {
 	err = traefikiov1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = smoothoperator1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	By("bootstrapping test environment")
 	traefikCRDPath := must(getTraefikCRDPath())
+	ownerInfoCRDPath := must(getOwnerInfoCRDPath())
+
 	testEnv = &envtest.Environment{
 		ErrorIfCRDPathMissing: true,
 		CRDInstallOptions: envtest.CRDInstallOptions{
@@ -90,6 +95,7 @@ var _ = BeforeSuite(func() {
 			Paths: []string{
 				filepath.Join("..", "..", "config", "crd", "bases"),
 				traefikCRDPath,
+				ownerInfoCRDPath,
 			},
 			ErrorIfPathMissing: true,
 		},
@@ -138,6 +144,17 @@ func getFirstFoundEnvTestBinaryDir() string {
 		}
 	}
 	return ""
+}
+
+func getOwnerInfoCRDPath() (string, error) {
+	smoothOperatorModule, err := getModule("github.com/pdok/smooth-operator")
+	if err != nil {
+		return "", err
+	}
+	if smoothOperatorModule.Dir == "" {
+		return "", errors.New("cannot find path for smooth-operator module")
+	}
+	return filepath.Join(smoothOperatorModule.Dir, "config", "crd", "bases", "pdok.nl_ownerinfoes.yaml"), nil
 }
 
 func getTraefikCRDPath() (string, error) {
