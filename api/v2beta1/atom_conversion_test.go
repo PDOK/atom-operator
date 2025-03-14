@@ -20,14 +20,12 @@ func TestAtom_ConvertTo(t *testing.T) {
 	}
 	testAtomV3 := getFilledAtomv3()
 
-	/*if testAtomV3.TypeMeta.APIVersion != convertToAtom.TypeMeta.APIVersion {
-		// TODO: Activate next line if bug is fixed.
-		// t.Errorf("ConvertTo() error = TypeMeta.APIVersion: %v, %v", testAtomV3.TypeMeta.APIVersion, convertToAtom.TypeMeta.APIVersion)
+	if convertToAtom.TypeMeta.APIVersion != "" {
+		t.Errorf("ConvertTo() error = TypeMeta.APIVersion: %v, %v", testAtomV3.TypeMeta.APIVersion, convertToAtom.TypeMeta.APIVersion)
 	}
-	if testAtomV3.TypeMeta.Kind != convertToAtom.TypeMeta.Kind {
-		// TODO: Activate next line if bug is fixed.
-		// t.Errorf("ConvertTo() error = TypeMeta.Kind: %v, %v", testAtomV3.TypeMeta.Kind, convertToAtom.TypeMeta.Kind)
-	}*/
+	if convertToAtom.TypeMeta.Kind != "" {
+		t.Errorf("ConvertTo() error = TypeMeta.Kind: %v, %v", testAtomV3.TypeMeta.Kind, convertToAtom.TypeMeta.Kind)
+	}
 
 	if testAtomV3.ObjectMeta.Name != convertToAtom.ObjectMeta.Name {
 		t.Errorf("ConvertTo() error = ObjectMeta.Name: %v, %v", testAtomV3.ObjectMeta.Name, convertToAtom.ObjectMeta.Name)
