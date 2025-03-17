@@ -26,6 +26,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -62,109 +63,17 @@ const (
 )
 
 var updated = metav1.NewTime(time.Now())
-var fullAtom = pdoknlv3.Atom{
-	ObjectMeta: metav1.ObjectMeta{
-		Namespace: namespace,
-		Name:      atomResourceName,
-		Labels: map[string]string{
-			"dataset":       "test-dataset",
-			"dataset-owner": "test-datasetowner",
-			"service-type":  "atom",
-		},
-	},
-	Spec: pdoknlv3.AtomSpec{
-		Lifecycle: smoothoperatormodel.Lifecycle{
-			TTLInDays: int32Ptr(999),
-		},
-		Service: pdoknlv3.Service{
-			BaseURL:      "https://my.test-resource.test/atom",
-			Lang:         "test lang",
-			Stylesheet:   "test stylesheet",
-			Title:        "test title",
-			Subtitle:     "test subtitle",
-			OwnerInfoRef: ownerInfoResourceName,
-			ServiceMetadataLinks: pdoknlv3.MetadataLink{
-				MetadataIdentifier: "00000000-0000-0000-0000-000000000000",
-				Templates:          []string{"csw", "opensearch", "html"},
-			},
-			Rights: "test rights",
-		},
-		DatasetFeeds: []pdoknlv3.DatasetFeed{
-			{
-				TechnicalName: "test-technical-name",
-				Title:         "test-title",
-				Subtitle:      "test-subtitle",
-				DatasetMetadataLinks: pdoknlv3.MetadataLink{
-					MetadataIdentifier: "11111111-1111-1111-1111-111111111111",
-					Templates:          []string{"csw", "html"},
-				},
-				SpatialDatasetIdentifierCode:      "22222222-2222-2222-2222-222222222222",
-				SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
-				Entries: []pdoknlv3.Entry{
-					{
-						TechnicalName: "test-technical-name",
-						DownloadLinks: []pdoknlv3.DownloadLink{
-							{
-								Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
-								BBox: &smoothoperatormodel.BBox{
-									MinX: "482.06",
-									MinY: "284182.97",
-									MaxX: "306602.42",
-									MaxY: "637049.52",
-								},
-							},
-						},
-						Updated: &updated,
-						Polygon: &pdoknlv3.Polygon{
-							BBox: smoothoperatormodel.BBox{
-								MinX: "482.06",
-								MinY: "284182.97",
-								MaxX: "306602.42",
-								MaxY: "637049.52",
-							},
-						},
-						SRS: &pdoknlv3.SRS{
-							URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
-							Name: "Amersfoort / RD New",
-						},
-					},
-				},
-			},
-		},
-		PodSpecPatch: &corev1.PodSpec{
-			InitContainers: []corev1.Container{
-				{
-					Name: "init-atom",
-					VolumeMounts: []corev1.VolumeMount{
-						{Name: "data", MountPath: srvDir + "/data"},
-						{Name: "config", MountPath: srvDir + "/config"},
-					},
-					Image: testImageName1,
-				},
-			},
-			Containers: []corev1.Container{
-				{
-					Name: "atom-service",
-					VolumeMounts: []corev1.VolumeMount{
-						{Name: "socket", MountPath: "/tmp", ReadOnly: false},
-						{Name: "data", MountPath: "var/www"},
-					},
-					Image: testImageName2,
-				},
-			},
-		},
-	},
-}
 
 var _ = Describe("Atom Controller", func() {
 	Context("When reconciling a resource", func() {
 
 		ctx := context.Background()
 
-		typeNamespacedNameAtom := types.NamespacedName{
-			Name:      atomResourceName,
-			Namespace: namespace,
-		}
+		// Setup variables for unique Atom resource per It node
+		counter := 1
+		var fullAtom pdoknlv3.Atom
+		var typeNamespacedNameAtom types.NamespacedName
+
 		atom := &pdoknlv3.Atom{}
 
 		typeNamespacedNameOwnerInfo := types.NamespacedName{
@@ -174,6 +83,10 @@ var _ = Describe("Atom Controller", func() {
 		ownerInfo := &smoothoperatorv1.OwnerInfo{}
 
 		BeforeEach(func() {
+			// Create a unique Atom resource for every It node to prevent unexpected resource state caused by finalizers
+			fullAtom = getUniqueFullAtom(counter)
+			typeNamespacedNameAtom = getUniqueAtomTypeNamespacedName(counter)
+			counter++
 
 			By("creating the custom resource for the Kind Atom")
 			err := k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
@@ -308,54 +221,54 @@ var _ = Describe("Atom Controller", func() {
 			}, "10s", "1s").Should(Not(HaveOccurred()))
 		})
 
-		/*		It("Should successfully reconcile after a change in an owned resource", func() {
-				controllerReconciler := &AtomReconciler{
-					Client:             k8sClient,
-					Scheme:             k8sClient.Scheme(),
-					AtomGeneratorImage: testImageName1,
-					LighttpdImage:      testImageName2,
-				}
+		It("Should successfully reconcile after a change in an owned resource", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
 
-				By("Reconciling the Atom, checking the finalizer, and reconciling again")
-				_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-				Expect(err).NotTo(HaveOccurred())
-				err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(atom.Finalizers).To(ContainElement(finalizerName))
-				_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-				Expect(err).NotTo(HaveOccurred())
+			By("Reconciling the Atom, checking the finalizer, and reconciling again")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
 
-				By("Getting the original Deployment")
-				deployment := getBareDeployment(atom)
-				Eventually(func() bool {
-					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
-					return Expect(err).NotTo(HaveOccurred())
-				}, "10s", "1s").Should(BeTrue())
-				originalMinReadySeconds := deployment.Spec.MinReadySeconds
+			By("Getting the original Deployment")
+			deployment := getBareDeployment(atom)
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
+				return Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(BeTrue())
+			originalMinReadySeconds := deployment.Spec.MinReadySeconds
 
-				By("Altering the Deployment")
-				err = k8sClient.Patch(ctx, deployment, client.RawPatch(types.MergePatchType, []byte(
-					`{"spec": {"minReadySeconds": 99}}`)))
-				Expect(err).NotTo(HaveOccurred())
+			By("Altering the Deployment")
+			err = k8sClient.Patch(ctx, deployment, client.RawPatch(types.MergePatchType, []byte(
+				`{"spec": {"minReadySeconds": 99}}`)))
+			Expect(err).NotTo(HaveOccurred())
 
-				By("Verifying that the Deployment was altered")
-				Eventually(func() bool {
-					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
-					return Expect(err).NotTo(HaveOccurred()) &&
-						Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(99))
-				}, "10s", "1s").Should(BeTrue())
+			By("Verifying that the Deployment was altered")
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
+				return Expect(err).NotTo(HaveOccurred()) &&
+					Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(99))
+			}, "10s", "1s").Should(BeTrue())
 
-				By("Reconciling the Atom again")
-				_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-				Expect(err).NotTo(HaveOccurred())
+			By("Reconciling the Atom again")
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
 
-				By("Verifying that the Deployment was restored")
-				Eventually(func() bool {
-					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
-					return Expect(err).NotTo(HaveOccurred()) &&
-						Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(originalMinReadySeconds))
-				}, "10s", "1s").Should(BeTrue())
-			})*/
+			By("Verifying that the Deployment was restored")
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
+				return Expect(err).NotTo(HaveOccurred()) &&
+					Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(originalMinReadySeconds))
+			}, "10s", "1s").Should(BeTrue())
+		})
 
 		It("Should create correct deployment manifest.", func() {
 			controllerReconciler := &AtomReconciler{
@@ -619,6 +532,113 @@ func Test_getGeneratorConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func getUniqueFullAtom(counter int) pdoknlv3.Atom {
+	return pdoknlv3.Atom{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      getUniqueAtomResourceName(counter),
+			Labels: map[string]string{
+				"dataset":       "test-dataset",
+				"dataset-owner": "test-datasetowner",
+				"service-type":  "atom",
+			},
+		},
+		Spec: pdoknlv3.AtomSpec{
+			Lifecycle: smoothoperatormodel.Lifecycle{
+				TTLInDays: int32Ptr(999),
+			},
+			Service: pdoknlv3.Service{
+				BaseURL:      "https://my.test-resource.test/atom",
+				Lang:         "test lang",
+				Stylesheet:   "test stylesheet",
+				Title:        "test title",
+				Subtitle:     "test subtitle",
+				OwnerInfoRef: ownerInfoResourceName,
+				ServiceMetadataLinks: pdoknlv3.MetadataLink{
+					MetadataIdentifier: "00000000-0000-0000-0000-000000000000",
+					Templates:          []string{"csw", "opensearch", "html"},
+				},
+				Rights: "test rights",
+			},
+			DatasetFeeds: []pdoknlv3.DatasetFeed{
+				{
+					TechnicalName: "test-technical-name",
+					Title:         "test-title",
+					Subtitle:      "test-subtitle",
+					DatasetMetadataLinks: pdoknlv3.MetadataLink{
+						MetadataIdentifier: "11111111-1111-1111-1111-111111111111",
+						Templates:          []string{"csw", "html"},
+					},
+					SpatialDatasetIdentifierCode:      "22222222-2222-2222-2222-222222222222",
+					SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+					Entries: []pdoknlv3.Entry{
+						{
+							TechnicalName: "test-technical-name",
+							DownloadLinks: []pdoknlv3.DownloadLink{
+								{
+									Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
+									BBox: &smoothoperatormodel.BBox{
+										MinX: "482.06",
+										MinY: "284182.97",
+										MaxX: "306602.42",
+										MaxY: "637049.52",
+									},
+								},
+							},
+							Updated: &updated,
+							Polygon: &pdoknlv3.Polygon{
+								BBox: smoothoperatormodel.BBox{
+									MinX: "482.06",
+									MinY: "284182.97",
+									MaxX: "306602.42",
+									MaxY: "637049.52",
+								},
+							},
+							SRS: &pdoknlv3.SRS{
+								URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
+								Name: "Amersfoort / RD New",
+							},
+						},
+					},
+				},
+			},
+			PodSpecPatch: &corev1.PodSpec{
+				InitContainers: []corev1.Container{
+					{
+						Name: "init-atom",
+						VolumeMounts: []corev1.VolumeMount{
+							{Name: "data", MountPath: srvDir + "/data"},
+							{Name: "config", MountPath: srvDir + "/config"},
+						},
+						Image: testImageName1,
+					},
+				},
+				Containers: []corev1.Container{
+					{
+						Name: "atom-service",
+						VolumeMounts: []corev1.VolumeMount{
+							{Name: "socket", MountPath: "/tmp", ReadOnly: false},
+							{Name: "data", MountPath: "var/www"},
+						},
+						Image: testImageName2,
+					},
+				},
+			},
+		},
+	}
+}
+
+func getUniqueAtomTypeNamespacedName(counter int) types.NamespacedName {
+	return types.NamespacedName{
+		Name:      getUniqueAtomResourceName(counter),
+		Namespace: namespace,
+	}
+}
+
+func getUniqueAtomResourceName(counter int) string {
+	return fmt.Sprintf("%s-%v", atomResourceName, counter)
 }
 
 func readTestFile(fileName string) string {
