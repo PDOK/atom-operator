@@ -69,7 +69,7 @@ const (
 const (
 	controllerName  = "atom-controller"
 	appLabelKey     = "app"
-	atomName        = "atom"
+	atomName        = "atom-service"
 	configFileName  = "values.yaml"
 	atomPortName    = "atom-service"
 	atomPortNr      = 80

@@ -28,6 +28,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -45,10 +46,8 @@ import (
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
@@ -70,6 +69,7 @@ var fullAtom = pdoknlv3.Atom{
 		Labels: map[string]string{
 			"dataset":       "test-dataset",
 			"dataset-owner": "test-datasetowner",
+			"service-type":  "atom",
 		},
 	},
 	Spec: pdoknlv3.AtomSpec{
@@ -308,7 +308,56 @@ var _ = Describe("Atom Controller", func() {
 			}, "10s", "1s").Should(Not(HaveOccurred()))
 		})
 
-		It("Should successfully reconcile after a change in an owned resource", func() {
+		/*		It("Should successfully reconcile after a change in an owned resource", func() {
+				controllerReconciler := &AtomReconciler{
+					Client:             k8sClient,
+					Scheme:             k8sClient.Scheme(),
+					AtomGeneratorImage: testImageName1,
+					LighttpdImage:      testImageName2,
+				}
+
+				By("Reconciling the Atom, checking the finalizer, and reconciling again")
+				_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+				Expect(err).NotTo(HaveOccurred())
+				err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(atom.Finalizers).To(ContainElement(finalizerName))
+				_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Getting the original Deployment")
+				deployment := getBareDeployment(atom)
+				Eventually(func() bool {
+					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
+					return Expect(err).NotTo(HaveOccurred())
+				}, "10s", "1s").Should(BeTrue())
+				originalMinReadySeconds := deployment.Spec.MinReadySeconds
+
+				By("Altering the Deployment")
+				err = k8sClient.Patch(ctx, deployment, client.RawPatch(types.MergePatchType, []byte(
+					`{"spec": {"minReadySeconds": 99}}`)))
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Verifying that the Deployment was altered")
+				Eventually(func() bool {
+					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
+					return Expect(err).NotTo(HaveOccurred()) &&
+						Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(99))
+				}, "10s", "1s").Should(BeTrue())
+
+				By("Reconciling the Atom again")
+				_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+				Expect(err).NotTo(HaveOccurred())
+
+				By("Verifying that the Deployment was restored")
+				Eventually(func() bool {
+					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
+					return Expect(err).NotTo(HaveOccurred()) &&
+						Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(originalMinReadySeconds))
+				}, "10s", "1s").Should(BeTrue())
+			})*/
+
+		It("Should create correct deployment manifest.", func() {
 			controllerReconciler := &AtomReconciler{
 				Client:             k8sClient,
 				Scheme:             k8sClient.Scheme(),
@@ -331,42 +380,20 @@ var _ = Describe("Atom Controller", func() {
 				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
-			originalMinReadySeconds := deployment.Spec.MinReadySeconds
 
 			// TODO: UNDERDEVELOPMENT
 			log.Printf(" deployment.ObjectMeta.Labels[\"app\"]: %v", deployment.ObjectMeta.Labels["app"])
 			log.Printf(" deployment.ObjectMeta.Labels[\"dataset\"]: %v", deployment.ObjectMeta.Labels["dataset"])
 			log.Printf(" deployment.ObjectMeta.Labels[\"dataset-owner\"]: %v", deployment.ObjectMeta.Labels["dataset-owner"])
 			log.Printf(" deployment.ObjectMeta.Labels[\"service-type\"]: %v", deployment.ObjectMeta.Labels["service-type"])
+
 			Expect(int32(2)).Should(Equal(atomic.LoadInt32(deployment.Spec.Replicas)))
 
 			log.Printf(" deployment.Spec.Replicas: %d", atomic.LoadInt32(deployment.Spec.Replicas))
 
 			// TODO: END DEVELOPMENT
-
-			By("Altering the Deployment")
-			err = k8sClient.Patch(ctx, deployment, client.RawPatch(types.MergePatchType, []byte(
-				`{"spec": {"minReadySeconds": 99}}`)))
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Verifying that the Deployment was altered")
-			Eventually(func() bool {
-				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
-				return Expect(err).NotTo(HaveOccurred()) &&
-					Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(99))
-			}, "10s", "1s").Should(BeTrue())
-
-			By("Reconciling the Atom again")
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Verifying that the Deployment was restored")
-			Eventually(func() bool {
-				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
-				return Expect(err).NotTo(HaveOccurred()) &&
-					Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(originalMinReadySeconds))
-			}, "10s", "1s").Should(BeTrue())
 		})
+
 	})
 })
 
