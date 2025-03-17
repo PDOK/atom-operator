@@ -26,14 +26,15 @@ package controller
 
 import (
 	"context"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"log"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sync/atomic"
 	"testing"
 	"time"
 	"unicode"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/pkg/errors"
 	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
@@ -135,7 +136,7 @@ var fullAtom = pdoknlv3.Atom{
 		PodSpecPatch: &corev1.PodSpec{
 			InitContainers: []corev1.Container{
 				{
-					Name: "init-atom",
+					Name: "atom-generator",
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "data", MountPath: srvDir + "/data"},
 						{Name: "config", MountPath: srvDir + "/config"},
@@ -416,12 +417,59 @@ var _ = Describe("Atom Controller", func() {
 						priority.version-checker.io/atom-service: "8"
 			*/
 
-			log.Printf("deployment.Spec.Template.ObjectMeta.Labels[\"app\"]: %v", deployment.Spec.Template.ObjectMeta.Labels["app"])
-
 			Expect("atom-service").Should(Equal(deployment.Spec.Template.ObjectMeta.Labels["app"]))
 			Expect("test-dataset").Should(Equal(deployment.Spec.Template.ObjectMeta.Labels["dataset"]))
 			Expect("test-datasetowner").Should(Equal(deployment.Spec.Template.ObjectMeta.Labels["dataset-owner"]))
 			Expect("atom").Should(Equal(deployment.Spec.Template.ObjectMeta.Labels["service-type"]))
+
+			Expect("atom-service").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Name))
+
+			// TODO: Ports hebben geen namen in de v2 deployment, maar wordt wel hier (controller) ingevuld
+			Expect("atom-service").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Ports[0].Name))
+			Expect(int32(80)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort))
+			Expect(testImageName2).Should(Equal(deployment.Spec.Template.Spec.Containers[0].Image))
+			Expect(corev1.PullIfNotPresent).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ImagePullPolicy))
+
+			httpGet := &corev1.HTTPGetAction{
+				Path:   "/index.xml",
+				Port:   intstr.FromInt32(atomPortNr),
+				Scheme: corev1.URISchemeHTTP,
+			}
+			Expect(httpGet).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet))
+			Expect(httpGet.Path).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Path))
+			Expect(httpGet.Port).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Port))
+			Expect(httpGet.Scheme).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Scheme))
+			Expect(int32(5)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.InitialDelaySeconds))
+			Expect(int32(10)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.PeriodSeconds))
+			Expect(int32(5)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.TimeoutSeconds))
+
+			Expect(httpGet).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.HTTPGet))
+			Expect(int32(5)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds))
+			Expect(int32(10)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.PeriodSeconds))
+			Expect(int32(5)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.TimeoutSeconds))
+
+			Expect("64M").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String()))
+			Expect("10m").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().String()))
+
+			expectedVolumeMounts := []corev1.VolumeMount{
+				{Name: "socket", MountPath: "/tmp", ReadOnly: false},
+				{Name: "data", MountPath: "var/www"},
+			}
+			Expect(expectedVolumeMounts).Should(Equal(deployment.Spec.Template.Spec.Containers[0].VolumeMounts))
+
+			log.Printf("deployment.Spec.Template.Spec.InitContainers[0].Name: %v", deployment.Spec.Template.Spec.InitContainers[0].Name)
+
+			Expect("atom-generator").Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Name))
+			Expect(corev1.PullIfNotPresent).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].ImagePullPolicy))
+			Expect([]string{"./atom"}).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Command))
+			Expect("-f=/srv/config/values.yaml").Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Args[0]))
+			Expect("-o=/srv/data").Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Args[1]))
+
+			VolumeMounts := []corev1.VolumeMount{
+				{Name: "data", MountPath: srvDir + "/data"},
+				{Name: "config", MountPath: srvDir + "/config"},
+			}
+			Expect(VolumeMounts).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].VolumeMounts))
 		})
 	})
 })
