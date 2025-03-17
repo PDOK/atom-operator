@@ -26,6 +26,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"sync/atomic"
@@ -64,109 +65,17 @@ const (
 )
 
 var updated = metav1.NewTime(time.Now())
-var fullAtom = pdoknlv3.Atom{
-	ObjectMeta: metav1.ObjectMeta{
-		Namespace: namespace,
-		Name:      atomResourceName,
-		Labels: map[string]string{
-			"dataset":       "test-dataset",
-			"dataset-owner": "test-datasetowner",
-			"service-type":  "atom",
-		},
-	},
-	Spec: pdoknlv3.AtomSpec{
-		Lifecycle: smoothoperatormodel.Lifecycle{
-			TTLInDays: int32Ptr(999),
-		},
-		Service: pdoknlv3.Service{
-			BaseURL:      "https://my.test-resource.test/atom",
-			Lang:         "test lang",
-			Stylesheet:   "test stylesheet",
-			Title:        "test title",
-			Subtitle:     "test subtitle",
-			OwnerInfoRef: ownerInfoResourceName,
-			ServiceMetadataLinks: pdoknlv3.MetadataLink{
-				MetadataIdentifier: "00000000-0000-0000-0000-000000000000",
-				Templates:          []string{"csw", "opensearch", "html"},
-			},
-			Rights: "test rights",
-		},
-		DatasetFeeds: []pdoknlv3.DatasetFeed{
-			{
-				TechnicalName: "test-technical-name",
-				Title:         "test-title",
-				Subtitle:      "test-subtitle",
-				DatasetMetadataLinks: pdoknlv3.MetadataLink{
-					MetadataIdentifier: "11111111-1111-1111-1111-111111111111",
-					Templates:          []string{"csw", "html"},
-				},
-				SpatialDatasetIdentifierCode:      "22222222-2222-2222-2222-222222222222",
-				SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
-				Entries: []pdoknlv3.Entry{
-					{
-						TechnicalName: "test-technical-name",
-						DownloadLinks: []pdoknlv3.DownloadLink{
-							{
-								Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
-								BBox: &smoothoperatormodel.BBox{
-									MinX: "482.06",
-									MinY: "284182.97",
-									MaxX: "306602.42",
-									MaxY: "637049.52",
-								},
-							},
-						},
-						Updated: &updated,
-						Polygon: &pdoknlv3.Polygon{
-							BBox: smoothoperatormodel.BBox{
-								MinX: "482.06",
-								MinY: "284182.97",
-								MaxX: "306602.42",
-								MaxY: "637049.52",
-							},
-						},
-						SRS: &pdoknlv3.SRS{
-							URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
-							Name: "Amersfoort / RD New",
-						},
-					},
-				},
-			},
-		},
-		PodSpecPatch: &corev1.PodSpec{
-			InitContainers: []corev1.Container{
-				{
-					Name: "atom-generator",
-					VolumeMounts: []corev1.VolumeMount{
-						{Name: "data", MountPath: srvDir + "/data"},
-						{Name: "config", MountPath: srvDir + "/config"},
-					},
-					Image: testImageName1,
-				},
-			},
-			Containers: []corev1.Container{
-				{
-					Name: "atom-service",
-					VolumeMounts: []corev1.VolumeMount{
-						{Name: "socket", MountPath: "/tmp", ReadOnly: false},
-						{Name: "data", MountPath: "var/www"},
-					},
-					Image: testImageName2,
-				},
-			},
-		},
-	},
-}
 
 var _ = Describe("Atom Controller", func() {
 	Context("When reconciling a resource", func() {
 
 		ctx := context.Background()
 
-		typeNamespacedNameAtom := types.NamespacedName{
-			Name:      atomResourceName,
-			Namespace: namespace,
-		}
+		// Setup variables for unique Atom resource per It node
+		counter := 1
+		var fullAtom pdoknlv3.Atom
+		var typeNamespacedNameAtom types.NamespacedName
+
 		atom := &pdoknlv3.Atom{}
 
 		typeNamespacedNameOwnerInfo := types.NamespacedName{
@@ -176,6 +85,10 @@ var _ = Describe("Atom Controller", func() {
 		ownerInfo := &smoothoperatorv1.OwnerInfo{}
 
 		BeforeEach(func() {
+			// Create a unique Atom resource for every It node to prevent unexpected resource state caused by finalizers
+			fullAtom = getUniqueFullAtom(counter)
+			typeNamespacedNameAtom = getUniqueAtomTypeNamespacedName(counter)
+			counter++
 
 			By("creating the custom resource for the Kind Atom")
 			err := k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
@@ -310,54 +223,54 @@ var _ = Describe("Atom Controller", func() {
 			}, "10s", "1s").Should(Not(HaveOccurred()))
 		})
 
-		/*		It("Should successfully reconcile after a change in an owned resource", func() {
-				controllerReconciler := &AtomReconciler{
-					Client:             k8sClient,
-					Scheme:             k8sClient.Scheme(),
-					AtomGeneratorImage: testImageName1,
-					LighttpdImage:      testImageName2,
-				}
+		It("Should successfully reconcile after a change in an owned resource", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
 
-				By("Reconciling the Atom, checking the finalizer, and reconciling again")
-				_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-				Expect(err).NotTo(HaveOccurred())
-				err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-				Expect(err).NotTo(HaveOccurred())
-				Expect(atom.Finalizers).To(ContainElement(finalizerName))
-				_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-				Expect(err).NotTo(HaveOccurred())
+			By("Reconciling the Atom, checking the finalizer, and reconciling again")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
 
-				By("Getting the original Deployment")
-				deployment := getBareDeployment(atom)
-				Eventually(func() bool {
-					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
-					return Expect(err).NotTo(HaveOccurred())
-				}, "10s", "1s").Should(BeTrue())
-				originalMinReadySeconds := deployment.Spec.MinReadySeconds
+			By("Getting the original Deployment")
+			deployment := getBareDeployment(atom)
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
+				return Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(BeTrue())
+			originalMinReadySeconds := deployment.Spec.MinReadySeconds
 
-				By("Altering the Deployment")
-				err = k8sClient.Patch(ctx, deployment, client.RawPatch(types.MergePatchType, []byte(
-					`{"spec": {"minReadySeconds": 99}}`)))
-				Expect(err).NotTo(HaveOccurred())
+			By("Altering the Deployment")
+			err = k8sClient.Patch(ctx, deployment, client.RawPatch(types.MergePatchType, []byte(
+				`{"spec": {"minReadySeconds": 99}}`)))
+			Expect(err).NotTo(HaveOccurred())
 
-				By("Verifying that the Deployment was altered")
-				Eventually(func() bool {
-					err := k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
-					return Expect(err).NotTo(HaveOccurred()) &&
-						Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(99))
-				}, "10s", "1s").Should(BeTrue())
+			By("Verifying that the Deployment was altered")
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
+				return Expect(err).NotTo(HaveOccurred()) &&
+					Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(99))
+			}, "10s", "1s").Should(BeTrue())
 
-				By("Reconciling the Atom again")
-				_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-				Expect(err).NotTo(HaveOccurred())
+			By("Reconciling the Atom again")
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
 
-				By("Verifying that the Deployment was restored")
-				Eventually(func() bool {
-					err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
-					return Expect(err).NotTo(HaveOccurred()) &&
-						Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(originalMinReadySeconds))
-				}, "10s", "1s").Should(BeTrue())
-			})*/
+			By("Verifying that the Deployment was restored")
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(deployment), deployment)
+				return Expect(err).NotTo(HaveOccurred()) &&
+					Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(originalMinReadySeconds))
+			}, "10s", "1s").Should(BeTrue())
+		})
 
 		It("Should create correct deployment manifest.", func() {
 			controllerReconciler := &AtomReconciler{
@@ -387,7 +300,6 @@ var _ = Describe("Atom Controller", func() {
 			Expect("test-dataset").Should(Equal(deployment.ObjectMeta.Labels["dataset"]))
 			Expect("test-datasetowner").Should(Equal(deployment.ObjectMeta.Labels["dataset-owner"]))
 			Expect("atom").Should(Equal(deployment.ObjectMeta.Labels["service-type"]))
-			Expect("test-atom-atom-service").Should(Equal(deployment.ObjectMeta.Name))
 			Expect("default").Should(Equal(deployment.ObjectMeta.Namespace))
 			Expect(int32(2)).Should(Equal(atomic.LoadInt32(deployment.Spec.Replicas)))
 			Expect(int32(1)).Should(Equal(atomic.LoadInt32(deployment.Spec.RevisionHistoryLimit)))
@@ -611,7 +523,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 					},
 				},
 			},
-			wantConfig: "feeds:\n    - xmlname:\n        space: \"\"\n        local: \"\"\n      stylesheet: /atom/style/style.xsl\n      xmlns: http://www.w3.org/2005/Atom\n      georss: http://www.georss.org/georss\n      inspire_dls: http://inspire.ec.europa.eu/schemas/inspire_dls/1.0\n      lang: nl\n      id: /index.xml\n      title: \"\"\n      subtitle: \"\"\n      self: null\n      describedby: null\n      search: null\n      up: null\n      link:\n        - href: /index.xml\n          data: null\n          rel: self\n          type: application/atom+xml\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n          data: null\n          rel: describedby\n          type: application/xml\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/opensearch/dut/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx/OpenSearchDescription.xml\n          data: null\n          rel: search\n          type: application/xml\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n          data: null\n          rel: related\n          type: text/html\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n      rights: \"\"\n      updated: \"2025-03-05T06:05:05+01:00\"\n      author:\n        name: \"\"\n        email: \"\"\n      entry:\n        - id: /https://service.pdok.nl/test/atom/index.xml.xml\n          title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n          content: \"\"\n          summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n          link:\n            - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n              data: null\n              rel: describedby\n              type: application/xml\n              hreflang: nl\n              length: \"\"\n              title: \"\"\n              version: null\n              time: null\n              bbox: null\n            - href: /https://service.pdok.nl/test/atom/index.xml.xml\n              data: null\n              rel: alternate\n              type: application/atom+xml\n              hreflang: null\n              length: \"\"\n              title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n              version: null\n              time: null\n              bbox: null\n          rights: \"\"\n          updated: \"2025-03-05T06:05:05+01:00\"\n          polygon: 1 1 1 2 2 2 2 1 1 1\n          category:\n            - term: https://www.opengis.net/def/crs/EPSG/0/28992\n              label: Amersfoort / RD New\n          spatial_dataset_identifier_code: d893c05b-907e-47f2-9cbd-ceb08e68732c\n          spatial_dataset_identifier_namespace: http://www.pdok.nl\n    - xmlname:\n        space: \"\"\n        local: \"\"\n      stylesheet: /atom/style/style.xsl\n      xmlns: \"\"\n      georss: \"\"\n      inspire_dls: \"\"\n      lang: nl\n      id: /https://service.pdok.nl/test/atom/index.xml.xml\n      title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n      subtitle: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n      self: null\n      describedby: null\n      search: null\n      up: null\n      link:\n        - href: /https://service.pdok.nl/test/atom/index.xml.xml\n          data: null\n          rel: self\n          type: \"\"\n          hreflang: null\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: /index.xml\n          data: null\n          rel: up\n          type: application/atom+xml\n          hreflang: null\n          length: \"\"\n          title: Top Atom Download Service Feed\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n          data: null\n          rel: describedby\n          type: text.html\n          hreflang: null\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n          data: null\n          rel: \"\"\n          type: text.html\n          hreflang: null\n          length: \"\"\n          title: NGR pagina voor deze dataset\n          version: null\n          time: null\n          bbox: null\n      rights: \"\"\n      author:\n        name: owner\n        email: info@test.com\n      entry:\n        - id: /https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml.xml\n          title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie\n          content: Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).\n          summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n          link:\n            - href: /downloads/dataset-1-file\n              data: /http://localazurite.blob.azurite/bucket/key1/dataset-1-file\n              rel: alternate\n              type: \"\"\n              hreflang: null\n              length: \"\"\n              title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie-dataset-1-file\n              version: null\n              time: null\n              bbox: null\n          rights: \"\"\n          updated: \"2025-03-05T06:05:05+01:00\"\n          polygon: 1 1 1 2 2 2 2 1 1 1\n          category:\n            - term: https://www.opengis.net/def/crs/EPSG/0/28992\n              label: Amersfoort / RD New\n          spatial_dataset_identifier_code: \"\"\n          spatial_dataset_identifier_namespace: \"\"\n",
+			wantConfig: "feeds:\n    - xmlname:\n        space: \"\"\n        local: \"\"\n      stylesheet: /atom/style/style.xsl\n      xmlns: http://www.w3.org/2005/Atom\n      georss: http://www.georss.org/georss\n      inspire_dls: http://inspire.ec.europa.eu/schemas/inspire_dls/1.0\n      lang: nl\n      id: /index.xml\n      title: \"\"\n      subtitle: \"\"\n      self: null\n      describedby: null\n      search: null\n      up: null\n      link:\n        - href: /index.xml\n          data: null\n          rel: self\n          type: application/atom+xml\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n          data: null\n          rel: describedby\n          type: application/xml\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/opensearch/dut/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx/OpenSearchDescription.xml\n          data: null\n          rel: search\n          type: application/xml\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n          data: null\n          rel: related\n          type: text/html\n          hreflang: nl\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n      rights: \"\"\n      updated: \"2025-03-05T05:05:05Z\"\n      author:\n        name: \"\"\n        email: \"\"\n      entry:\n        - id: /https://service.pdok.nl/test/atom/index.xml.xml\n          title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n          content: \"\"\n          summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n          link:\n            - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n              data: null\n              rel: describedby\n              type: application/xml\n              hreflang: nl\n              length: \"\"\n              title: \"\"\n              version: null\n              time: null\n              bbox: null\n            - href: /https://service.pdok.nl/test/atom/index.xml.xml\n              data: null\n              rel: alternate\n              type: application/atom+xml\n              hreflang: null\n              length: \"\"\n              title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n              version: null\n              time: null\n              bbox: null\n          rights: \"\"\n          updated: \"2025-03-05T05:05:05Z\"\n          polygon: 1 1 1 2 2 2 2 1 1 1\n          category:\n            - term: https://www.opengis.net/def/crs/EPSG/0/28992\n              label: Amersfoort / RD New\n          spatial_dataset_identifier_code: d893c05b-907e-47f2-9cbd-ceb08e68732c\n          spatial_dataset_identifier_namespace: http://www.pdok.nl\n    - xmlname:\n        space: \"\"\n        local: \"\"\n      stylesheet: /atom/style/style.xsl\n      xmlns: \"\"\n      georss: \"\"\n      inspire_dls: \"\"\n      lang: nl\n      id: /https://service.pdok.nl/test/atom/index.xml.xml\n      title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n      subtitle: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n      self: null\n      describedby: null\n      search: null\n      up: null\n      link:\n        - href: /https://service.pdok.nl/test/atom/index.xml.xml\n          data: null\n          rel: self\n          type: \"\"\n          hreflang: null\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: /index.xml\n          data: null\n          rel: up\n          type: application/atom+xml\n          hreflang: null\n          length: \"\"\n          title: Top Atom Download Service Feed\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n          data: null\n          rel: describedby\n          type: text.html\n          hreflang: null\n          length: \"\"\n          title: \"\"\n          version: null\n          time: null\n          bbox: null\n        - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx\n          data: null\n          rel: \"\"\n          type: text.html\n          hreflang: null\n          length: \"\"\n          title: NGR pagina voor deze dataset\n          version: null\n          time: null\n          bbox: null\n      rights: \"\"\n      author:\n        name: owner\n        email: info@test.com\n      entry:\n        - id: /https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml.xml\n          title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie\n          content: Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).\n          summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM\n          link:\n            - href: /downloads/dataset-1-file\n              data: /http://localazurite.blob.azurite/bucket/key1/dataset-1-file\n              rel: alternate\n              type: \"\"\n              hreflang: null\n              length: \"\"\n              title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie-dataset-1-file\n              version: null\n              time: null\n              bbox: null\n          rights: \"\"\n          updated: \"2025-03-05T05:05:05Z\"\n          polygon: 1 1 1 2 2 2 2 1 1 1\n          category:\n            - term: https://www.opengis.net/def/crs/EPSG/0/28992\n              label: Amersfoort / RD New\n          spatial_dataset_identifier_code: \"\"\n          spatial_dataset_identifier_namespace: \"\"\n",
 			wantErr:    false,
 		},
 		{
@@ -698,6 +610,113 @@ func Test_getGeneratorConfig(t *testing.T) {
 	}
 }
 
+func getUniqueFullAtom(counter int) pdoknlv3.Atom {
+	return pdoknlv3.Atom{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      getUniqueAtomResourceName(counter),
+			Labels: map[string]string{
+				"dataset":       "test-dataset",
+				"dataset-owner": "test-datasetowner",
+				"service-type":  "atom",
+			},
+		},
+		Spec: pdoknlv3.AtomSpec{
+			Lifecycle: smoothoperatormodel.Lifecycle{
+				TTLInDays: int32Ptr(999),
+			},
+			Service: pdoknlv3.Service{
+				BaseURL:      "https://my.test-resource.test/atom",
+				Lang:         "test lang",
+				Stylesheet:   "test stylesheet",
+				Title:        "test title",
+				Subtitle:     "test subtitle",
+				OwnerInfoRef: ownerInfoResourceName,
+				ServiceMetadataLinks: pdoknlv3.MetadataLink{
+					MetadataIdentifier: "00000000-0000-0000-0000-000000000000",
+					Templates:          []string{"csw", "opensearch", "html"},
+				},
+				Rights: "test rights",
+			},
+			DatasetFeeds: []pdoknlv3.DatasetFeed{
+				{
+					TechnicalName: "test-technical-name",
+					Title:         "test-title",
+					Subtitle:      "test-subtitle",
+					DatasetMetadataLinks: pdoknlv3.MetadataLink{
+						MetadataIdentifier: "11111111-1111-1111-1111-111111111111",
+						Templates:          []string{"csw", "html"},
+					},
+					SpatialDatasetIdentifierCode:      "22222222-2222-2222-2222-222222222222",
+					SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+					Entries: []pdoknlv3.Entry{
+						{
+							TechnicalName: "test-technical-name",
+							DownloadLinks: []pdoknlv3.DownloadLink{
+								{
+									Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
+									BBox: &smoothoperatormodel.BBox{
+										MinX: "482.06",
+										MinY: "284182.97",
+										MaxX: "306602.42",
+										MaxY: "637049.52",
+									},
+								},
+							},
+							Updated: &updated,
+							Polygon: &pdoknlv3.Polygon{
+								BBox: smoothoperatormodel.BBox{
+									MinX: "482.06",
+									MinY: "284182.97",
+									MaxX: "306602.42",
+									MaxY: "637049.52",
+								},
+							},
+							SRS: &pdoknlv3.SRS{
+								URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
+								Name: "Amersfoort / RD New",
+							},
+						},
+					},
+				},
+			},
+			PodSpecPatch: &corev1.PodSpec{
+				InitContainers: []corev1.Container{
+					{
+						Name: "atom-generator",
+						VolumeMounts: []corev1.VolumeMount{
+							{Name: "data", MountPath: srvDir + "/data"},
+							{Name: "config", MountPath: srvDir + "/config"},
+						},
+						Image: testImageName1,
+					},
+				},
+				Containers: []corev1.Container{
+					{
+						Name: "atom-service",
+						VolumeMounts: []corev1.VolumeMount{
+							{Name: "socket", MountPath: "/tmp", ReadOnly: false},
+							{Name: "data", MountPath: "var/www"},
+						},
+						Image: testImageName2,
+					},
+				},
+			},
+		},
+	}
+}
+
+func getUniqueAtomTypeNamespacedName(counter int) types.NamespacedName {
+	return types.NamespacedName{
+		Name:      getUniqueAtomResourceName(counter),
+		Namespace: namespace,
+	}
+}
+
+func getUniqueAtomResourceName(counter int) string {
+	return fmt.Sprintf("%s-%v", atomResourceName, counter)
+}
+
 func readTestFile(fileName string) string {
 	dat, _ := os.ReadFile(fileName)
 
@@ -716,7 +735,7 @@ func getTestPolygon() *pdoknlv3.Polygon {
 }
 
 func getUpdatedDate() time.Time {
-	return metav1.Date(2025, time.March, 5, 5, 5, 5, 0, time.UTC).Local()
+	return metav1.Date(2025, time.March, 5, 5, 5, 5, 0, time.UTC).UTC()
 }
 
 func removeSpace(s string) string {
