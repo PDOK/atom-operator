@@ -27,7 +27,6 @@ package controller
 import (
 	"context"
 	"log"
-	"os"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -342,7 +341,7 @@ var _ = Describe("Atom Controller", func() {
 
 			log.Printf(" deployment.Spec.Replicas: %d", atomic.LoadInt32(deployment.Spec.Replicas))
 
-			// TODO: END DEVELOPEMENT
+			// TODO: END DEVELOPMENT
 
 			By("Altering the Deployment")
 			err = k8sClient.Patch(ctx, deployment, client.RawPatch(types.MergePatchType, []byte(
@@ -578,7 +577,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 		//	},
 		//	wantConfig: readTestFile("generatorConfigData_testdata.yaml"),
 		//	wantErr:    false,
-		//},
+		// },
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -594,11 +593,11 @@ func Test_getGeneratorConfig(t *testing.T) {
 	}
 }
 
-func readTestFile(fileName string) string {
+/*func readTestFile(fileName string) string {
 	dat, _ := os.ReadFile(fileName)
 
 	return string(dat)
-}
+}*/
 
 func getTestPolygon() *pdoknlv3.Polygon {
 	return &pdoknlv3.Polygon{
