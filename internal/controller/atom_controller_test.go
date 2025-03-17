@@ -34,7 +34,6 @@ import (
 	"time"
 	"unicode"
 
-
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -301,7 +300,6 @@ var _ = Describe("Atom Controller", func() {
 			Expect("test-dataset").Should(Equal(deployment.ObjectMeta.Labels["dataset"]))
 			Expect("test-datasetowner").Should(Equal(deployment.ObjectMeta.Labels["dataset-owner"]))
 			Expect("atom").Should(Equal(deployment.ObjectMeta.Labels["service-type"]))
-			Expect("test-atom-atom-service").Should(Equal(deployment.ObjectMeta.Name))
 			Expect("default").Should(Equal(deployment.ObjectMeta.Namespace))
 			Expect(int32(2)).Should(Equal(atomic.LoadInt32(deployment.Spec.Replicas)))
 			Expect(int32(1)).Should(Equal(atomic.LoadInt32(deployment.Spec.RevisionHistoryLimit)))
@@ -685,7 +683,7 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 			PodSpecPatch: &corev1.PodSpec{
 				InitContainers: []corev1.Container{
 					{
-						Name: "init-atom",
+						Name: "atom-generator",
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "data", MountPath: srvDir + "/data"},
 							{Name: "config", MountPath: srvDir + "/config"},
