@@ -29,11 +29,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sync/atomic"
 	"testing"
 	"time"
 	"unicode"
+
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/pkg/errors"
 	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
