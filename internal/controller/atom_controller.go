@@ -383,10 +383,13 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 			},
 			InitContainers: []corev1.Container{
 				{
-					Name:            "init-atom",
+					Name:            "atom-generator",
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Command:         []string{"./atom"},
 					Args:            []string{"-f=" + srvDir + "/config/" + configFileName, "-o=" + srvDir + "/data"},
+
+					// TODO:
+					Image: "acrpdokprodman.azurecr.io/mirror/docker.io/pdok/atom-generator:0.6.0",
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "data", MountPath: srvDir + "/data"},
 						{Name: "config", MountPath: srvDir + "/config"},
