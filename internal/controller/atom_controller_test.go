@@ -35,6 +35,7 @@ import (
 
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
+	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
 	policyv1 "k8s.io/api/policy/v1"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
@@ -69,7 +70,7 @@ var fullAtom = pdoknlv3.Atom{
 	},
 	Spec: pdoknlv3.AtomSpec{
 		Lifecycle: smoothoperatormodel.Lifecycle{
-			TTLInDays: int32Ptr(999),
+			TTLInDays: smoothoperatorutils.Int32Ptr(999),
 		},
 		Service: pdoknlv3.Service{
 			BaseURL:      "https://my.test-resource.test/atom",
@@ -292,7 +293,7 @@ var _ = Describe("Atom Controller", func() {
 				for _, d := range expectedBareObjects {
 					err := k8sClient.Get(ctx, d.key, d.obj)
 					if err == nil {
-						return errors.New("expected " + getObjectFullName(k8sClient, d.obj) + " to not be found")
+						return errors.New("expected " + smoothoperatorutils.GetObjectFullName(k8sClient, d.obj) + " to not be found")
 					}
 					if !k8serrors.IsNotFound(err) {
 						return err

@@ -111,8 +111,8 @@ github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaR
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
 github.com/pdok/atom-generator v0.6.0 h1:7VbGn98Js2kJwhLRqbeX8D+byW5DfovTgJ09bMYg3Ew=
 github.com/pdok/atom-generator v0.6.0/go.mod h1:+tW5rgSjcPZeLkIBeKAkCKMeQNHVl/2moqf3uvv7LTI=
-github.com/pdok/smooth-operator v0.0.2-0.20250311095154-eb6e739e9d75 h1:Bfn/kY4rvsXev3/n+PZu9F3UWLlwDmTofEzb/liTIXg=
-github.com/pdok/smooth-operator v0.0.2-0.20250311095154-eb6e739e9d75/go.mod h1:Jz2AcpdfElRbjJsJNUuuk/o5XGZPZAC+820bVpRysbE=
+github.com/pdok/smooth-operator v0.0.3 h1:dyDCfLeoWN+bzrPIdeCvH7NhAqeiTFrBP1fl1weNP/s=
+github.com/pdok/smooth-operator v0.0.3/go.mod h1:oZWFuIKJGjN/C6ocgMNfMZ7SbLQi+N0qaWj7j95Wdec=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
