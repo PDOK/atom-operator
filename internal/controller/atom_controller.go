@@ -48,6 +48,7 @@ import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	"github.com/pdok/atom-operator/internal/controller/generator"
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
 
 	traefikdynamic "github.com/traefik/traefik/v3/pkg/config/dynamic"
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
@@ -146,9 +147,9 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	}
 
 	lgr.Info("Get object full name")
-	fullName := getObjectFullName(r.Client, atom)
+	fullName := smoothoperatorutils.GetObjectFullName(r.Client, atom)
 	lgr.Info("Finalize if necessary")
-	shouldContinue, err := finalizeIfNecessary(ctx, r.Client, atom, finalizerName, func() error {
+	shouldContinue, err := smoothoperatorutils.FinalizeIfNecessary(ctx, r.Client, atom, finalizerName, func() error {
 		lgr.Info("deleting resources", "name", fullName)
 		return r.deleteAllForAtom(ctx, atom, ownerInfo)
 	})
@@ -192,60 +193,60 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	if err = r.mutateConfigMap(atom, ownerInfo, configMap); err != nil {
 		return operationResults, err
 	}
-	operationResults[getObjectFullName(r.Client, atom)], err = controllerutil.CreateOrUpdate(ctx, r.Client, configMap, func() error {
+	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, atom)], err = controllerutil.CreateOrUpdate(ctx, r.Client, configMap, func() error {
 		return r.mutateConfigMap(atom, ownerInfo, configMap)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, configMap), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, configMap), err)
 	}
 	// endregion
 
 	// region Create or update Deployment
 	deployment := getBareDeployment(atom)
-	operationResults[getObjectFullName(r.Client, deployment)], err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
+	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, deployment)], err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
 		return r.mutateDeployment(atom, deployment, configMap.GetName())
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, deployment), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, deployment), err)
 	}
 	// endregion
 
 	// region Create or update Service
 	service := getBareService(atom)
-	operationResults[getObjectFullName(r.Client, service)], err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, service)], err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
 		return r.mutateService(atom, service)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, service), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, service), err)
 	}
 	// endregion
 
 	// region Create or update Middleware
 
 	stripPrefixMiddleware := getBareStripPrefixMiddleware(atom)
-	operationResults[getObjectFullName(r.Client, stripPrefixMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, stripPrefixMiddleware, func() error {
+	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, stripPrefixMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, stripPrefixMiddleware, func() error {
 		return r.mutateStripPrefixMiddleware(atom, stripPrefixMiddleware)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("could not create or update resource %s: %w", getObjectFullName(c, stripPrefixMiddleware), err)
+		return operationResults, fmt.Errorf("could not create or update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, stripPrefixMiddleware), err)
 	}
 
 	corsHeadersMiddleware := getBareCorsHeadersMiddleware(atom)
-	operationResults[getObjectFullName(r.Client, corsHeadersMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, corsHeadersMiddleware, func() error {
+	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, corsHeadersMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, corsHeadersMiddleware, func() error {
 		return r.mutateCorsHeadersMiddleware(atom, corsHeadersMiddleware)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("could not create or update resource %s: %w", getObjectFullName(c, corsHeadersMiddleware), err)
+		return operationResults, fmt.Errorf("could not create or update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, corsHeadersMiddleware), err)
 	}
 
 	// Create or update extra middleware per downloadLink
 	for index, downloadLink := range atom.GetIndexedDownloadLinks() {
 		downloadLinkMiddleware := getBareDownloadLinkMiddleware(atom, index)
-		operationResults[getObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
+		operationResults[smoothoperatorutils.GetObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
 			return r.mutateDownloadLinkMiddleware(atom, &downloadLink, downloadLinkMiddleware)
 		})
 		if err != nil {
-			return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, downloadLinkMiddleware), err)
+			return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, downloadLinkMiddleware), err)
 		}
 	}
 
@@ -253,22 +254,22 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 
 	// region Create or update IngressRoute
 	ingressRoute := getBareIngressRoute(atom)
-	operationResults[getObjectFullName(r.Client, ingressRoute)], err = controllerutil.CreateOrUpdate(ctx, r.Client, ingressRoute, func() error {
+	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, ingressRoute)], err = controllerutil.CreateOrUpdate(ctx, r.Client, ingressRoute, func() error {
 		return r.mutateIngressRoute(atom, ingressRoute)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, ingressRoute), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, ingressRoute), err)
 	}
 
 	// endregion
 
 	// region Create or update PodDisruptionBudget
 	podDisruptionBudget := getBarePodDisruptionBudget(atom)
-	operationResults[getObjectFullName(r.Client, podDisruptionBudget)], err = controllerutil.CreateOrUpdate(ctx, r.Client, podDisruptionBudget, func() error {
+	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, podDisruptionBudget)], err = controllerutil.CreateOrUpdate(ctx, r.Client, podDisruptionBudget, func() error {
 		return r.mutatePodDisruptionBudget(atom, podDisruptionBudget)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", getObjectFullName(c, podDisruptionBudget), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, podDisruptionBudget), err)
 	}
 	// endregion
 
@@ -294,7 +295,7 @@ func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.At
 		objects = append(objects, getBareDownloadLinkMiddleware(atom, index))
 	}
 
-	return deleteObjects(ctx, r.Client, objects)
+	return smoothoperatorutils.DeleteObjects(ctx, r.Client, objects)
 }
 
 func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
@@ -307,9 +308,9 @@ func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
 }
 
 func (r *AtomReconciler) mutateConfigMap(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo, configMap *corev1.ConfigMap) error {
-	labels := cloneOrEmptyMap(atom.GetLabels())
+	labels := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
 	labels[appLabelKey] = atomName
-	if err := setImmutableLabels(r.Client, configMap, labels); err != nil {
+	if err := smoothoperatorutils.SetImmutableLabels(r.Client, configMap, labels); err != nil {
 		return err
 	}
 
@@ -320,15 +321,15 @@ func (r *AtomReconciler) mutateConfigMap(atom *pdoknlv3.Atom, ownerInfo *smootho
 		}
 		configMap.Data = map[string]string{configFileName: generatorConfig}
 	}
-	configMap.Immutable = boolPtr(true)
+	configMap.Immutable = smoothoperatorutils.BoolPtr(true)
 
-	if err := ensureSetGVK(r.Client, configMap, configMap); err != nil {
+	if err := smoothoperatorutils.EnsureSetGVK(r.Client, configMap, configMap); err != nil {
 		return err
 	}
 	if err := ctrl.SetControllerReference(atom, configMap, r.Scheme); err != nil {
 		return err
 	}
-	return addHashSuffix(configMap)
+	return smoothoperatorutils.AddHashSuffix(configMap)
 }
 
 func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
@@ -343,21 +344,21 @@ func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
 
 //nolint:funlen
 func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv1.Deployment, configMapName string) error {
-	labels := cloneOrEmptyMap(atom.GetLabels())
+	labels := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
 	labels[appLabelKey] = atomName
-	if err := setImmutableLabels(r.Client, deployment, labels); err != nil {
+	if err := smoothoperatorutils.SetImmutableLabels(r.Client, deployment, labels); err != nil {
 		return err
 	}
 
-	podTemplateAnnotations := cloneOrEmptyMap(deployment.Spec.Template.GetAnnotations())
+	podTemplateAnnotations := smoothoperatorutils.CloneOrEmptyMap(deployment.Spec.Template.GetAnnotations())
 
-	matchLabels := cloneOrEmptyMap(labels)
+	matchLabels := smoothoperatorutils.CloneOrEmptyMap(labels)
 	deployment.Spec.Selector = &metav1.LabelSelector{
 		MatchLabels: matchLabels,
 	}
 
 	deployment.Spec.MinReadySeconds = 0
-	deployment.Spec.ProgressDeadlineSeconds = int32Ptr(600)
+	deployment.Spec.ProgressDeadlineSeconds = smoothoperatorutils.Int32Ptr(600)
 	deployment.Spec.Strategy = appsv1.DeploymentStrategy{
 		Type: appsv1.RollingUpdateDeploymentStrategyType,
 		RollingUpdate: &appsv1.RollingUpdateDeployment{
@@ -365,8 +366,8 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 			MaxSurge:       &intstr.IntOrString{Type: intstr.Int, IntVal: 4},
 		},
 	}
-	deployment.Spec.RevisionHistoryLimit = int32Ptr(1)
-	deployment.Spec.Replicas = int32Ptr(2)
+	deployment.Spec.RevisionHistoryLimit = smoothoperatorutils.Int32Ptr(1)
+	deployment.Spec.Replicas = smoothoperatorutils.Int32Ptr(2)
 
 	podTemplateSpec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
@@ -445,7 +446,7 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 	}
 
 	if atom.Spec.PodSpecPatch != nil {
-		patchedPod, err := strategicMergePatch(&podTemplateSpec.Spec, &atom.Spec.PodSpecPatch)
+		patchedPod, err := smoothoperatorutils.StrategicMergePatch(&podTemplateSpec.Spec, &atom.Spec.PodSpecPatch)
 		if err != nil {
 			return err
 		}
@@ -455,7 +456,7 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 	podTemplateSpec.Spec.Containers[0].Image = r.LighttpdImage
 	deployment.Spec.Template = podTemplateSpec
 
-	if err := ensureSetGVK(r.Client, deployment, deployment); err != nil {
+	if err := smoothoperatorutils.EnsureSetGVK(r.Client, deployment, deployment); err != nil {
 		return err
 	}
 	return ctrl.SetControllerReference(atom, deployment, r.Scheme)
@@ -472,10 +473,10 @@ func getBareService(obj metav1.Object) *corev1.Service {
 }
 
 func (r *AtomReconciler) mutateService(atom *pdoknlv3.Atom, service *corev1.Service) error {
-	labels := cloneOrEmptyMap(atom.GetLabels())
-	selector := cloneOrEmptyMap(atom.GetLabels())
+	labels := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
+	selector := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
 	selector[appLabelKey] = atomName
-	if err := setImmutableLabels(r.Client, service, labels); err != nil {
+	if err := smoothoperatorutils.SetImmutableLabels(r.Client, service, labels); err != nil {
 		return err
 	}
 
@@ -490,7 +491,7 @@ func (r *AtomReconciler) mutateService(atom *pdoknlv3.Atom, service *corev1.Serv
 		},
 		Selector: selector,
 	}
-	if err := ensureSetGVK(r.Client, service, service); err != nil {
+	if err := smoothoperatorutils.EnsureSetGVK(r.Client, service, service); err != nil {
 		return err
 	}
 	return ctrl.SetControllerReference(atom, service, r.Scheme)
@@ -507,8 +508,8 @@ func getBareStripPrefixMiddleware(obj metav1.Object) *traefikiov1alpha1.Middlewa
 }
 
 func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware) error {
-	labels := cloneOrEmptyMap(atom.GetLabels())
-	if err := setImmutableLabels(r.Client, middleware, labels); err != nil {
+	labels := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
+	if err := smoothoperatorutils.SetImmutableLabels(r.Client, middleware, labels); err != nil {
 		return err
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
@@ -516,7 +517,7 @@ func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middle
 			Prefixes: []string{"/" + atom.GetURI() + "/"}},
 	}
 
-	if err := ensureSetGVK(r.Client, middleware, middleware); err != nil {
+	if err := smoothoperatorutils.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
 		return err
 	}
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
@@ -534,8 +535,8 @@ func getBareCorsHeadersMiddleware(obj metav1.Object) *traefikiov1alpha1.Middlewa
 }
 
 func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware) error {
-	labels := cloneOrEmptyMap(atom.GetLabels())
-	if err := setImmutableLabels(r.Client, middleware, labels); err != nil {
+	labels := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
+	if err := smoothoperatorutils.SetImmutableLabels(r.Client, middleware, labels); err != nil {
 		return err
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
@@ -545,7 +546,7 @@ func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middle
 			AccessControlAllowOriginList: []string{"*"},
 		},
 	}
-	if err := ensureSetGVK(r.Client, middleware, middleware); err != nil {
+	if err := smoothoperatorutils.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
 		return err
 	}
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
@@ -562,8 +563,8 @@ func getBareDownloadLinkMiddleware(obj metav1.Object, index int8) *traefikiov1al
 }
 
 func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLink, middleware *traefikiov1alpha1.Middleware) error {
-	labels := cloneOrEmptyMap(atom.GetLabels())
-	if err := setImmutableLabels(r.Client, middleware, labels); err != nil {
+	labels := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
+	if err := smoothoperatorutils.SetImmutableLabels(r.Client, middleware, labels); err != nil {
 		return err
 	}
 
@@ -574,7 +575,7 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downl
 		},
 	}
 
-	if err := ensureSetGVK(r.Client, middleware, middleware); err != nil {
+	if err := smoothoperatorutils.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
 		return err
 	}
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
@@ -590,8 +591,8 @@ func getBareIngressRoute(obj metav1.Object) *traefikiov1alpha1.IngressRoute {
 }
 
 func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *traefikiov1alpha1.IngressRoute) error {
-	labels := cloneOrEmptyMap(atom.GetLabels())
-	if err := setImmutableLabels(r.Client, ingressRoute, labels); err != nil {
+	labels := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
+	if err := smoothoperatorutils.SetImmutableLabels(r.Client, ingressRoute, labels); err != nil {
 		return err
 	}
 
@@ -631,7 +632,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
 					Name:           "azure-storage",
 					Port:           intstr.IntOrString{Type: intstr.String, StrVal: "azure-storage"},
-					PassHostHeader: boolPtr(false),
+					PassHostHeader: smoothoperatorutils.BoolPtr(false),
 				},
 			},
 		},
@@ -659,7 +660,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)
 	}
 
-	if err := ensureSetGVK(r.Client, ingressRoute, ingressRoute); err != nil {
+	if err := smoothoperatorutils.EnsureSetGVK(r.Client, ingressRoute, ingressRoute); err != nil {
 		return err
 	}
 	return ctrl.SetControllerReference(atom, ingressRoute, r.Scheme)
@@ -675,13 +676,13 @@ func getBarePodDisruptionBudget(obj metav1.Object) *v1.PodDisruptionBudget {
 }
 
 func (r *AtomReconciler) mutatePodDisruptionBudget(atom *pdoknlv3.Atom, podDisruptionBudget *v1.PodDisruptionBudget) error {
-	labels := cloneOrEmptyMap(atom.GetLabels())
+	labels := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
 	labels[appLabelKey] = atomName
-	if err := setImmutableLabels(r.Client, podDisruptionBudget, labels); err != nil {
+	if err := smoothoperatorutils.SetImmutableLabels(r.Client, podDisruptionBudget, labels); err != nil {
 		return err
 	}
 
-	matchLabels := cloneOrEmptyMap(labels)
+	matchLabels := smoothoperatorutils.CloneOrEmptyMap(labels)
 	podDisruptionBudget.Spec = v1.PodDisruptionBudgetSpec{
 		MaxUnavailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 1},
 		Selector: &metav1.LabelSelector{
@@ -689,7 +690,7 @@ func (r *AtomReconciler) mutatePodDisruptionBudget(atom *pdoknlv3.Atom, podDisru
 		},
 	}
 
-	if err := ensureSetGVK(r.Client, podDisruptionBudget, podDisruptionBudget); err != nil {
+	if err := smoothoperatorutils.EnsureSetGVK(r.Client, podDisruptionBudget, podDisruptionBudget); err != nil {
 		return err
 	}
 	return ctrl.SetControllerReference(atom, podDisruptionBudget, r.Scheme)
