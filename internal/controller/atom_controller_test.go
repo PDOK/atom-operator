@@ -27,6 +27,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"log"
 	"os"
 	"sync/atomic"
@@ -34,7 +35,6 @@ import (
 	"time"
 	"unicode"
 
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/pkg/errors"
@@ -296,13 +296,13 @@ var _ = Describe("Atom Controller", func() {
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
 
-			Expect("atom-service").Should(Equal(deployment.ObjectMeta.Labels["app"]))
-			Expect("test-dataset").Should(Equal(deployment.ObjectMeta.Labels["dataset"]))
-			Expect("test-datasetowner").Should(Equal(deployment.ObjectMeta.Labels["dataset-owner"]))
-			Expect("atom").Should(Equal(deployment.ObjectMeta.Labels["service-type"]))
-			Expect("default").Should(Equal(deployment.ObjectMeta.Namespace))
-			Expect(int32(2)).Should(Equal(atomic.LoadInt32(deployment.Spec.Replicas)))
-			Expect(int32(1)).Should(Equal(atomic.LoadInt32(deployment.Spec.RevisionHistoryLimit)))
+			Expect(deployment.ObjectMeta.Labels["app"]).Should(Equal("atom-service"))
+			Expect(deployment.ObjectMeta.Labels["dataset"]).Should(Equal("test-dataset"))
+			Expect(deployment.ObjectMeta.Labels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(deployment.ObjectMeta.Labels["service-type"]).Should(Equal("atom"))
+			Expect(deployment.ObjectMeta.Namespace).Should(Equal("default"))
+			Expect(atomic.LoadInt32(deployment.Spec.Replicas)).Should(Equal(int32(2)))
+			Expect(atomic.LoadInt32(deployment.Spec.RevisionHistoryLimit)).Should(Equal(int32(1)))
 
 			TestStrategy := appsv1.DeploymentStrategy{
 				Type: appsv1.RollingUpdateDeploymentStrategyType,
@@ -314,10 +314,10 @@ var _ = Describe("Atom Controller", func() {
 			Expect(TestStrategy.Type).Should(Equal(deployment.Spec.Strategy.Type))
 			Expect(TestStrategy.RollingUpdate.MaxUnavailable).Should(Equal(deployment.Spec.Strategy.RollingUpdate.MaxUnavailable))
 			Expect(TestStrategy.RollingUpdate.MaxSurge).Should(Equal(deployment.Spec.Strategy.RollingUpdate.MaxSurge))
-			Expect("atom-service").Should(Equal(deployment.Spec.Selector.MatchLabels["app"]))
-			Expect("test-dataset").Should(Equal(deployment.Spec.Selector.MatchLabels["dataset"]))
-			Expect("test-datasetowner").Should(Equal(deployment.Spec.Selector.MatchLabels["dataset-owner"]))
-			Expect("atom").Should(Equal(deployment.Spec.Selector.MatchLabels["service-type"]))
+			Expect(deployment.Spec.Selector.MatchLabels["app"]).Should(Equal("atom-service"))
+			Expect(deployment.Spec.Selector.MatchLabels["dataset"]).Should(Equal("test-dataset"))
+			Expect(deployment.Spec.Selector.MatchLabels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(deployment.Spec.Selector.MatchLabels["service-type"]).Should(Equal("atom"))
 
 			log.Printf("deployment.Spec.Template.ObjectMeta.Annotations[\"cluster-autoscaler.kubernetes.io/safe-to-evict\"]: %v", deployment.Spec.Template.ObjectMeta.Annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"])
 
@@ -329,69 +329,131 @@ var _ = Describe("Atom Controller", func() {
 						priority.version-checker.io/atom-service: "8"
 			*/
 
-			Expect("atom-service").Should(Equal(deployment.Spec.Template.ObjectMeta.Labels["app"]))
-			Expect("test-dataset").Should(Equal(deployment.Spec.Template.ObjectMeta.Labels["dataset"]))
-			Expect("test-datasetowner").Should(Equal(deployment.Spec.Template.ObjectMeta.Labels["dataset-owner"]))
-			Expect("atom").Should(Equal(deployment.Spec.Template.ObjectMeta.Labels["service-type"]))
+			Expect(deployment.Spec.Template.ObjectMeta.Labels["app"]).Should(Equal("atom-service"))
+			Expect(deployment.Spec.Template.ObjectMeta.Labels["dataset"]).Should(Equal("test-dataset"))
+			Expect(deployment.Spec.Template.ObjectMeta.Labels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(deployment.Spec.Template.ObjectMeta.Labels["service-type"]).Should(Equal("atom"))
 
-			Expect("atom-service").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Name))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Name).Should(Equal("atom-service"))
 
-			Expect("atom-service").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Ports[0].Name))
-			Expect(int32(80)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort))
-			Expect(testImageName2).Should(Equal(deployment.Spec.Template.Spec.Containers[0].Image))
-			Expect(corev1.PullIfNotPresent).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ImagePullPolicy))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Ports[0].Name).Should(Equal("atom-service"))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort).Should(Equal(int32(80)))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Image).Should(Equal(testImageName2))
+			Expect(deployment.Spec.Template.Spec.Containers[0].ImagePullPolicy).Should(Equal(corev1.PullIfNotPresent))
 
 			httpGet := &corev1.HTTPGetAction{
 				Path:   "/index.xml",
 				Port:   intstr.FromInt32(atomPortNr),
 				Scheme: corev1.URISchemeHTTP,
 			}
-			Expect(httpGet).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet))
-			Expect(httpGet.Path).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Path))
-			Expect(httpGet.Port).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Port))
-			Expect(httpGet.Scheme).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Scheme))
-			Expect(int32(5)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.InitialDelaySeconds))
-			Expect(int32(10)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.PeriodSeconds))
-			Expect(int32(5)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.TimeoutSeconds))
+			Expect(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet).Should(Equal(httpGet))
+			Expect(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Path).Should(Equal(httpGet.Path))
+			Expect(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Port).Should(Equal(httpGet.Port))
+			Expect(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.HTTPGet.Scheme).Should(Equal(httpGet.Scheme))
+			Expect(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.InitialDelaySeconds).Should(Equal(int32(5)))
+			Expect(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.PeriodSeconds).Should(Equal(int32(10)))
+			Expect(deployment.Spec.Template.Spec.Containers[0].LivenessProbe.TimeoutSeconds).Should(Equal(int32(5)))
 
-			Expect(httpGet).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.HTTPGet))
-			Expect(int32(5)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds))
-			Expect(int32(10)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.PeriodSeconds))
-			Expect(int32(5)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.TimeoutSeconds))
+			Expect(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.HTTPGet).Should(Equal(httpGet))
+			Expect(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.InitialDelaySeconds).Should(Equal(int32(5)))
+			Expect(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.PeriodSeconds).Should(Equal(int32(10)))
+			Expect(deployment.Spec.Template.Spec.Containers[0].ReadinessProbe.TimeoutSeconds).Should(Equal(int32(5)))
 
-			Expect("64M").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String()))
-			Expect("10m").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().String()))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String()).Should(Equal("64M"))
+			Expect(deployment.Spec.Template.Spec.Containers[0].Resources.Requests.Cpu().String()).Should(Equal("10m"))
 
 			expectedVolumeMounts := []corev1.VolumeMount{
 				{Name: "socket", MountPath: "/tmp", ReadOnly: false},
 				{Name: "data", MountPath: "var/www"},
 			}
-			Expect(expectedVolumeMounts).Should(Equal(deployment.Spec.Template.Spec.Containers[0].VolumeMounts))
+			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts).Should(Equal(expectedVolumeMounts))
 
-			Expect("atom-generator").Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Name))
-			Expect(testImageName1).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Image))
-			Expect(corev1.PullIfNotPresent).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].ImagePullPolicy))
-			Expect([]string{"./atom"}).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Command))
-			Expect("-f=/srv/config/values.yaml").Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Args[0]))
-			Expect("-o=/srv/data").Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Args[1]))
+			Expect(deployment.Spec.Template.Spec.InitContainers[0].Name).Should(Equal("atom-generator"))
+			Expect(deployment.Spec.Template.Spec.InitContainers[0].Image).Should(Equal(testImageName1))
+			Expect(deployment.Spec.Template.Spec.InitContainers[0].ImagePullPolicy).Should(Equal(corev1.PullIfNotPresent))
+			Expect(deployment.Spec.Template.Spec.InitContainers[0].Command).Should(Equal([]string{"./atom"}))
+			Expect(deployment.Spec.Template.Spec.InitContainers[0].Args[0]).Should(Equal("-f=/srv/config/values.yaml"))
+			Expect(deployment.Spec.Template.Spec.InitContainers[0].Args[1]).Should(Equal("-o=/srv/data"))
 
 			VolumeMounts := []corev1.VolumeMount{
 				{Name: "data", MountPath: srvDir + "/data"},
 				{Name: "config", MountPath: srvDir + "/config"},
 			}
-			Expect(VolumeMounts).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].VolumeMounts))
+			Expect(deployment.Spec.Template.Spec.InitContainers[0].VolumeMounts).Should(Equal(VolumeMounts))
 
 			testEmptyDir := &corev1.EmptyDirVolumeSource{}
-			Expect("data").Should(Equal(deployment.Spec.Template.Spec.Volumes[0].Name))
-			Expect(testEmptyDir).Should(Equal(deployment.Spec.Template.Spec.Volumes[0].EmptyDir))
+			Expect(deployment.Spec.Template.Spec.Volumes[0].Name).Should(Equal("data"))
+			Expect(deployment.Spec.Template.Spec.Volumes[0].EmptyDir).Should(Equal(testEmptyDir))
 
-			Expect("socket").Should(Equal(deployment.Spec.Template.Spec.Volumes[1].Name))
-			Expect(testEmptyDir).Should(Equal(deployment.Spec.Template.Spec.Volumes[1].EmptyDir))
-			Expect("config").Should(Equal(deployment.Spec.Template.Spec.Volumes[2].Name))
+			Expect(deployment.Spec.Template.Spec.Volumes[1].Name).Should(Equal("socket"))
+			Expect(deployment.Spec.Template.Spec.Volumes[1].EmptyDir).Should(Equal(testEmptyDir))
+			Expect(deployment.Spec.Template.Spec.Volumes[2].Name).Should(Equal("config"))
 			Expect(deployment.Spec.Template.Spec.Volumes[2].ConfigMap.Name).Should(ContainSubstring("test-atom-3-atom-service-"))
+		})
+
+		It("Should create correct configmap-atom-generator manifest.", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+
+			By("Reconciling the Atom, checking the finalizer, and reconciling again")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Getting the original Deployment")
+			configMap := getBareConfigMap(atom)
+			configMapName, err := getAtomConfigMapNameFromClient(ctx, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKey{Namespace: atom.GetNamespace(), Name: configMapName}, configMap)
+				return Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(BeTrue())
+
+			testTure := true
+			Expect(configMap.Name).Should(Equal(configMapName))
+			Expect(configMap.ObjectMeta.Name).Should(Equal(configMapName))
+			Expect(configMap.ObjectMeta.Namespace).Should(Equal(atom.Namespace))
+			Expect(configMap.Immutable).Should(Equal(&testTure))
+			Expect(len(configMap.Labels)).Should(Equal(4))
+			Expect(configMap.Labels["app"]).Should(Equal("atom-service"))
+			Expect(configMap.Labels["dataset"]).Should(Equal("test-dataset"))
+			Expect(configMap.Labels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(configMap.Labels["service-type"]).Should(Equal("atom"))
+
+			Expect(configMap.Data["values.yaml"]).Should(ContainSubstring("feeds:"))
+			Expect(configMap.Data["values.yaml"]).Should(ContainSubstring("rel: self"))
+			Expect(configMap.Data["values.yaml"]).Should(ContainSubstring("href: https://my.test-resource.test/atom/index.xml"))
+			Expect(configMap.Data["values.yaml"]).Should(ContainSubstring("type: application/atom+xml"))
+			Expect(configMap.Data["values.yaml"]).Should(ContainSubstring("title: test title"))
 		})
 	})
 })
+
+func getAtomConfigMapNameFromClient(ctx context.Context, atom *pdoknlv3.Atom) (string, error) {
+	deployment := &appsv1.Deployment{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Namespace: atom.GetNamespace(), Name: getBareDeployment(atom).GetName()}, deployment)
+	if err != nil {
+		return "", err
+	}
+	return getAtomConfigMapNameFromDeployment(deployment)
+}
+
+func getAtomConfigMapNameFromDeployment(deployment *appsv1.Deployment) (string, error) {
+	for _, volume := range deployment.Spec.Template.Spec.Volumes {
+		if volume.Name == "config" && volume.ConfigMap != nil {
+			return volume.ConfigMap.Name, nil
+		}
+	}
+	return "", errors.New("AtomOperator deployment configmap not found")
+}
 
 func must[T any](t T, err error) T {
 	if err != nil {
