@@ -336,7 +336,6 @@ var _ = Describe("Atom Controller", func() {
 
 			Expect("atom-service").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Name))
 
-			// TODO: Ports hebben geen namen in de v2 deployment, maar wordt hier (controller) wel ingevuld
 			Expect("atom-service").Should(Equal(deployment.Spec.Template.Spec.Containers[0].Ports[0].Name))
 			Expect(int32(80)).Should(Equal(deployment.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort))
 			Expect(testImageName2).Should(Equal(deployment.Spec.Template.Spec.Containers[0].Image))
@@ -370,6 +369,7 @@ var _ = Describe("Atom Controller", func() {
 			Expect(expectedVolumeMounts).Should(Equal(deployment.Spec.Template.Spec.Containers[0].VolumeMounts))
 
 			Expect("atom-generator").Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Name))
+			Expect(testImageName1).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Image))
 			Expect(corev1.PullIfNotPresent).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].ImagePullPolicy))
 			Expect([]string{"./atom"}).Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Command))
 			Expect("-f=/srv/config/values.yaml").Should(Equal(deployment.Spec.Template.Spec.InitContainers[0].Args[0]))
@@ -389,15 +389,6 @@ var _ = Describe("Atom Controller", func() {
 			Expect(testEmptyDir).Should(Equal(deployment.Spec.Template.Spec.Volumes[1].EmptyDir))
 			Expect("config").Should(Equal(deployment.Spec.Template.Spec.Volumes[2].Name))
 			Expect(deployment.Spec.Template.Spec.Volumes[2].ConfigMap.Name).Should(ContainSubstring("test-atom-3-atom-service-"))
-
-			log.Printf("deployment.Spec.Template.Spec.Volumes[0].Name: %v", deployment.Spec.Template.Spec.Volumes[0].Name)
-			log.Printf("deployment.Spec.Template.Spec.Volumes[1].Name: %v", deployment.Spec.Template.Spec.Volumes[1].Name)
-			log.Printf("deployment.Spec.Template.Spec.Volumes[1].EmptyDir: %v", deployment.Spec.Template.Spec.Volumes[1].EmptyDir)
-			log.Printf("deployment.Spec.Template.Spec.Volumes[2].Name: %v", deployment.Spec.Template.Spec.Volumes[2].Name)
-			log.Printf("deployment.Spec.Template.Spec.Volumes[2].EmptyDir: %v", deployment.Spec.Template.Spec.Volumes[2].EmptyDir)
-			log.Printf("deployment.Spec.Template.Spec.Volumes[2].ConfigMap.Name: %v", deployment.Spec.Template.Spec.Volumes[2].ConfigMap.Name)
-
-			log.Printf("deployment.Spec.Template.Spec.Volumes length: %v", len(deployment.Spec.Template.Spec.Volumes))
 		})
 	})
 })
