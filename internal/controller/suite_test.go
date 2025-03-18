@@ -34,7 +34,7 @@ import (
 	"testing"
 
 	smoothoperator1 "github.com/pdok/smooth-operator/api/v1"
-	traefikiov1alpha1 "github.com/traefik/traefik/v2/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	"golang.org/x/tools/go/packages"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
@@ -158,7 +158,7 @@ func getOwnerInfoCRDPath() (string, error) {
 }
 
 func getTraefikCRDPath() (string, error) {
-	traefikModule, err := getModule("github.com/traefik/traefik/v2")
+	traefikModule, err := getModule("github.com/traefik/traefik/v3")
 	if err != nil {
 		return "", err
 	}
