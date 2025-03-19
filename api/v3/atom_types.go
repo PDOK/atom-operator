@@ -25,6 +25,7 @@ SOFTWARE.
 package v3
 
 import (
+	"net/url"
 	"strings"
 
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
@@ -172,6 +173,11 @@ func SetBlobEndpoint(atomBlobEndpoint string) {
 
 func GetBlobEndpoint() string {
 	return blobEndpoint
+}
+
+func (r *Atom) GetBaseURLPath() string {
+	url, _ := url.Parse(r.Spec.Service.BaseURL)
+	return strings.Replace(url.Path, "/", "", 1)
 }
 
 func (r *Atom) GetIndexedDownloadLinks() (downloadLinks map[int8]DownloadLink) {
