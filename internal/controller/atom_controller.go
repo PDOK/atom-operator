@@ -514,7 +514,7 @@ func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middle
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		StripPrefix: &traefikdynamic.StripPrefix{
-			Prefixes: []string{"/" + atom.GetURI() + "/"}},
+			Prefixes: []string{"/" + atom.Spec.Service.BaseURL + "/"}},
 	}
 
 	if err := smoothoperatorutils.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
@@ -710,15 +710,15 @@ func getGeneratorConfig(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerIn
 }
 
 func getMatchRuleForIndex(atom *pdoknlv3.Atom) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetURI() + "/index.xml`)"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.Spec.Service.BaseURL + "/index.xml`)"
 }
 
 func getMatchRuleForDownloads(atom *pdoknlv3.Atom) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && PathPrefix(`/" + atom.GetURI() + "/downloads/`)"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && PathPrefix(`/" + atom.Spec.Service.BaseURL + "/downloads/`)"
 }
 
 func getMatchRuleForDatasetFeed(atom *pdoknlv3.Atom, datasetFeed *pdoknlv3.DatasetFeed) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml`)"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml`)"
 }
 
 func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Route {
@@ -752,7 +752,7 @@ func getDownloadLinkRegex(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLi
 	if downloadLink.Version != nil {
 		version = *downloadLink.Version + "/"
 	}
-	return fmt.Sprintf("^/%s/downloads/%s(%s)", atom.GetURI(), version, downloadLink.GetBlobName())
+	return fmt.Sprintf("^/%s/downloads/%s(%s)", atom.Spec.Service.BaseURL, version, downloadLink.GetBlobName())
 }
 
 func getDownloadLinkReplacement(downloadLink *pdoknlv3.DownloadLink) string {

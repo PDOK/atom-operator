@@ -25,7 +25,6 @@ SOFTWARE.
 package v3
 
 import (
-	"fmt"
 	"strings"
 
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
@@ -173,27 +172,6 @@ func SetBlobEndpoint(atomBlobEndpoint string) {
 
 func GetBlobEndpoint() string {
 	return blobEndpoint
-}
-
-func (r *Atom) GetURI() (uri string) {
-	datasetOwner := "unknown"
-	if v, ok := r.ObjectMeta.Labels["dataset-owner"]; ok {
-		datasetOwner = v
-	}
-	dataset := "unknown"
-	if v, ok := r.ObjectMeta.Labels["dataset"]; ok {
-		dataset = v
-	}
-	uri = fmt.Sprintf("%s/%s", datasetOwner, dataset)
-
-	if v, ok := r.ObjectMeta.Labels["theme"]; ok {
-		uri += "/" + v
-	}
-	uri += "/atom"
-	if v, ok := r.ObjectMeta.Labels["service-version"]; ok {
-		uri += "/" + v
-	}
-	return
 }
 
 func (r *Atom) GetIndexedDownloadLinks() (downloadLinks map[int8]DownloadLink) {
