@@ -68,7 +68,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 		Rights: a.Spec.Service.Rights,
 	}
 
-	dst.Spec.DatasetFeeds = []pdoknlv3.DatasetFeed{}
+	dst.Spec.Service.DatasetFeeds = []pdoknlv3.DatasetFeed{}
 	for _, srcDataset := range a.Spec.Service.Datasets {
 		dstDatasetFeed := pdoknlv3.DatasetFeed{
 			TechnicalName: srcDataset.Name,
@@ -170,7 +170,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			dstDatasetFeed.Entries = append(dstDatasetFeed.Entries, dstEntry)
 		}
 
-		dst.Spec.DatasetFeeds = append(dst.Spec.DatasetFeeds, dstDatasetFeed)
+		dst.Spec.Service.DatasetFeeds = append(dst.Spec.Service.DatasetFeeds, dstDatasetFeed)
 	}
 
 	return nil
@@ -218,7 +218,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 
 	// Datasets
 	a.Spec.Service.Datasets = []Dataset{}
-	for _, srcDatasetFeed := range src.Spec.DatasetFeeds {
+	for _, srcDatasetFeed := range src.Spec.Service.DatasetFeeds {
 		dstDataset := Dataset{
 			Name:             srcDatasetFeed.TechnicalName,
 			Title:            srcDatasetFeed.Title,

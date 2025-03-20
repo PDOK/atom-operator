@@ -655,7 +655,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 	ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, azureStorageRule)
 
 	// Set additional routes per datasetFeed
-	for _, datasetFeed := range atom.Spec.DatasetFeeds {
+	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
 		matchRule := getMatchRuleForDatasetFeed(atom, &datasetFeed)
 		rule := getDefaultRule(atom, matchRule)
 		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)

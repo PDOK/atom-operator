@@ -27,13 +27,14 @@ package controller
 import (
 	"context"
 	"fmt"
-	"k8s.io/apimachinery/pkg/util/intstr"
 	"log"
 	"os"
 	"sync/atomic"
 	"testing"
 	"time"
 	"unicode"
+
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
@@ -538,38 +539,38 @@ func Test_getGeneratorConfig(t *testing.T) {
 								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx",
 								Templates:          []string{"csw", "opensearch", "html"},
 							},
-						},
-						DatasetFeeds: []pdoknlv3.DatasetFeed{
-							{
-								TechnicalName: "https://service.pdok.nl/test/atom/index.xml",
-								Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
-								Subtitle:      "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
-								//Links:         []pdoknlv3.Link{},
-								DatasetMetadataLinks: pdoknlv3.MetadataLink{
-									MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
-									Templates:          []string{"csw", "html"},
-								},
-								Author: smoothoperatormodel.Author{
-									Name:  "owner",
-									Email: "info@test.com",
-								},
-								SpatialDatasetIdentifierCode:      "d893c05b-907e-47f2-9cbd-ceb08e68732c",
-								SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
-								Entries: []pdoknlv3.Entry{
-									{
-										TechnicalName: "https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
-										Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
-										Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).",
-										DownloadLinks: []pdoknlv3.DownloadLink{
-											{
-												Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
+							DatasetFeeds: []pdoknlv3.DatasetFeed{
+								{
+									TechnicalName: "https://service.pdok.nl/test/atom/index.xml",
+									Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
+									Subtitle:      "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
+									//Links:         []pdoknlv3.Link{},
+									DatasetMetadataLinks: pdoknlv3.MetadataLink{
+										MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
+										Templates:          []string{"csw", "html"},
+									},
+									Author: smoothoperatormodel.Author{
+										Name:  "owner",
+										Email: "info@test.com",
+									},
+									SpatialDatasetIdentifierCode:      "d893c05b-907e-47f2-9cbd-ceb08e68732c",
+									SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+									Entries: []pdoknlv3.Entry{
+										{
+											TechnicalName: "https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
+											Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
+											Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).",
+											DownloadLinks: []pdoknlv3.DownloadLink{
+												{
+													Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
+												},
 											},
-										},
-										Polygon: getTestPolygon(),
-										Updated: &metav1.Time{Time: getUpdatedDate()},
-										SRS: &pdoknlv3.SRS{
-											Name: "Amersfoort / RD New",
-											URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
+											Polygon: getTestPolygon(),
+											Updated: &metav1.Time{Time: getUpdatedDate()},
+											SRS: &pdoknlv3.SRS{
+												Name: "Amersfoort / RD New",
+												URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
+											},
 										},
 									},
 								},
@@ -607,38 +608,38 @@ func Test_getGeneratorConfig(t *testing.T) {
 								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx",
 								Templates:          []string{"csw", "opensearch", "html"},
 							},
-						},
-						DatasetFeeds: []pdoknlv3.DatasetFeed{
-							{
-								TechnicalName: "https://service.pdok.nl/test/atom/index.xml",
-								Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
-								Subtitle:      "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
-								//Links:         []pdoknlv3.Link{},
-								DatasetMetadataLinks: pdoknlv3.MetadataLink{
-									MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
-									Templates:          []string{"csw", "html"},
-								},
-								Author: smoothoperatormodel.Author{
-									Name:  "owner",
-									Email: "info@test.com",
-								},
-								SpatialDatasetIdentifierCode:      "d893c05b-907e-47f2-9cbd-ceb08e68732c",
-								SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
-								Entries: []pdoknlv3.Entry{
-									{
-										TechnicalName: "https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
-										Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
-										Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).",
-										DownloadLinks: []pdoknlv3.DownloadLink{
-											{
-												Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
+							DatasetFeeds: []pdoknlv3.DatasetFeed{
+								{
+									TechnicalName: "https://service.pdok.nl/test/atom/index.xml",
+									Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
+									Subtitle:      "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
+									//Links:         []pdoknlv3.Link{},
+									DatasetMetadataLinks: pdoknlv3.MetadataLink{
+										MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
+										Templates:          []string{"csw", "html"},
+									},
+									Author: smoothoperatormodel.Author{
+										Name:  "owner",
+										Email: "info@test.com",
+									},
+									SpatialDatasetIdentifierCode:      "d893c05b-907e-47f2-9cbd-ceb08e68732c",
+									SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+									Entries: []pdoknlv3.Entry{
+										{
+											TechnicalName: "https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
+											Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
+											Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).",
+											DownloadLinks: []pdoknlv3.DownloadLink{
+												{
+													Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
+												},
 											},
-										},
-										Polygon: getTestPolygon(),
-										Updated: &metav1.Time{Time: getUpdatedDate()},
-										SRS: &pdoknlv3.SRS{
-											Name: "Amersfoort / RD New",
-											URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
+											Polygon: getTestPolygon(),
+											Updated: &metav1.Time{Time: getUpdatedDate()},
+											SRS: &pdoknlv3.SRS{
+												Name: "Amersfoort / RD New",
+												URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
+											},
 										},
 									},
 								},
@@ -707,44 +708,44 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 					Templates:          []string{"csw", "opensearch", "html"},
 				},
 				Rights: "test rights",
-			},
-			DatasetFeeds: []pdoknlv3.DatasetFeed{
-				{
-					TechnicalName: "test-technical-name",
-					Title:         "test-title",
-					Subtitle:      "test-subtitle",
-					DatasetMetadataLinks: pdoknlv3.MetadataLink{
-						MetadataIdentifier: "11111111-1111-1111-1111-111111111111",
-						Templates:          []string{"csw", "html"},
-					},
-					SpatialDatasetIdentifierCode:      "22222222-2222-2222-2222-222222222222",
-					SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
-					Entries: []pdoknlv3.Entry{
-						{
-							TechnicalName: "test-technical-name",
-							DownloadLinks: []pdoknlv3.DownloadLink{
-								{
-									Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
-									BBox: &smoothoperatormodel.BBox{
+				DatasetFeeds: []pdoknlv3.DatasetFeed{
+					{
+						TechnicalName: "test-technical-name",
+						Title:         "test-title",
+						Subtitle:      "test-subtitle",
+						DatasetMetadataLinks: pdoknlv3.MetadataLink{
+							MetadataIdentifier: "11111111-1111-1111-1111-111111111111",
+							Templates:          []string{"csw", "html"},
+						},
+						SpatialDatasetIdentifierCode:      "22222222-2222-2222-2222-222222222222",
+						SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+						Entries: []pdoknlv3.Entry{
+							{
+								TechnicalName: "test-technical-name",
+								DownloadLinks: []pdoknlv3.DownloadLink{
+									{
+										Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
+										BBox: &smoothoperatormodel.BBox{
+											MinX: "482.06",
+											MinY: "284182.97",
+											MaxX: "306602.42",
+											MaxY: "637049.52",
+										},
+									},
+								},
+								Updated: &updated,
+								Polygon: &pdoknlv3.Polygon{
+									BBox: smoothoperatormodel.BBox{
 										MinX: "482.06",
 										MinY: "284182.97",
 										MaxX: "306602.42",
 										MaxY: "637049.52",
 									},
 								},
-							},
-							Updated: &updated,
-							Polygon: &pdoknlv3.Polygon{
-								BBox: smoothoperatormodel.BBox{
-									MinX: "482.06",
-									MinY: "284182.97",
-									MaxX: "306602.42",
-									MaxY: "637049.52",
+								SRS: &pdoknlv3.SRS{
+									URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
+									Name: "Amersfoort / RD New",
 								},
-							},
-							SRS: &pdoknlv3.SRS{
-								URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
-								Name: "Amersfoort / RD New",
 							},
 						},
 					},
