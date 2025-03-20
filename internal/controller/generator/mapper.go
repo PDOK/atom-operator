@@ -80,9 +80,9 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 }
 
 func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
-	if len(feeds) == 0 {
-		return "", errors.New("this atom doesn't have any dataset feeds")
-	}
+	// if len(feeds) == 0 {
+	// 	return "", errors.New("this atom doesn't have any dataset feeds")
+	// }
 
 	var updateTime *metav1.Time
 	for _, datasetFeed := range feeds {
