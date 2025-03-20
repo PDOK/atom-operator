@@ -70,7 +70,7 @@ const (
 const (
 	controllerName  = "atom-controller"
 	appLabelKey     = "app"
-	atomName        = "atom"
+	atomName        = "atom-service"
 	configFileName  = "values.yaml"
 	atomPortName    = "atom-service"
 	atomPortNr      = 80
@@ -384,10 +384,11 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 			},
 			InitContainers: []corev1.Container{
 				{
-					Name:            "init-atom",
+					Name:            "atom-generator",
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Command:         []string{"./atom"},
 					Args:            []string{"-f=" + srvDir + "/config/" + configFileName, "-o=" + srvDir + "/data"},
+
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "data", MountPath: srvDir + "/data"},
 						{Name: "config", MountPath: srvDir + "/config"},
