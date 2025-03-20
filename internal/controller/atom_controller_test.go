@@ -71,6 +71,7 @@ var _ = Describe("Atom Controller", func() {
 
 		ctx := context.Background()
 
+		pdoknlv3.SetHost("localhost")
 		// Setup variables for unique Atom resource per It node
 		counter := 1
 		var fullAtom pdoknlv3.Atom
@@ -280,7 +281,7 @@ var _ = Describe("Atom Controller", func() {
 				LighttpdImage:      testImageName2,
 			}
 
-			By("Reconciling the Atom, checking the finalizer, and reconciling again")
+			By("Reconciling the Atom and checking the deployment manifest")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
@@ -399,7 +400,7 @@ var _ = Describe("Atom Controller", func() {
 				LighttpdImage:      testImageName2,
 			}
 
-			By("Reconciling the Atom, checking the finalizer, and reconciling again")
+			By("Reconciling the Atom and checking the configmap")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
@@ -433,6 +434,79 @@ var _ = Describe("Atom Controller", func() {
 			Expect(configMap.Data["values.yaml"]).Should(ContainSubstring("href: https://my.test-resource.test/atom/index.xml"))
 			Expect(configMap.Data["values.yaml"]).Should(ContainSubstring("type: application/atom+xml"))
 			Expect(configMap.Data["values.yaml"]).Should(ContainSubstring("title: test title"))
+		})
+
+		It("Should create correct IngressRoute manifest.", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+
+			By("Reconciling the Atom and checking the IngressRoute")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Getting the original Deployment")
+			ingressRoute := getBareIngressRoute(atom)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(ingressRoute), ingressRoute)
+				return Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(BeTrue())
+
+			Expect(ingressRoute.Name).Should(Equal(atom.Name))
+			Expect(ingressRoute.Namespace).Should(Equal(atom.Namespace))
+			Expect(ingressRoute.Labels["app"]).Should(Equal(atom.Labels["app"]))
+			Expect(ingressRoute.Labels["dataset"]).Should(Equal(atom.Labels["dataset"]))
+			Expect(ingressRoute.Labels["dataset-owner"]).Should(Equal(atom.Labels["dataset-owner"]))
+			Expect(ingressRoute.Labels["service-type"]).Should(Equal(atom.Labels["service-type"]))
+
+			Expect(ingressRoute.Spec.Routes[0].Kind).Should(Equal("Rule"))
+			Expect(ingressRoute.Spec.Routes[0].Match).Should(Equal("Host(`localhost`) && Path(`/test-datasetowner/test-dataset/atom/index.xml`)"))
+			Expect(ingressRoute.Spec.Routes[0].Priority).Should(Equal(0))
+			Expect(len(ingressRoute.Spec.Routes[0].Services)).Should(Equal(1))
+			Expect(ingressRoute.Spec.Routes[0].Services[0].Name).Should(Equal("test-atom-5-atom"))
+			Expect(ingressRoute.Spec.Routes[0].Services[0].Kind).Should(Equal("Service"))
+			Expect(ingressRoute.Spec.Routes[0].Services[0].Namespace).Should(Equal(""))
+			Expect(ingressRoute.Spec.Routes[0].Services[0].Port.IntVal).Should(Equal(int32(80)))
+			Expect(ingressRoute.Spec.Routes[0].Middlewares[0].Name).Should(Equal("test-atom-5-atom-strip-prefix"))
+			Expect(ingressRoute.Spec.Routes[0].Middlewares[0].Namespace).Should(Equal("default"))
+			Expect(ingressRoute.Spec.Routes[0].Middlewares[1].Name).Should(Equal("test-atom-5-atom-cors-headers"))
+			Expect(ingressRoute.Spec.Routes[0].Middlewares[1].Namespace).Should(Equal("default"))
+
+			Expect(ingressRoute.Spec.Routes[1].Kind).Should(Equal("Rule"))
+			Expect(ingressRoute.Spec.Routes[1].Match).Should(Equal("Host(`localhost`) && PathPrefix(`/test-datasetowner/test-dataset/atom/downloads/`)"))
+			Expect(ingressRoute.Spec.Routes[1].Priority).Should(Equal(0))
+			Expect(len(ingressRoute.Spec.Routes[1].Services)).Should(Equal(1))
+			Expect(ingressRoute.Spec.Routes[1].Services[0].Name).Should(Equal("azure-storage"))
+			Expect(ingressRoute.Spec.Routes[1].Services[0].Kind).Should(Equal("Service"))
+			Expect(ingressRoute.Spec.Routes[1].Services[0].Namespace).Should(Equal(""))
+			Expect(ingressRoute.Spec.Routes[1].Services[0].Port.StrVal).Should(Equal(intstr.FromString("azure-storage").StrVal))
+			Expect(ingressRoute.Spec.Routes[1].Middlewares[0].Name).Should(Equal("test-atom-5-atom-cors-headers"))
+			Expect(ingressRoute.Spec.Routes[1].Middlewares[0].Namespace).Should(Equal("default"))
+			Expect(ingressRoute.Spec.Routes[1].Middlewares[1].Name).Should(Equal("test-atom-5-atom-downloads-0"))
+			Expect(ingressRoute.Spec.Routes[1].Middlewares[1].Namespace).Should(Equal("default"))
+
+			Expect(ingressRoute.Spec.Routes[2].Kind).Should(Equal("Rule"))
+			Expect(ingressRoute.Spec.Routes[2].Match).Should(Equal("Host(`localhost`) && Path(`/test-datasetowner/test-dataset/atom/test-technical-name.xml`)"))
+			Expect(ingressRoute.Spec.Routes[2].Priority).Should(Equal(0))
+			Expect(len(ingressRoute.Spec.Routes[2].Services)).Should(Equal(1))
+			Expect(ingressRoute.Spec.Routes[2].Services[0].Name).Should(Equal("test-atom-5-atom"))
+			Expect(ingressRoute.Spec.Routes[2].Services[0].Kind).Should(Equal("Service"))
+			Expect(ingressRoute.Spec.Routes[2].Services[0].Namespace).Should(Equal(""))
+			Expect(ingressRoute.Spec.Routes[2].Services[0].Port.IntVal).Should(Equal(int32(80)))
+			Expect(ingressRoute.Spec.Routes[2].Middlewares[0].Name).Should(Equal("test-atom-5-atom-strip-prefix"))
+			Expect(ingressRoute.Spec.Routes[2].Middlewares[0].Namespace).Should(Equal("default"))
+			Expect(ingressRoute.Spec.Routes[2].Middlewares[1].Name).Should(Equal("test-atom-5-atom-cors-headers"))
+			Expect(ingressRoute.Spec.Routes[2].Middlewares[1].Namespace).Should(Equal("default"))
+
 		})
 	})
 })
