@@ -178,7 +178,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 // ConvertFrom converts the Hub version (v3) to this Atom (v2beta1).
 //
-//nolint:funlen
+//nolint:funlen,cyclop
 func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertFrom: Converting Atom from Hub version v3 to Spoke version v2beta1;"+
