@@ -607,7 +607,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 						LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
 							Name: getBareService(atom).GetName(),
 							Kind: "Service",
-							Port: intstr.FromString(atomPortName),
+							Port: intstr.FromInt32(atomPortNr),
 						},
 					},
 				},
@@ -634,6 +634,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 					Name:           "azure-storage",
 					Port:           intstr.IntOrString{Type: intstr.String, StrVal: "azure-storage"},
 					PassHostHeader: smoothoperatorutils.BoolPtr(false),
+					Kind:           "Service",
 				},
 			},
 		},
@@ -731,7 +732,7 @@ func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Rou
 				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
 					Name: getBareService(atom).GetName(),
 					Kind: "Service",
-					Port: intstr.FromString(atomPortName),
+					Port: intstr.FromInt32(atomPortNr),
 				},
 			},
 		},
