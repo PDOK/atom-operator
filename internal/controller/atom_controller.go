@@ -549,7 +549,7 @@ func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middle
 			},
 		},
 	}
-  middleware.Spec.Headers.FrameDeny = true
+	middleware.Spec.Headers.FrameDeny = true
 	if err := smoothoperatorutils.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
 		return err
 	}

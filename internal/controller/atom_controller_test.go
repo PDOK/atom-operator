@@ -606,6 +606,42 @@ var _ = Describe("Atom Controller", func() {
 
 			}
 		})
+
+		It("Should create correct podDisruptionBudget.", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+
+			By("Reconciling the Atom and checking the podDisruptionBudget")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+
+			podDisruptionBudget := getBarePodDisruptionBudget(atom)
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(podDisruptionBudget), podDisruptionBudget)
+				return Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(BeTrue())
+
+			Expect(podDisruptionBudget.Name).Should(Equal("test-atom-9-atom-pdb"))
+			Expect(podDisruptionBudget.Namespace).Should(Equal("default"))
+			Expect(podDisruptionBudget.Labels["app"]).Should(Equal("atom-service"))
+			Expect(podDisruptionBudget.Labels["dataset"]).Should(Equal("test-dataset"))
+			Expect(podDisruptionBudget.Labels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(podDisruptionBudget.Labels["service-type"]).Should(Equal("atom"))
+			Expect(podDisruptionBudget.Spec.MaxUnavailable).Should(Equal(&intstr.IntOrString{IntVal: 1}))
+			Expect(podDisruptionBudget.Spec.Selector.MatchLabels["app"]).Should(Equal("atom-service"))
+			Expect(podDisruptionBudget.Spec.Selector.MatchLabels["dataset"]).Should(Equal("test-dataset"))
+			Expect(podDisruptionBudget.Spec.Selector.MatchLabels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(podDisruptionBudget.Spec.Selector.MatchLabels["service-type"]).Should(Equal("atom"))
+		})
 	})
 })
 
