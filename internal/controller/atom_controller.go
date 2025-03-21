@@ -541,14 +541,18 @@ func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middle
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		Headers: &traefikdynamic.Headers{
-			AccessControlAllowHeaders:    []string{"Content-Type"},
-			AccessControlAllowMethods:    []string{"GET", "HEAD", "OPTIONS"},
-			AccessControlAllowOriginList: []string{"*"},
+			CustomResponseHeaders: map[string]string{
+				"Access-Control-Allow-Headers": "Content-Type",
+				"Access-Control-Allow-Method":  "GET, HEAD, OPTIONS",
+				"Access-Control-Allow-Origin":  "*",
+			},
 		},
 	}
+	middleware.Spec.Headers.FrameDeny = true
 	if err := ensureSetGVK(r.Client, middleware, middleware); err != nil {
 		return err
 	}
+
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
