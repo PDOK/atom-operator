@@ -348,173 +348,6 @@ spec:
           spec:
             description: AtomSpec defines the desired state of Atom.
             properties:
-              datasetFeeds:
-                items:
-                  description: DatasetFeed represents individual dataset feeds within
-                    the Atom service
-                  properties:
-                    author:
-                      description: Author represents the author or owner of the service
-                        or dataset
-                      properties:
-                        email:
-                          type: string
-                        name:
-                          type: string
-                      type: object
-                    datasetMetadataLinks:
-                      description: MetadataLink represents a link in the service or
-                        dataset feed
-                      properties:
-                        metadataIdentifier:
-                          type: string
-                        templates:
-                          items:
-                            type: string
-                          type: array
-                      required:
-                      - metadataIdentifier
-                      type: object
-                    entries:
-                      items:
-                        description: Entry represents an entry within a dataset feed,
-                          typically for downloads
-                        properties:
-                          content:
-                            type: string
-                          downloadlinks:
-                            items:
-                              description: DownloadLink specifies download information
-                                for entries
-                              properties:
-                                bbox:
-                                  description: BBox defines a bounding box with coordinates
-                                  properties:
-                                    maxx:
-                                      description: Rechtsonder X coördinaat
-                                      pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
-                                      type: string
-                                    maxy:
-                                      description: Rechtsonder Y coördinaat
-                                      pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
-                                      type: string
-                                    minx:
-                                      description: Linksboven X coördinaat
-                                      pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
-                                      type: string
-                                    miny:
-                                      description: Linksboven Y coördinaat
-                                      pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
-                                      type: string
-                                  required:
-                                  - maxx
-                                  - maxy
-                                  - minx
-                                  - miny
-                                  type: object
-                                data:
-                                  type: string
-                                rel:
-                                  type: string
-                                time:
-                                  type: string
-                                version:
-                                  type: string
-                              required:
-                              - data
-                              type: object
-                            type: array
-                          polygon:
-                            description: Polygon describes the bounding box of an
-                              entry or download
-                            properties:
-                              bbox:
-                                description: BBox defines a bounding box with coordinates
-                                properties:
-                                  maxx:
-                                    description: Rechtsonder X coördinaat
-                                    pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
-                                    type: string
-                                  maxy:
-                                    description: Rechtsonder Y coördinaat
-                                    pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
-                                    type: string
-                                  minx:
-                                    description: Linksboven X coördinaat
-                                    pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
-                                    type: string
-                                  miny:
-                                    description: Linksboven Y coördinaat
-                                    pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
-                                    type: string
-                                required:
-                                - maxx
-                                - maxy
-                                - minx
-                                - miny
-                                type: object
-                            required:
-                            - bbox
-                            type: object
-                          srs:
-                            description: SRS describes the Spatial Reference System
-                              for an entry
-                            properties:
-                              name:
-                                type: string
-                              uri:
-                                type: string
-                            required:
-                            - name
-                            - uri
-                            type: object
-                          technicalName:
-                            type: string
-                          title:
-                            type: string
-                          updated:
-                            format: date-time
-                            type: string
-                        required:
-                        - technicalName
-                        type: object
-                      type: array
-                    links:
-                      items:
-                        description: Link represents a link in the service or dataset
-                          feed
-                        properties:
-                          category:
-                            type: string
-                          href:
-                            type: string
-                          hreflang:
-                            type: string
-                          rel:
-                            type: string
-                          title:
-                            type: string
-                          type:
-                            type: string
-                        required:
-                        - href
-                        type: object
-                      type: array
-                    spatial_dataset_identifier_code:
-                      type: string
-                    spatial_dataset_identifier_namespace:
-                      type: string
-                    subtitle:
-                      type: string
-                    technicalName:
-                      type: string
-                    title:
-                      type: string
-                  required:
-                  - technicalName
-                  - title
-                  type: object
-                type: array
               lifecycle:
                 properties:
                   ttlInDays:
@@ -543,6 +376,175 @@ spec:
                     type: object
                   baseUrl:
                     type: string
+                  datasetFeeds:
+                    items:
+                      description: DatasetFeed represents individual dataset feeds
+                        within the Atom service
+                      properties:
+                        author:
+                          description: Author represents the author or owner of the
+                            service or dataset
+                          properties:
+                            email:
+                              type: string
+                            name:
+                              type: string
+                          type: object
+                        datasetMetadataLinks:
+                          description: MetadataLink represents a link in the service
+                            or dataset feed
+                          properties:
+                            metadataIdentifier:
+                              type: string
+                            templates:
+                              items:
+                                type: string
+                              type: array
+                          required:
+                          - metadataIdentifier
+                          type: object
+                        entries:
+                          items:
+                            description: Entry represents an entry within a dataset
+                              feed, typically for downloads
+                            properties:
+                              content:
+                                type: string
+                              downloadlinks:
+                                items:
+                                  description: DownloadLink specifies download information
+                                    for entries
+                                  properties:
+                                    bbox:
+                                      description: BBox defines a bounding box with
+                                        coordinates
+                                      properties:
+                                        maxx:
+                                          description: Rechtsonder X coördinaat
+                                          pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                          type: string
+                                        maxy:
+                                          description: Rechtsonder Y coördinaat
+                                          pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                          type: string
+                                        minx:
+                                          description: Linksboven X coördinaat
+                                          pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                          type: string
+                                        miny:
+                                          description: Linksboven Y coördinaat
+                                          pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                          type: string
+                                      required:
+                                      - maxx
+                                      - maxy
+                                      - minx
+                                      - miny
+                                      type: object
+                                    data:
+                                      type: string
+                                    rel:
+                                      type: string
+                                    time:
+                                      type: string
+                                    version:
+                                      type: string
+                                  required:
+                                  - data
+                                  type: object
+                                type: array
+                              polygon:
+                                description: Polygon describes the bounding box of
+                                  an entry or download
+                                properties:
+                                  bbox:
+                                    description: BBox defines a bounding box with
+                                      coordinates
+                                    properties:
+                                      maxx:
+                                        description: Rechtsonder X coördinaat
+                                        pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                        type: string
+                                      maxy:
+                                        description: Rechtsonder Y coördinaat
+                                        pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                        type: string
+                                      minx:
+                                        description: Linksboven X coördinaat
+                                        pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                        type: string
+                                      miny:
+                                        description: Linksboven Y coördinaat
+                                        pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                        type: string
+                                    required:
+                                    - maxx
+                                    - maxy
+                                    - minx
+                                    - miny
+                                    type: object
+                                required:
+                                - bbox
+                                type: object
+                              srs:
+                                description: SRS describes the Spatial Reference System
+                                  for an entry
+                                properties:
+                                  name:
+                                    type: string
+                                  uri:
+                                    type: string
+                                required:
+                                - name
+                                - uri
+                                type: object
+                              technicalName:
+                                type: string
+                              title:
+                                type: string
+                              updated:
+                                format: date-time
+                                type: string
+                            required:
+                            - technicalName
+                            type: object
+                          type: array
+                        links:
+                          items:
+                            description: Link represents a link in the service or
+                              dataset feed
+                            properties:
+                              category:
+                                type: string
+                              href:
+                                type: string
+                              hreflang:
+                                type: string
+                              rel:
+                                type: string
+                              title:
+                                type: string
+                              type:
+                                type: string
+                            required:
+                            - href
+                            type: object
+                          type: array
+                        spatial_dataset_identifier_code:
+                          type: string
+                        spatial_dataset_identifier_namespace:
+                          type: string
+                        subtitle:
+                          type: string
+                        technicalName:
+                          type: string
+                        title:
+                          type: string
+                      required:
+                      - technicalName
+                      - title
+                      type: object
+                    type: array
                   lang:
                     type: string
                   ownerInfoRef:

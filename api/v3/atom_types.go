@@ -25,7 +25,7 @@ SOFTWARE.
 package v3
 
 import (
-	"fmt"
+	"net/url"
 	"strings"
 
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
@@ -39,9 +39,8 @@ var blobEndpoint string
 
 // AtomSpec defines the desired state of Atom.
 type AtomSpec struct {
-	Lifecycle    smoothoperatormodel.Lifecycle `json:"lifecycle,omitempty"`
-	Service      Service                       `json:"service"`
-	DatasetFeeds []DatasetFeed                 `json:"datasetFeeds,omitempty"`
+	Lifecycle smoothoperatormodel.Lifecycle `json:"lifecycle,omitempty"`
+	Service   Service                       `json:"service"`
 	//+kubebuilder:validation:Type=object
 	//+kubebuilder:validation:Schemaless
 	//+kubebuilder:pruning:PreserveUnknownFields
@@ -59,6 +58,7 @@ type Service struct {
 	OwnerInfoRef         string                     `json:"ownerInfoRef"`
 	ServiceMetadataLinks MetadataLink               `json:"serviceMetadataLinks,omitempty"`
 	Rights               string                     `json:"rights,omitempty"`
+	DatasetFeeds         []DatasetFeed              `json:"datasetFeeds,omitempty"`
 	Author               smoothoperatormodel.Author `json:"author,omitempty"`
 }
 
@@ -175,31 +175,15 @@ func GetBlobEndpoint() string {
 	return blobEndpoint
 }
 
-func (r *Atom) GetURI() (uri string) {
-	datasetOwner := "unknown"
-	if v, ok := r.ObjectMeta.Labels["dataset-owner"]; ok {
-		datasetOwner = v
-	}
-	dataset := "unknown"
-	if v, ok := r.ObjectMeta.Labels["dataset"]; ok {
-		dataset = v
-	}
-	uri = fmt.Sprintf("%s/%s", datasetOwner, dataset)
-
-	if v, ok := r.ObjectMeta.Labels["theme"]; ok {
-		uri += "/" + v
-	}
-	uri += "/atom"
-	if v, ok := r.ObjectMeta.Labels["service-version"]; ok {
-		uri += "/" + v
-	}
-	return
+func (r *Atom) GetBaseURLPath() string {
+	url, _ := url.Parse(r.Spec.Service.BaseURL)
+	return strings.Replace(url.Path, "/", "", 1)
 }
 
 func (r *Atom) GetIndexedDownloadLinks() (downloadLinks map[int8]DownloadLink) {
 	downloadLinks = make(map[int8]DownloadLink)
 	var index int8
-	for _, datasetFeed := range r.Spec.DatasetFeeds {
+	for _, datasetFeed := range r.Spec.Service.DatasetFeeds {
 		for _, entry := range datasetFeed.Entries {
 			for _, downloadLink := range entry.DownloadLinks {
 				downloadLinks[index] = downloadLink

@@ -70,7 +70,7 @@ const (
 const (
 	controllerName  = "atom-controller"
 	appLabelKey     = "app"
-	atomName        = "atom"
+	atomName        = "atom-service"
 	configFileName  = "values.yaml"
 	atomPortName    = "atom-service"
 	atomPortNr      = 80
@@ -384,10 +384,11 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 			},
 			InitContainers: []corev1.Container{
 				{
-					Name:            "init-atom",
+					Name:            "atom-generator",
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Command:         []string{"./atom"},
 					Args:            []string{"-f=" + srvDir + "/config/" + configFileName, "-o=" + srvDir + "/data"},
+
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "data", MountPath: srvDir + "/data"},
 						{Name: "config", MountPath: srvDir + "/config"},
@@ -514,7 +515,7 @@ func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middle
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		StripPrefix: &traefikdynamic.StripPrefix{
-			Prefixes: []string{"/" + atom.GetURI() + "/"}},
+			Prefixes: []string{"/" + atom.GetBaseURLPath() + "/"}},
 	}
 
 	if err := smoothoperatorutils.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
@@ -541,14 +542,18 @@ func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middle
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		Headers: &traefikdynamic.Headers{
-			AccessControlAllowHeaders:    []string{"Content-Type"},
-			AccessControlAllowMethods:    []string{"GET", "HEAD", "OPTIONS"},
-			AccessControlAllowOriginList: []string{"*"},
+			CustomResponseHeaders: map[string]string{
+				"Access-Control-Allow-Headers": "Content-Type",
+				"Access-Control-Allow-Method":  "GET, HEAD, OPTIONS",
+				"Access-Control-Allow-Origin":  "*",
+			},
 		},
 	}
+	middleware.Spec.Headers.FrameDeny = true
 	if err := smoothoperatorutils.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
 		return err
 	}
+
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
@@ -606,7 +611,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 						LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
 							Name: getBareService(atom).GetName(),
 							Kind: "Service",
-							Port: intstr.FromString(atomPortName),
+							Port: intstr.FromInt32(atomPortNr),
 						},
 					},
 				},
@@ -633,6 +638,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 					Name:           "azure-storage",
 					Port:           intstr.IntOrString{Type: intstr.String, StrVal: "azure-storage"},
 					PassHostHeader: smoothoperatorutils.BoolPtr(false),
+					Kind:           "Service",
 				},
 			},
 		},
@@ -654,7 +660,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 	ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, azureStorageRule)
 
 	// Set additional routes per datasetFeed
-	for _, datasetFeed := range atom.Spec.DatasetFeeds {
+	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
 		matchRule := getMatchRuleForDatasetFeed(atom, &datasetFeed)
 		rule := getDefaultRule(atom, matchRule)
 		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)
@@ -710,15 +716,15 @@ func getGeneratorConfig(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerIn
 }
 
 func getMatchRuleForIndex(atom *pdoknlv3.Atom) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetURI() + "/index.xml`)"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetBaseURLPath() + "/index.xml`)"
 }
 
 func getMatchRuleForDownloads(atom *pdoknlv3.Atom) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && PathPrefix(`/" + atom.GetURI() + "/downloads/`)"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && PathPrefix(`/" + atom.GetBaseURLPath() + "/downloads/`)"
 }
 
 func getMatchRuleForDatasetFeed(atom *pdoknlv3.Atom, datasetFeed *pdoknlv3.DatasetFeed) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetURI() + "/" + datasetFeed.TechnicalName + ".xml`)"
+	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetBaseURLPath() + "/" + datasetFeed.TechnicalName + ".xml`)"
 }
 
 func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Route {
@@ -730,7 +736,7 @@ func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Rou
 				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
 					Name: getBareService(atom).GetName(),
 					Kind: "Service",
-					Port: intstr.FromString(atomPortName),
+					Port: intstr.FromInt32(atomPortNr),
 				},
 			},
 		},
@@ -752,7 +758,7 @@ func getDownloadLinkRegex(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLi
 	if downloadLink.Version != nil {
 		version = *downloadLink.Version + "/"
 	}
-	return fmt.Sprintf("^/%s/downloads/%s(%s)", atom.GetURI(), version, downloadLink.GetBlobName())
+	return fmt.Sprintf("^/%s/downloads/%s(%s)", atom.GetBaseURLPath(), version, downloadLink.GetBlobName())
 }
 
 func getDownloadLinkReplacement(downloadLink *pdoknlv3.DownloadLink) string {

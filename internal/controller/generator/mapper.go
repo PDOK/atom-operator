@@ -33,7 +33,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 	if err != nil {
 		return atomfeed.Feeds{}, err
 	}
-	latestUpdated, err := getLatestUpdate(atom.Spec.DatasetFeeds)
+	latestUpdated, err := getLatestUpdate(atom.Spec.Service.DatasetFeeds)
 	if err != nil {
 		return atomfeed.Feeds{}, err
 	}
@@ -62,7 +62,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 	}
 	atomGeneratorConfig.Feeds = append(atomGeneratorConfig.Feeds, serviceFeed)
 
-	for _, datasetFeed := range atom.Spec.DatasetFeeds {
+	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
 		dsFeed := atomfeed.Feed{
 			ID:            atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml",
 			Title:         escapeQuotes(datasetFeed.Title),
@@ -100,7 +100,7 @@ func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
 
 func getServiceEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo, latestUpdated *string) []atomfeed.Entry {
 	var retEntriesArray []atomfeed.Entry
-	for _, datasetFeed := range atom.Spec.DatasetFeeds {
+	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
 		datasetEntry := atomfeed.Entry{
 			ID:                                atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml",
 			Title:                             escapeQuotes(datasetFeed.Title),

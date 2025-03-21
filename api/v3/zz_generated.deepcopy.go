@@ -98,13 +98,6 @@ func (in *AtomSpec) DeepCopyInto(out *AtomSpec) {
 	*out = *in
 	in.Lifecycle.DeepCopyInto(&out.Lifecycle)
 	in.Service.DeepCopyInto(&out.Service)
-	if in.DatasetFeeds != nil {
-		in, out := &in.DatasetFeeds, &out.DatasetFeeds
-		*out = make([]DatasetFeed, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
-		}
-	}
 	if in.PodSpecPatch != nil {
 		in, out := &in.PodSpecPatch, &out.PodSpecPatch
 		*out = new(v1.PodSpec)
@@ -287,6 +280,13 @@ func (in *SRS) DeepCopy() *SRS {
 func (in *Service) DeepCopyInto(out *Service) {
 	*out = *in
 	in.ServiceMetadataLinks.DeepCopyInto(&out.ServiceMetadataLinks)
+	if in.DatasetFeeds != nil {
+		in, out := &in.DatasetFeeds, &out.DatasetFeeds
+		*out = make([]DatasetFeed, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	out.Author = in.Author
 }
 
