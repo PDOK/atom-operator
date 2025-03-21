@@ -275,7 +275,10 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			for _, srcDownloadLink := range srcEntry.DownloadLinks {
 				dstLink := Link{
 					BlobKey: &srcDownloadLink.Data,
-					Rel:     &srcDownloadLink.Rel,
+				}
+
+				if srcDownloadLink.Rel != "" {
+					dstLink.Rel = &srcDownloadLink.Rel
 				}
 
 				if srcDownloadLink.Time != nil {
