@@ -78,7 +78,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				MetadataIdentifier: srcDataset.MetadataIdentifier,
 				Templates:          []string{"csw", "html"},
 			},
-			Author:                            smoothoperatormodel.Author{Name: a.Spec.Service.Author.Name, Email: a.Spec.Service.Author.Email}, // Todo
+			Author:                            smoothoperatormodel.Author{Name: a.Spec.Service.Author.Name, Email: a.Spec.Service.Author.Email},
 			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
 			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
 		}
@@ -220,10 +220,11 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	a.Spec.Service.Datasets = []Dataset{}
 	for _, srcDatasetFeed := range src.Spec.Service.DatasetFeeds {
 		dstDataset := Dataset{
-			Name:             srcDatasetFeed.TechnicalName,
-			Title:            srcDatasetFeed.Title,
-			Subtitle:         srcDatasetFeed.Subtitle,
-			SourceIdentifier: srcDatasetFeed.SpatialDatasetIdentifierCode,
+			Name:               srcDatasetFeed.TechnicalName,
+			Title:              srcDatasetFeed.Title,
+			Subtitle:           srcDatasetFeed.Subtitle,
+			SourceIdentifier:   srcDatasetFeed.SpatialDatasetIdentifierCode,
+			MetadataIdentifier: srcDatasetFeed.DatasetMetadataLinks.MetadataIdentifier,
 		}
 
 		// Map the links
@@ -250,9 +251,12 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		// Map the downloads
 		for _, srcEntry := range srcDatasetFeed.Entries {
 			dstDownload := Download{
-				Name:    srcEntry.TechnicalName,
-				Content: &srcEntry.Content,
-				Title:   &srcEntry.Title,
+				Name:  srcEntry.TechnicalName,
+				Title: &srcEntry.Title,
+			}
+
+			if srcEntry.Content != "" {
+				dstDownload.Content = &srcEntry.Content
 			}
 
 			if srcEntry.Updated != nil {
@@ -288,6 +292,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 						Maxy: GetStringAsFloat32(srcDownloadLink.BBox.MaxY),
 					}
 				}
+				dstDownload.Links = append(dstDownload.Links, dstLink)
 			}
 
 			dstDataset.Downloads = append(dstDataset.Downloads, dstDownload)
