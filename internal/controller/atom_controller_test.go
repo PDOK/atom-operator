@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -411,7 +412,6 @@ var _ = Describe("Atom Controller", func() {
 			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Getting the original Deployment")
 			configMap := getBareConfigMap(atom)
 			configMapName, err := getAtomConfigMapNameFromClient(ctx, atom)
 			Expect(err).NotTo(HaveOccurred())
@@ -455,9 +455,7 @@ var _ = Describe("Atom Controller", func() {
 			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Getting the original Deployment")
 			ingressRoute := getBareIngressRoute(atom)
-			Expect(err).NotTo(HaveOccurred())
 			Eventually(func() bool {
 				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(ingressRoute), ingressRoute)
 				return Expect(err).NotTo(HaveOccurred())
@@ -510,8 +508,123 @@ var _ = Describe("Atom Controller", func() {
 			Expect(ingressRoute.Spec.Routes[2].Middlewares[1].Namespace).Should(Equal("default"))
 
 		})
+
+		It("Should create correct middlewareCorsHeaders manifest.", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+
+			By("Reconciling the Atom and checking the middlewareCorsHeaders")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+
+			middlewareCorsHeaders := getBareCorsHeadersMiddleware(atom)
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareCorsHeaders), middlewareCorsHeaders)
+				return Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(BeTrue())
+
+			Expect(middlewareCorsHeaders.Name).Should(Equal("test-atom-6-atom-cors-headers"))
+			Expect(middlewareCorsHeaders.Namespace).Should(Equal("default"))
+			Expect(middlewareCorsHeaders.Labels["app"]).Should(Equal("atom-service"))
+			Expect(middlewareCorsHeaders.Labels["dataset"]).Should(Equal("test-dataset"))
+			Expect(middlewareCorsHeaders.Labels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(middlewareCorsHeaders.Labels["service-type"]).Should(Equal("atom"))
+			Expect(middlewareCorsHeaders.Spec.Headers.FrameDeny).Should(Equal(true))
+			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Headers"]).Should(Equal("Content-Type"))
+			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Method"]).Should(Equal("GET, HEAD, OPTIONS"))
+			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Origin"]).Should(Equal("*"))
+		})
+
+		It("Should create correct middlewareStripPrefix.", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+
+			By("Reconciling the Atom and checking the middlewareStripPrefix")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+
+			middlewareStripPrefix := getBareStripPrefixMiddleware(atom)
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareStripPrefix), middlewareStripPrefix)
+				return Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(BeTrue())
+
+			Expect(middlewareStripPrefix.Name).Should(Equal("test-atom-7-atom-strip-prefix"))
+			Expect(middlewareStripPrefix.Namespace).Should(Equal("default"))
+			Expect(middlewareStripPrefix.Labels["app"]).Should(Equal("atom-service"))
+			Expect(middlewareStripPrefix.Labels["dataset"]).Should(Equal("test-dataset"))
+			Expect(middlewareStripPrefix.Labels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(middlewareStripPrefix.Labels["service-type"]).Should(Equal("atom"))
+			Expect(middlewareStripPrefix.Spec.StripPrefix.Prefixes[0]).Should(Equal("/test-datasetowner/test-dataset/atom/"))
+		})
+
+		It("Should create correct middleware atom download.", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+
+			By("Reconciling the Atom and checking the middlewareStripPrefix")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+
+			downloadMiddlewareArray := getDownloadMiddlewareArray(ctx, atom)
+			for i := 0; i < len(downloadMiddlewareArray); i++ {
+				Expect(downloadMiddlewareArray[i].Name).Should(Equal("test-atom-8-atom-downloads-" + strconv.Itoa(i)))
+				Expect(downloadMiddlewareArray[i].Namespace).Should(Equal("default"))
+				Expect(downloadMiddlewareArray[i].Labels["app"]).Should(Equal("atom-service"))
+				Expect(downloadMiddlewareArray[i].Labels["dataset"]).Should(Equal("test-dataset"))
+				Expect(downloadMiddlewareArray[i].Labels["dataset-owner"]).Should(Equal("test-datasetowner"))
+				Expect(downloadMiddlewareArray[i].Labels["service-type"]).Should(Equal("atom"))
+				Expect(downloadMiddlewareArray[i].Spec.ReplacePathRegex.Regex).Should(Equal("^/test-datasetowner/test-dataset/atom/downloads/(dataset-1-file)"))
+				Expect(downloadMiddlewareArray[i].Spec.ReplacePathRegex.Replacement).Should(Equal("/http://localazurite.blob.azurite/bucket/key1/$1"))
+
+			}
+		})
 	})
 })
+
+func getDownloadMiddlewareArray(ctx context.Context, atom metav1.Object) []*traefikiov1alpha1.Middleware {
+	var downloadMiddlewareArray []*traefikiov1alpha1.Middleware
+	var err error
+	index := int8(0)
+	for err == nil {
+		middlewareDownloadLink := getBareDownloadLinkMiddleware(atom, index)
+		err = k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareDownloadLink), middlewareDownloadLink)
+		if err != nil {
+			break
+		}
+		downloadMiddlewareArray = append(downloadMiddlewareArray, middlewareDownloadLink)
+		index++
+	}
+	log.Printf("getDownloadMiddlewareArray: %v", len(downloadMiddlewareArray))
+	return downloadMiddlewareArray
+}
 
 func getAtomConfigMapNameFromClient(ctx context.Context, atom *pdoknlv3.Atom) (string, error) {
 	deployment := &appsv1.Deployment{}
@@ -761,6 +874,7 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 			Namespace: namespace,
 			Name:      getUniqueAtomResourceName(counter),
 			Labels: map[string]string{
+				"app":           "atom-service",
 				"dataset":       "test-dataset",
 				"dataset-owner": "test-datasetowner",
 				"service-type":  "atom",
