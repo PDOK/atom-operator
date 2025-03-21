@@ -517,7 +517,7 @@ var _ = Describe("Atom Controller", func() {
 				LighttpdImage:      testImageName2,
 			}
 
-			By("Reconciling the Atom and checking the IngressRoute")
+			By("Reconciling the Atom and checking the middlewareCorsHeaders")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
@@ -544,6 +544,40 @@ var _ = Describe("Atom Controller", func() {
 			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Headers"]).Should(Equal("Content-Type"))
 			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Method"]).Should(Equal("GET, HEAD, OPTIONS"))
 			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Origin"]).Should(Equal("*"))
+		})
+
+		It("Should create correct middlewareStripPrefix.", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+
+			By("Reconciling the Atom and checking the middlewareStripPrefix")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+
+			By("Getting the original Deployment")
+			middlewareStripPrefix := getBareStripPrefixMiddleware(atom)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareStripPrefix), middlewareStripPrefix)
+				return Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(BeTrue())
+
+			Expect(middlewareStripPrefix.Name).Should(Equal("test-atom-7-atom-strip-prefix"))
+			Expect(middlewareStripPrefix.Namespace).Should(Equal("default"))
+			Expect(middlewareStripPrefix.Labels["app"]).Should(Equal("atom-service"))
+			Expect(middlewareStripPrefix.Labels["dataset"]).Should(Equal("test-dataset"))
+			Expect(middlewareStripPrefix.Labels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(middlewareStripPrefix.Labels["service-type"]).Should(Equal("atom"))
+			Expect(middlewareStripPrefix.Spec.StripPrefix.Prefixes[0]).Should(Equal("/test-datasetowner/test-dataset/atom/"))
 		})
 
 	})
