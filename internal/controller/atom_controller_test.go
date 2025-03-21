@@ -642,6 +642,44 @@ var _ = Describe("Atom Controller", func() {
 			Expect(podDisruptionBudget.Spec.Selector.MatchLabels["dataset-owner"]).Should(Equal("test-datasetowner"))
 			Expect(podDisruptionBudget.Spec.Selector.MatchLabels["service-type"]).Should(Equal("atom"))
 		})
+
+		It("Should create correct Service atom.", func() {
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+
+			By("Reconciling the Atom and checking the Service atom")
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(atom.Finalizers).To(ContainElement(finalizerName))
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
+			Expect(err).NotTo(HaveOccurred())
+
+			service := getBareService(atom)
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(service), service)
+				return Expect(err).NotTo(HaveOccurred())
+			}, "10s", "1s").Should(BeTrue())
+
+			Expect(service.Name).Should(Equal("test-atom-10-atom"))
+			Expect(service.Namespace).Should(Equal("default"))
+			Expect(service.Labels["app"]).Should(Equal("atom-service"))
+			Expect(service.Labels["dataset"]).Should(Equal("test-dataset"))
+			Expect(service.Labels["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(service.Labels["service-type"]).Should(Equal("atom"))
+			Expect(service.Spec.Ports[0].Name).Should(Equal("atom-service"))
+			Expect(service.Spec.Ports[0].Port).Should(Equal(int32(80)))
+			Expect(service.Spec.Ports[0].Protocol).Should(Equal(corev1.ProtocolTCP))
+			Expect(service.Spec.Selector["app"]).Should(Equal("atom-service"))
+			Expect(service.Spec.Selector["dataset"]).Should(Equal("test-dataset"))
+			Expect(service.Spec.Selector["dataset-owner"]).Should(Equal("test-datasetowner"))
+			Expect(service.Spec.Selector["service-type"]).Should(Equal("atom"))
+		})
 	})
 })
 
