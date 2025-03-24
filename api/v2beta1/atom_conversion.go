@@ -338,7 +338,7 @@ func GetIntPointer(value int) *int {
 }
 
 func GetFloat32AsString(value float32) string {
-	return fmt.Sprintf("%g", value)
+	return strconv.FormatFloat(float64(value), 'f', 0, 32)
 }
 
 func GetStringAsFloat32(value string) float32 {
