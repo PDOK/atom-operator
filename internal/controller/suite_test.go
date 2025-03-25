@@ -154,7 +154,7 @@ func getOwnerInfoCRDPath() (string, error) {
 	if smoothOperatorModule.Dir == "" {
 		return "", errors.New("cannot find path for smooth-operator module")
 	}
-	return filepath.Join(smoothOperatorModule.Dir, "config", "crd", "bases", "pdok.nl_ownerinfoes.yaml"), nil
+	return filepath.Join(smoothOperatorModule.Dir, "config", "crd", "bases", "pdok.nl_ownerinfo.yaml"), nil
 }
 
 func getTraefikCRDPath() (string, error) {

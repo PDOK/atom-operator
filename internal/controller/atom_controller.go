@@ -96,8 +96,8 @@ type AtomReconciler struct {
 // +kubebuilder:rbac:groups=pdok.nl,resources=atoms,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=pdok.nl,resources=atoms/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=pdok.nl,resources=atoms/finalizers,verbs=update
-// +kubebuilder:rbac:groups=pdok.nl,resources=ownerinfoes,verbs=get;list;watch
-// +kubebuilder:rbac:groups=pdok.nl,resources=ownerinfoes/status,verbs=get
+// +kubebuilder:rbac:groups=pdok.nl,resources=ownerinfo,verbs=get;list;watch
+// +kubebuilder:rbac:groups=pdok.nl,resources=ownerinfo/status,verbs=get
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=core,resources=configmaps;services,verbs=watch;create;get;update;list;delete
 // +kubebuilder:rbac:groups=traefik.io,resources=ingressroutes;middlewares,verbs=get;list;watch;create;update;delete
