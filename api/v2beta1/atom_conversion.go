@@ -68,7 +68,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 		Rights: a.Spec.Service.Rights,
 	}
 
-	dst.Spec.DatasetFeeds = []pdoknlv3.DatasetFeed{}
+	dst.Spec.Service.DatasetFeeds = []pdoknlv3.DatasetFeed{}
 	for _, srcDataset := range a.Spec.Service.Datasets {
 		dstDatasetFeed := pdoknlv3.DatasetFeed{
 			TechnicalName: srcDataset.Name,
@@ -78,7 +78,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				MetadataIdentifier: srcDataset.MetadataIdentifier,
 				Templates:          []string{"csw", "html"},
 			},
-			Author:                            smoothoperatormodel.Author{Name: a.Spec.Service.Author.Name, Email: a.Spec.Service.Author.Email}, // Todo
+			Author:                            smoothoperatormodel.Author{Name: a.Spec.Service.Author.Name, Email: a.Spec.Service.Author.Email},
 			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
 			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
 		}
@@ -170,7 +170,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			dstDatasetFeed.Entries = append(dstDatasetFeed.Entries, dstEntry)
 		}
 
-		dst.Spec.DatasetFeeds = append(dst.Spec.DatasetFeeds, dstDatasetFeed)
+		dst.Spec.Service.DatasetFeeds = append(dst.Spec.Service.DatasetFeeds, dstDatasetFeed)
 	}
 
 	return nil
@@ -178,7 +178,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 // ConvertFrom converts the Hub version (v3) to this Atom (v2beta1).
 //
-//nolint:funlen
+//nolint:funlen,cyclop
 func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertFrom: Converting Atom from Hub version v3 to Spoke version v2beta1;"+
@@ -218,12 +218,13 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 
 	// Datasets
 	a.Spec.Service.Datasets = []Dataset{}
-	for _, srcDatasetFeed := range src.Spec.DatasetFeeds {
+	for _, srcDatasetFeed := range src.Spec.Service.DatasetFeeds {
 		dstDataset := Dataset{
-			Name:             srcDatasetFeed.TechnicalName,
-			Title:            srcDatasetFeed.Title,
-			Subtitle:         srcDatasetFeed.Subtitle,
-			SourceIdentifier: srcDatasetFeed.SpatialDatasetIdentifierCode,
+			Name:               srcDatasetFeed.TechnicalName,
+			Title:              srcDatasetFeed.Title,
+			Subtitle:           srcDatasetFeed.Subtitle,
+			SourceIdentifier:   srcDatasetFeed.SpatialDatasetIdentifierCode,
+			MetadataIdentifier: srcDatasetFeed.DatasetMetadataLinks.MetadataIdentifier,
 		}
 
 		// Map the links
@@ -250,9 +251,12 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		// Map the downloads
 		for _, srcEntry := range srcDatasetFeed.Entries {
 			dstDownload := Download{
-				Name:    srcEntry.TechnicalName,
-				Content: &srcEntry.Content,
-				Title:   &srcEntry.Title,
+				Name:  srcEntry.TechnicalName,
+				Title: &srcEntry.Title,
+			}
+
+			if srcEntry.Content != "" {
+				dstDownload.Content = &srcEntry.Content
 			}
 
 			if srcEntry.Updated != nil {
@@ -271,7 +275,10 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			for _, srcDownloadLink := range srcEntry.DownloadLinks {
 				dstLink := Link{
 					BlobKey: &srcDownloadLink.Data,
-					Rel:     &srcDownloadLink.Rel,
+				}
+
+				if srcDownloadLink.Rel != "" {
+					dstLink.Rel = &srcDownloadLink.Rel
 				}
 
 				if srcDownloadLink.Time != nil {
@@ -288,6 +295,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 						Maxy: GetStringAsFloat32(srcDownloadLink.BBox.MaxY),
 					}
 				}
+				dstDownload.Links = append(dstDownload.Links, dstLink)
 			}
 
 			dstDataset.Downloads = append(dstDataset.Downloads, dstDownload)
