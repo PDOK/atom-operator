@@ -25,16 +25,77 @@ SOFTWARE.
 package v3
 
 import (
-	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
+	"context"
+	"fmt"
+
+	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 )
+
+// nolint:unused
+// log is for logging in this package.
+var atomlog = logf.Log.WithName("atom-resource")
 
 // SetupAtomWebhookWithManager registers the webhook for Atom in the manager.
 func SetupAtomWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&pdoknlv3.Atom{}).
-		// Todo add WithValidator / AtomCustomValidator ?
-		// Todo add WithDefaulter / AtomCustomDefaulter ?
+		WithValidator(&AtomCustomValidator{}).
 		Complete()
 }
 
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
+// Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
+// +kubebuilder:webhook:path=/validate-pdok-nl-v3-atom,mutating=false,failurePolicy=fail,sideEffects=None,groups=pdok.nl,resources=atoms,verbs=create;update,versions=v3,name=vatom-v3.kb.io,admissionReviewVersions=v1
+
+// AtomCustomValidator struct is responsible for validating the Atom resource
+// when it is created, updated, or deleted.
+//
+// NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
+// as this struct is used only for temporary operations and does not need to be deeply copied.
+type AtomCustomValidator struct{}
+
+var _ webhook.CustomValidator = &AtomCustomValidator{}
+
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Atom.
+func (v *AtomCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	atom, ok := obj.(*pdoknlv3.Atom)
+	if !ok {
+		return nil, fmt.Errorf("expected a Atom object but got %T", obj)
+	}
+	atomlog.Info("Validation for Atom upon creation", "name", atom.GetName())
+
+	return atom.ValidateCreate()
+}
+
+// ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Atom.
+func (v *AtomCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	atom, ok := newObj.(*pdoknlv3.Atom)
+	if !ok {
+		return nil, fmt.Errorf("expected a Atom object for the newObj but got %T", newObj)
+	}
+	atomOld, ok := oldObj.(*pdoknlv3.Atom)
+	if !ok {
+		return nil, fmt.Errorf("expected a Atom object for the oldObj but got %T", oldObj)
+	}
+	atomlog.Info("Validation for Atom upon update", "name", atom.GetName())
+
+	return atom.ValidateUpdate(atomOld)
+}
+
+// ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Atom.
+func (v *AtomCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	atom, ok := obj.(*pdoknlv3.Atom)
+	if !ok {
+		return nil, fmt.Errorf("expected a Atom object but got %T", obj)
+	}
+	atomlog.Info("Validation for Atom upon deletion", "name", atom.GetName())
+
+	// TODO(user): fill in your validation logic upon object deletion.
+
+	return nil, nil
+}

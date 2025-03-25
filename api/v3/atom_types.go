@@ -95,7 +95,7 @@ type MetadataLink struct {
 type Entry struct {
 	TechnicalName string         `json:"technicalName"`
 	Title         string         `json:"title,omitempty"`
-	Content       string         `json:"content,omitempty"`
+	Content       *string        `json:"content,omitempty"`
 	DownloadLinks []DownloadLink `json:"downloadlinks,omitempty"`
 	Updated       *metav1.Time   `json:"updated,omitempty"`
 	Polygon       *Polygon       `json:"polygon,omitempty"`
