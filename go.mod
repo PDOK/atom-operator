@@ -9,7 +9,7 @@ require (
 	github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega v1.35.1
 	github.com/pdok/atom-generator v0.6.0
-	github.com/pdok/smooth-operator v0.0.5
+	github.com/pdok/smooth-operator v0.0.6
 	github.com/pkg/errors v0.9.1
 	github.com/traefik/traefik/v3 v3.3.4
 	golang.org/x/tools v0.28.0
