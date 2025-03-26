@@ -321,7 +321,7 @@ func (r *AtomReconciler) mutateConfigMap(atom *pdoknlv3.Atom, ownerInfo *smootho
 		}
 		configMap.Data = map[string]string{configFileName: generatorConfig}
 	}
-	configMap.Immutable = smoothoperatorutils.BoolPtr(true)
+	configMap.Immutable = smoothoperatorutils.Pointer(true)
 
 	if err := smoothoperatorutils.EnsureSetGVK(r.Client, configMap, configMap); err != nil {
 		return err
@@ -358,7 +358,7 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 	}
 
 	deployment.Spec.MinReadySeconds = 0
-	deployment.Spec.ProgressDeadlineSeconds = smoothoperatorutils.Int32Ptr(600)
+	deployment.Spec.ProgressDeadlineSeconds = smoothoperatorutils.Pointer(int32(600))
 	deployment.Spec.Strategy = appsv1.DeploymentStrategy{
 		Type: appsv1.RollingUpdateDeploymentStrategyType,
 		RollingUpdate: &appsv1.RollingUpdateDeployment{
@@ -366,8 +366,8 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 			MaxSurge:       &intstr.IntOrString{Type: intstr.Int, IntVal: 4},
 		},
 	}
-	deployment.Spec.RevisionHistoryLimit = smoothoperatorutils.Int32Ptr(1)
-	deployment.Spec.Replicas = smoothoperatorutils.Int32Ptr(2)
+	deployment.Spec.RevisionHistoryLimit = smoothoperatorutils.Pointer(int32(1))
+	deployment.Spec.Replicas = smoothoperatorutils.Pointer(int32(2))
 
 	podTemplateSpec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
@@ -637,7 +637,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
 					Name:           "azure-storage",
 					Port:           intstr.IntOrString{Type: intstr.String, StrVal: "azure-storage"},
-					PassHostHeader: smoothoperatorutils.BoolPtr(false),
+					PassHostHeader: smoothoperatorutils.Pointer(false),
 					Kind:           "Service",
 				},
 			},

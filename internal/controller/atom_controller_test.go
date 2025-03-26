@@ -956,7 +956,7 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 		},
 		Spec: pdoknlv3.AtomSpec{
 			Lifecycle: smoothoperatormodel.Lifecycle{
-				TTLInDays: smoothoperatorutils.Int32Ptr(999),
+				TTLInDays: smoothoperatorutils.Pointer(int32(999)),
 			},
 			Service: pdoknlv3.Service{
 				BaseURL:      "https://my.test-resource.test/test-datasetowner/test-dataset/atom",
