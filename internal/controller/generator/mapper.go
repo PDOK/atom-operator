@@ -299,12 +299,15 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 		datasetEntry := atomfeed.Entry{
 			ID:       atom.Spec.Service.BaseURL + "/" + entry.TechnicalName + ".xml",
 			Title:    escapeQuotes(entry.Title),
-			Content:  entry.Content,
 			Link:     []atomfeed.Link{},
 			Rights:   atom.Spec.Service.Rights,
 			Category: []atomfeed.Category{getCategory(entry.SRS)},
 			Polygon:  entry.Polygon.BBox.ToPolygon(),
 			Summary:  escapeQuotes(datasetFeed.Subtitle),
+		}
+
+		if entry.Content != nil {
+			datasetEntry.Content = *entry.Content
 		}
 
 		updated := entry.Updated.Format(time.RFC3339)

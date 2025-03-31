@@ -2,11 +2,14 @@ package v3
 
 import (
 	"fmt"
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	sharedValidation "github.com/pdok/smooth-operator/pkg/validation"
+	"golang.org/x/net/context"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 )
 
-func (atom *Atom) ValidateCreate() ([]string, error) {
+func (atom *Atom) ValidateCreate(c client.Client) ([]string, error) {
 	warnings := []string{}
 	reasons := []string{}
 
@@ -15,7 +18,7 @@ func (atom *Atom) ValidateCreate() ([]string, error) {
 		reasons = append(reasons, fmt.Sprintf("%v", err))
 	}
 
-	validateAtom(atom, &warnings, &reasons)
+	validateAtom(c, atom, &warnings, &reasons)
 
 	if len(reasons) > 0 {
 		return warnings, fmt.Errorf("%s", strings.Join(reasons, ". "))
@@ -24,7 +27,7 @@ func (atom *Atom) ValidateCreate() ([]string, error) {
 	}
 }
 
-func (atom *Atom) ValidateUpdate(atomOld *Atom) ([]string, error) {
+func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, error) {
 	warnings := []string{}
 	reasons := []string{}
 
@@ -36,10 +39,10 @@ func (atom *Atom) ValidateUpdate(atomOld *Atom) ([]string, error) {
 
 	// Check service.baseURL did not change
 	if atom.Spec.Service.BaseURL != atomOld.Spec.Service.BaseURL {
-		reasons = append(reasons, fmt.Sprintf("service.baseURL is immutable"))
+		reasons = append(reasons, fmt.Sprintf("service.baseURL is immutable, oldBaseUrl: %s, newBaseUrl: %s", atomOld.Spec.Service.BaseURL, atom.Spec.Service.BaseURL))
 	}
 
-	validateAtom(atom, &warnings, &reasons)
+	validateAtom(c, atom, &warnings, &reasons)
 
 	if len(reasons) > 0 {
 		return warnings, fmt.Errorf("%s", strings.Join(reasons, ". "))
@@ -48,7 +51,7 @@ func (atom *Atom) ValidateUpdate(atomOld *Atom) ([]string, error) {
 	}
 }
 
-func validateAtom(atom *Atom, warnings *[]string, reasons *[]string) {
+func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]string) {
 	if strings.Contains(atom.GetName(), "atom") {
 		*warnings = append(*warnings, sharedValidation.FormatValidationWarning("name should not contain atom", atom.GroupVersionKind(), atom.GetName()))
 	}
@@ -62,9 +65,24 @@ func validateAtom(atom *Atom, warnings *[]string, reasons *[]string) {
 	}
 
 	service := atom.Spec.Service
-
 	err := sharedValidation.ValidateBaseURL(service.BaseURL)
 	if err != nil {
 		*reasons = append(*reasons, fmt.Sprintf("%v", err))
 	}
+
+	ownerInfo := &smoothoperatorv1.OwnerInfo{}
+	objectKey := client.ObjectKey{
+		Namespace: atom.Namespace,
+		Name:      atom.Spec.Service.OwnerInfoRef,
+	}
+	ctx := context.Background()
+	err = c.Get(ctx, objectKey, ownerInfo)
+	if err != nil {
+		*reasons = append(*reasons, fmt.Sprintf("%v", err))
+	}
+
+	// TODO uncomment when atom is point in ownerInfo
+	//if ownerInfo.Spec.Atom == nil {
+	//	*reasons = append(*reasons, fmt.Sprintf("no atom settings in ownerInfo: %s", ownerInfo.Name))
+	//}
 }

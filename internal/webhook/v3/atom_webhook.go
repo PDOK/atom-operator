@@ -27,6 +27,7 @@ package v3
 import (
 	"context"
 	"fmt"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -44,7 +45,7 @@ var atomlog = logf.Log.WithName("atom-resource")
 // SetupAtomWebhookWithManager registers the webhook for Atom in the manager.
 func SetupAtomWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&pdoknlv3.Atom{}).
-		WithValidator(&AtomCustomValidator{}).
+		WithValidator(&AtomCustomValidator{mgr.GetClient()}).
 		Complete()
 }
 
@@ -57,7 +58,9 @@ func SetupAtomWebhookWithManager(mgr ctrl.Manager) error {
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type AtomCustomValidator struct{}
+type AtomCustomValidator struct {
+	Client client.Client
+}
 
 var _ webhook.CustomValidator = &AtomCustomValidator{}
 
@@ -69,22 +72,24 @@ func (v *AtomCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 	}
 	atomlog.Info("Validation for Atom upon creation", "name", atom.GetName())
 
-	return atom.ValidateCreate()
+	return atom.ValidateCreate(v.Client)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Atom.
 func (v *AtomCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+	atomlog.Info("reading newAtom")
 	atom, ok := newObj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object for the newObj but got %T", newObj)
 	}
+	atomlog.Info("reading oldAtom")
 	atomOld, ok := oldObj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object for the oldObj but got %T", oldObj)
 	}
 	atomlog.Info("Validation for Atom upon update", "name", atom.GetName())
 
-	return atom.ValidateUpdate(atomOld)
+	return atom.ValidateUpdate(v.Client, atomOld)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Atom.

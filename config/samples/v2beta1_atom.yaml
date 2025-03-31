@@ -7,14 +7,15 @@ metadata:
     dataset: dataset
     dataset-owner: owner
     service-type: atom
+    service-version: v1_0
   name: v2-sample
 spec:
   general:
     dataset: dataset
     datasetOwner: owner
-    dataVersion:
+#    dataVersion:
     serviceVersion: v1_0
-    theme:
+#    theme:
   service:
     title: Test Dataset ATOM
     subtitle: Test Dataset ATOM
@@ -45,7 +46,7 @@ spec:
             content: "Per Featuretype is er een downloadbestand beschikbaar"
             title: "Dataset download GML"
             links:
-              - BlobKey: "http://localazurite.blob.azurite/bucket/key1/dataset_1.gpkg"
+              - blobKey: "http://localazurite.blob.azurite/bucket/key1/dataset_1.gpkg"
                 updated: "2022-12-02T14:02:14Z"
                 bbox:
                   minx: 3.31
