@@ -27,6 +27,7 @@ package v3
 import (
 	"context"
 	"fmt"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -38,8 +39,9 @@ import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 )
 
-// nolint:unused
 // log is for logging in this package.
+//
+
 var atomlog = logf.Log.WithName("atom-resource")
 
 // SetupAtomWebhookWithManager registers the webhook for Atom in the manager.
@@ -65,7 +67,7 @@ type AtomCustomValidator struct {
 var _ webhook.CustomValidator = &AtomCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Atom.
-func (v *AtomCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *AtomCustomValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	atom, ok := obj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object but got %T", obj)
@@ -76,7 +78,7 @@ func (v *AtomCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Atom.
-func (v *AtomCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *AtomCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	atomlog.Info("reading newAtom")
 	atom, ok := newObj.(*pdoknlv3.Atom)
 	if !ok {
@@ -93,7 +95,7 @@ func (v *AtomCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Atom.
-func (v *AtomCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *AtomCustomValidator) ValidateDelete(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	atom, ok := obj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object but got %T", obj)

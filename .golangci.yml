@@ -18,6 +18,7 @@ issues:
         - dupl
         - dogsled
         - funlen
+        - gosec
 
 output:
   formats: colored-line-number

@@ -2,11 +2,14 @@ package v3
 
 import (
 	"fmt"
+
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	sharedValidation "github.com/pdok/smooth-operator/pkg/validation"
+
+	"strings"
+
 	"golang.org/x/net/context"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 )
 
 func (atom *Atom) ValidateCreate(c client.Client) ([]string, error) {
@@ -22,9 +25,9 @@ func (atom *Atom) ValidateCreate(c client.Client) ([]string, error) {
 
 	if len(reasons) > 0 {
 		return warnings, fmt.Errorf("%s", strings.Join(reasons, ". "))
-	} else {
-		return warnings, nil
 	}
+
+	return warnings, nil
 }
 
 func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, error) {
@@ -46,9 +49,9 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 
 	if len(reasons) > 0 {
 		return warnings, fmt.Errorf("%s", strings.Join(reasons, ". "))
-	} else {
-		return warnings, nil
 	}
+
+	return warnings, nil
 }
 
 func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]string) {
@@ -82,7 +85,7 @@ func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]st
 	}
 
 	// TODO uncomment when atom is point in ownerInfo
-	//if ownerInfo.Spec.Atom == nil {
-	//	*reasons = append(*reasons, fmt.Sprintf("no atom settings in ownerInfo: %s", ownerInfo.Name))
-	//}
+	// if ownerInfo.Spec.Atom == nil {
+	// 	 *reasons = append(*reasons, fmt.Sprintf("no atom settings in ownerInfo: %s", ownerInfo.Name))
+	// }
 }
