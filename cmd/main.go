@@ -266,10 +266,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		if err = webhookpdoknlv3.SetupAtomWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")
-			os.Exit(1)
-		}
 	}
 
 	// +kubebuilder:scaffold:builder
