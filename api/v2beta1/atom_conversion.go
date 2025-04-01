@@ -103,6 +103,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 		for _, srcDownload := range srcDataset.Downloads {
 			dstEntry := pdoknlv3.Entry{
 				TechnicalName: srcDownload.Name,
+				Content:       srcDownload.Content,
 				SRS: &pdoknlv3.SRS{
 					URI:  srcDownload.Srs.URI,
 					Name: srcDownload.Srs.Code,
@@ -119,9 +120,6 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 			if srcDownload.Title != nil {
 				dstEntry.Title = *srcDownload.Title
-			}
-			if srcDownload.Content != nil {
-				dstEntry.Content = *srcDownload.Content
 			}
 
 			var updated string
@@ -251,12 +249,9 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		// Map the downloads
 		for _, srcEntry := range srcDatasetFeed.Entries {
 			dstDownload := Download{
-				Name:  srcEntry.TechnicalName,
-				Title: &srcEntry.Title,
-			}
-
-			if srcEntry.Content != "" {
-				dstDownload.Content = &srcEntry.Content
+				Name:    srcEntry.TechnicalName,
+				Title:   &srcEntry.Title,
+				Content: srcEntry.Content,
 			}
 
 			if srcEntry.Updated != nil {

@@ -25,8 +25,8 @@ SOFTWARE.
 package v3
 
 import (
-	. "github.com/onsi/ginkgo/v2" //nolint:revive
-	. "github.com/onsi/gomega"    //nolint:revive
+	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
+	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	// TODO (user): Add any additional imports if needed
@@ -34,13 +34,16 @@ import (
 
 var _ = Describe("Atom Webhook", func() {
 	var (
-		obj    *pdoknlv3.Atom
-		oldObj *pdoknlv3.Atom
+		obj       *pdoknlv3.Atom
+		oldObj    *pdoknlv3.Atom
+		validator AtomCustomValidator
 	)
 
 	BeforeEach(func() {
 		obj = &pdoknlv3.Atom{}
 		oldObj = &pdoknlv3.Atom{}
+		validator = AtomCustomValidator{}
+		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
 		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
 		// TODO (user): Add any setup logic common to all tests
@@ -50,13 +53,26 @@ var _ = Describe("Atom Webhook", func() {
 		// TODO (user): Add any teardown logic common to all tests
 	})
 
-	Context("When creating Atom under Conversion Webhook", func() {
-		// TODO (user): Add logic to convert the object to the desired version and verify the conversion
+	Context("When creating or updating Atom under Validating Webhook", func() {
+		// TODO (user): Add logic for validating webhooks
 		// Example:
-		// It("Should convert the object correctly", func() {
-		//     convertedObj := &pdoknlv3.Atom{}
-		//     Expect(obj.ConvertTo(convertedObj)).To(Succeed())
-		//     Expect(convertedObj).ToNot(BeNil())
+		// It("Should deny creation if a required field is missing", func() {
+		//     By("simulating an invalid creation scenario")
+		//     obj.SomeRequiredField = ""
+		//     Expect(validator.ValidateCreate(ctx, obj)).Error().To(HaveOccurred())
+		// })
+		//
+		// It("Should admit creation if all required fields are present", func() {
+		//     By("simulating an invalid creation scenario")
+		//     obj.SomeRequiredField = "valid_value"
+		//     Expect(validator.ValidateCreate(ctx, obj)).To(BeNil())
+		// })
+		//
+		// It("Should validate updates correctly", func() {
+		//     By("simulating a valid update scenario")
+		//     oldObj.SomeRequiredField = "updated_value"
+		//     obj.SomeRequiredField = "updated_value"
+		//     Expect(validator.ValidateUpdate(ctx, oldObj, obj)).To(BeNil())
 		// })
 	})
 

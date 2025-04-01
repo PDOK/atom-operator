@@ -820,7 +820,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 										{
 											TechnicalName: "https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
 											Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
-											Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).",
+											Content:       smoothoperatorutils.Pointer("Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO)."),
 											DownloadLinks: []pdoknlv3.DownloadLink{
 												{
 													Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
@@ -889,7 +889,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 										{
 											TechnicalName: "https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
 											Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
-											Content:       "Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).",
+											Content:       smoothoperatorutils.Pointer("Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO)."),
 											DownloadLinks: []pdoknlv3.DownloadLink{
 												{
 													Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
