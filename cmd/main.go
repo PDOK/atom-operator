@@ -49,7 +49,7 @@ import (
 )
 
 const (
-	defaultAtomGeneratorImage = "docker.io/pdok/atom-generator:0.6.0"
+	defaultAtomGeneratorImage = "docker.io/pdok/atom-generator:v0.6.1"
 	defaultLighttpdImage      = "docker.io/pdok/lighttpd:1.4.67"
 )
 
