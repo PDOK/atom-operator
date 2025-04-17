@@ -349,7 +349,6 @@ spec:
             description: AtomSpec defines the desired state of Atom.
             properties:
               lifecycle:
-                description: descpri
                 properties:
                   ttlInDays:
                     format: int32
@@ -363,7 +362,8 @@ spec:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
               service:
-                description: fsdhjk
+                description: Service defines the service configuration for the Atom
+                  feed
                 properties:
                   author:
                     description: Author represents the author or owner of the service
@@ -649,8 +649,6 @@ spec:
                   for this Atom.
                 type: object
             type: object
-        required:
-        - spec
         type: object
     served: true
     storage: true
