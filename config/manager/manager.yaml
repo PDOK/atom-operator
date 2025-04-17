@@ -54,9 +54,9 @@ spec:
         args:
           - --leader-elect
           - --health-probe-bind-address=:8081
-          - --atom-baseurl=https://test.example.nl
-          - --atom-host=test.example.nl
-          - --blob-endpoint=https://test.blob.example.net
+          - --atom-baseurl=http://localhost
+          - --atom-host=localhost
+          - --blob-endpoint=http://localazurite.blob.azurite
         image: controller:latest
         name: manager
         ports: []

@@ -795,7 +795,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 			args: args{
 				atom: &pdoknlv3.Atom{
 					Spec: pdoknlv3.AtomSpec{
-						Lifecycle: smoothoperatormodel.Lifecycle{},
+						Lifecycle: &smoothoperatormodel.Lifecycle{},
 						Service: pdoknlv3.Service{
 							ServiceMetadataLinks: pdoknlv3.MetadataLink{
 								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx",
@@ -886,7 +886,7 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 			},
 		},
 		Spec: pdoknlv3.AtomSpec{
-			Lifecycle: smoothoperatormodel.Lifecycle{
+			Lifecycle: &smoothoperatormodel.Lifecycle{
 				TTLInDays: smoothoperatorutils.Pointer(int32(999)),
 			},
 			Service: pdoknlv3.Service{

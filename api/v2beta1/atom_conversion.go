@@ -50,7 +50,9 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 	// Lifecycle
 	if a.Spec.Kubernetes != nil && a.Spec.Kubernetes.Lifecycle != nil && a.Spec.Kubernetes.Lifecycle.TTLInDays != nil {
-		dst.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*a.Spec.Kubernetes.Lifecycle.TTLInDays)) //nolint:gosec
+		dst.Spec.Lifecycle = &smoothoperatormodel.Lifecycle{
+			TTLInDays: GetInt32Pointer(int32(*a.Spec.Kubernetes.Lifecycle.TTLInDays)), //nolint:gosec
+		}
 	}
 
 	// Service
@@ -302,7 +304,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	a.Spec.Kubernetes = &Kubernetes{
 		Lifecycle: &Lifecycle{},
 	}
-	if src.Spec.Lifecycle.TTLInDays != nil {
+	if src.Spec.Lifecycle != nil && src.Spec.Lifecycle.TTLInDays != nil {
 		a.Spec.Kubernetes.Lifecycle.TTLInDays = GetIntPointer(int(*src.Spec.Lifecycle.TTLInDays))
 	}
 

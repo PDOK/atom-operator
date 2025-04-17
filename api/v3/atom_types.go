@@ -39,8 +39,8 @@ var blobEndpoint string
 
 // AtomSpec defines the desired state of Atom.
 type AtomSpec struct {
-	Lifecycle smoothoperatormodel.Lifecycle `json:"lifecycle,omitempty"`
-	Service   Service                       `json:"service"`
+	Lifecycle *smoothoperatormodel.Lifecycle `json:"lifecycle,omitempty"`
+	Service   Service                        `json:"service"`
 	//+kubebuilder:validation:Type=object
 	//+kubebuilder:validation:Schemaless
 	//+kubebuilder:pruning:PreserveUnknownFields
