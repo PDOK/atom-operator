@@ -29,7 +29,6 @@ import (
 	"strings"
 
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -39,76 +38,69 @@ var blobEndpoint string
 
 // AtomSpec defines the desired state of Atom.
 type AtomSpec struct {
-	Lifecycle smoothoperatormodel.Lifecycle `json:"lifecycle,omitempty"`
-	Service   Service                       `json:"service"`
-	//+kubebuilder:validation:Type=object
-	//+kubebuilder:validation:Schemaless
-	//+kubebuilder:pruning:PreserveUnknownFields
-	// Optional strategic merge patch for the pod in the deployment. E.g. to patch the resources or add extra env vars.
-	PodSpecPatch *corev1.PodSpec `json:"podSpecPatch,omitempty"`
+	Lifecycle *smoothoperatormodel.Lifecycle `json:"lifecycle,omitempty"`
+	Service   Service                        `json:"service"`
 }
 
 // Service defines the service configuration for the Atom feed
 type Service struct {
-	BaseURL              string                     `json:"baseUrl"`
-	Lang                 string                     `json:"lang,omitempty"`
-	Stylesheet           string                     `json:"stylesheet,omitempty"`
-	Title                string                     `json:"title"`
-	Subtitle             string                     `json:"subtitle,omitempty"`
-	OwnerInfoRef         string                     `json:"ownerInfoRef"`
-	ServiceMetadataLinks MetadataLink               `json:"serviceMetadataLinks,omitempty"`
-	Rights               string                     `json:"rights,omitempty"`
-	DatasetFeeds         []DatasetFeed              `json:"datasetFeeds,omitempty"`
-	Author               smoothoperatormodel.Author `json:"author,omitempty"`
+	BaseURL              string        `json:"baseUrl"`
+	Lang                 string        `json:"lang"` // TODO default nl
+	Stylesheet           *string       `json:"stylesheet,omitempty"`
+	Title                string        `json:"title"`
+	Subtitle             string        `json:"subtitle"`
+	OwnerInfoRef         string        `json:"ownerInfoRef"`
+	ServiceMetadataLinks *MetadataLink `json:"serviceMetadataLinks,omitempty"`
+	Links                []Link        `json:"links,omitempty"` // TODO minlength 1 if not nil (zal momenteel altijd nil zijn)
+	Rights               string        `json:"rights"`
+	DatasetFeeds         []DatasetFeed `json:"datasetFeeds"` // TODO minlength 1
 }
 
 // Link represents a link in the service or dataset feed
 type Link struct {
-	Href     string `json:"href"`
-	Category string `json:"category,omitempty"`
-	Rel      string `json:"rel,omitempty"`
-	Type     string `json:"type,omitempty"`
-	Hreflang string `json:"hreflang,omitempty"`
-	Title    string `json:"title,omitempty"`
+	Href     string  `json:"href"`
+	Rel      string  `json:"rel"`
+	Type     string  `json:"type"`
+	Hreflang *string `json:"hreflang,omitempty"`
+	Title    *string `json:"title,omitempty"`
 }
 
 // DatasetFeed represents individual dataset feeds within the Atom service
 type DatasetFeed struct {
 	TechnicalName                     string                     `json:"technicalName"`
 	Title                             string                     `json:"title"`
-	Subtitle                          string                     `json:"subtitle,omitempty"`
-	Links                             []Link                     `json:"links,omitempty"`
-	DatasetMetadataLinks              MetadataLink               `json:"datasetMetadataLinks,omitempty"`
-	Author                            smoothoperatormodel.Author `json:"author,omitempty"`
-	SpatialDatasetIdentifierCode      string                     `json:"spatial_dataset_identifier_code,omitempty"`      //nolint:tagliatelle // This is according to Atom spec
-	SpatialDatasetIdentifierNamespace string                     `json:"spatial_dataset_identifier_namespace,omitempty"` //nolint:tagliatelle // This is according to Atom spec
-	Entries                           []Entry                    `json:"entries,omitempty"`
+	Subtitle                          string                     `json:"subtitle"`
+	Links                             []Link                     `json:"links,omitempty"` // TODO minlength 1 if not nil
+	DatasetMetadataLinks              *MetadataLink              `json:"datasetMetadataLinks,omitempty"`
+	Author                            smoothoperatormodel.Author `json:"author"`
+	SpatialDatasetIdentifierCode      *string                    `json:"spatialDatasetIdentifierCode,omitempty"`
+	SpatialDatasetIdentifierNamespace *string                    `json:"spatialDatasetIdentifierNamespace,omitempty"`
+	Entries                           []Entry                    `json:"entries"` // TODO minlength 1
 }
 
 // MetadataLink represents a link in the service or dataset feed
 type MetadataLink struct {
 	MetadataIdentifier string   `json:"metadataIdentifier"`
-	Templates          []string `json:"templates,omitempty"`
+	Templates          []string `json:"templates"` // TODO min 1
 }
 
 // Entry represents an entry within a dataset feed, typically for downloads
 type Entry struct {
 	TechnicalName string         `json:"technicalName"`
-	Title         string         `json:"title,omitempty"`
-	Content       *string        `json:"content,omitempty"`
-	DownloadLinks []DownloadLink `json:"downloadlinks,omitempty"`
-	Updated       *metav1.Time   `json:"updated,omitempty"`
-	Polygon       *Polygon       `json:"polygon,omitempty"`
-	SRS           *SRS           `json:"srs,omitempty"`
+	Title         *string        `json:"title,omitempty"`
+	Content       *string        `json:"content,omitempty"` // required if downloadLinks >=2
+	DownloadLinks []DownloadLink `json:"downloadlinks"`     // TODO minlength 1
+	Updated       metav1.Time    `json:"updated"`
+	Polygon       Polygon        `json:"polygon"`
+	SRS           SRS            `json:"srs"`
 }
 
 // DownloadLink specifies download information for entries
 type DownloadLink struct {
-	Data    string                    `json:"data"`
-	Rel     string                    `json:"rel,omitempty"`
-	Version *string                   `json:"version,omitempty"`
-	Time    *string                   `json:"time,omitempty"`
-	BBox    *smoothoperatormodel.BBox `json:"bbox,omitempty"`
+	Data string                    `json:"data"`
+	Rel  *string                   `json:"rel,omitempty"`
+	Time *string                   `json:"time,omitempty"`
+	BBox *smoothoperatormodel.BBox `json:"bbox,omitempty"`
 }
 
 // Polygon describes the bounding box of an entry or download
@@ -134,8 +126,8 @@ type Atom struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtomSpec                           `json:"spec,omitempty"`
-	Status smoothoperatormodel.OperatorStatus `json:"status,omitempty"`
+	Spec   AtomSpec                            `json:"spec"`
+	Status *smoothoperatormodel.OperatorStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true
