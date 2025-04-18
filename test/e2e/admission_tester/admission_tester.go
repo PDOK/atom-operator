@@ -27,6 +27,8 @@ func main() {
 		k8sClusters += "/"
 	}
 	k8sClusters += "applications"
+
+	v3.SetBaseURL("https://service.pdok.nl")
 	err := filepath.WalkDir(k8sClusters, func(path string, d fs.DirEntry, err error) error {
 		if strings.HasSuffix(path, "atom.yaml") {
 			checkAtom(path)
