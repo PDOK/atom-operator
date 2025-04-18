@@ -44,32 +44,37 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
 		"source: %s/%s", a.Namespace, a.Name)
+	V3AtomHubFromV2(a, dst)
 
+	return nil
+}
+
+func V3AtomHubFromV2(src *Atom, target *pdoknlv3.Atom) {
 	// ObjectMeta
-	dst.ObjectMeta = a.ObjectMeta
+	target.ObjectMeta = src.ObjectMeta
 
 	// Lifecycle
-	if a.Spec.Kubernetes != nil && a.Spec.Kubernetes.Lifecycle != nil && a.Spec.Kubernetes.Lifecycle.TTLInDays != nil {
-		dst.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*a.Spec.Kubernetes.Lifecycle.TTLInDays)) //nolint:gosec
+	if src.Spec.Kubernetes != nil && src.Spec.Kubernetes.Lifecycle != nil && src.Spec.Kubernetes.Lifecycle.TTLInDays != nil {
+		target.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*src.Spec.Kubernetes.Lifecycle.TTLInDays)) //nolint:gosec
 	}
 
 	// Service
-	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), a.Spec.General),
+	target.Spec.Service = pdoknlv3.Service{
+		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), src.Spec.General),
 		Lang:         "nl",
 		Stylesheet:   pdoknlv3.GetBaseURL() + "/atom/style/style.xsl",
-		Title:        a.Spec.Service.Title,
-		Subtitle:     a.Spec.Service.Subtitle,
+		Title:        src.Spec.Service.Title,
+		Subtitle:     src.Spec.Service.Subtitle,
 		OwnerInfoRef: "pdok",
 		ServiceMetadataLinks: pdoknlv3.MetadataLink{
-			MetadataIdentifier: a.Spec.Service.MetadataIdentifier,
+			MetadataIdentifier: src.Spec.Service.MetadataIdentifier,
 			Templates:          []string{"csw", "opensearch", "html"},
 		},
-		Rights: a.Spec.Service.Rights,
+		Rights: src.Spec.Service.Rights,
 	}
 
-	dst.Spec.Service.DatasetFeeds = []pdoknlv3.DatasetFeed{}
-	for _, srcDataset := range a.Spec.Service.Datasets {
+	target.Spec.Service.DatasetFeeds = []pdoknlv3.DatasetFeed{}
+	for _, srcDataset := range src.Spec.Service.Datasets {
 		dstDatasetFeed := pdoknlv3.DatasetFeed{
 			TechnicalName: srcDataset.Name,
 			Title:         srcDataset.Title,
@@ -78,7 +83,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				MetadataIdentifier: srcDataset.MetadataIdentifier,
 				Templates:          []string{"csw", "html"},
 			},
-			Author:                            smoothoperatormodel.Author{Name: a.Spec.Service.Author.Name, Email: a.Spec.Service.Author.Email},
+			Author:                            smoothoperatormodel.Author{Name: src.Spec.Service.Author.Name, Email: src.Spec.Service.Author.Email},
 			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
 			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
 		}
@@ -125,8 +130,8 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			var updated string
 			if srcDownload.Updated != nil {
 				updated = *srcDownload.Updated
-			} else if a.Spec.Service.Updated != nil {
-				updated = *a.Spec.Service.Updated
+			} else if src.Spec.Service.Updated != nil {
+				updated = *src.Spec.Service.Updated
 			}
 
 			parsedUpdatedTime, err := time.Parse(time.RFC3339, updated)
@@ -168,10 +173,8 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 			dstDatasetFeed.Entries = append(dstDatasetFeed.Entries, dstEntry)
 		}
 
-		dst.Spec.Service.DatasetFeeds = append(dst.Spec.Service.DatasetFeeds, dstDatasetFeed)
+		target.Spec.Service.DatasetFeeds = append(target.Spec.Service.DatasetFeeds, dstDatasetFeed)
 	}
-
-	return nil
 }
 
 // ConvertFrom converts the Hub version (v3) to this Atom (v2beta1).
