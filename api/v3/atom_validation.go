@@ -67,19 +67,13 @@ func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]st
 		}
 	}
 
-	service := atom.Spec.Service
-	err := sharedValidation.ValidateBaseURL(service.BaseURL)
-	if err != nil {
-		*reasons = append(*reasons, fmt.Sprintf("%v", err))
-	}
-
 	ownerInfo := &smoothoperatorv1.OwnerInfo{}
 	objectKey := client.ObjectKey{
 		Namespace: atom.Namespace,
 		Name:      atom.Spec.Service.OwnerInfoRef,
 	}
 	ctx := context.Background()
-	err = c.Get(ctx, objectKey, ownerInfo)
+	err := c.Get(ctx, objectKey, ownerInfo)
 	if err != nil {
 		*reasons = append(*reasons, fmt.Sprintf("%v", err))
 	}
