@@ -2,6 +2,7 @@ package generator
 
 import (
 	"errors"
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -17,6 +18,11 @@ import (
 func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) (atomGeneratorConfig atomfeed.Feeds, err error) {
 
 	var describedbyLink, searchLink, relatedLink atomfeed.Link
+
+	if ownerInfo.Spec.Atom == nil {
+		err = fmt.Errorf("ownerInfo has no Atom information defined")
+		return
+	}
 
 	language := "nl"
 	xmlSheet := pdoknlv3.GetBaseURL() + "/atom/style/style.xsl"
@@ -87,8 +93,8 @@ func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
 	var updateTime *metav1.Time
 	for _, datasetFeed := range feeds {
 		for _, entry := range datasetFeed.Entries {
-			if entry.Updated != nil && (updateTime == nil || updateTime.Before(entry.Updated)) {
-				updateTime = entry.Updated
+			if updateTime == nil || updateTime.Before(&entry.Updated) {
+				updateTime = &entry.Updated
 			}
 		}
 	}
@@ -118,12 +124,10 @@ func getServiceEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerIn
 
 		// Collect all categories
 		for _, entry := range datasetFeed.Entries {
-			if entry.SRS != nil {
-				category := getCategory(entry.SRS)
-				// Add category to datasetFeed.category if not yet present
-				if !slices.Contains(datasetEntry.Category, category) {
-					datasetEntry.Category = append(datasetEntry.Category, category)
-				}
+			category := getCategory(entry.SRS)
+			// Add category to datasetFeed.category if not yet present
+			if !slices.Contains(datasetEntry.Category, category) {
+				datasetEntry.Category = append(datasetEntry.Category, category)
 			}
 		}
 
@@ -155,7 +159,7 @@ func getServiceEntryLinks(atom pdoknlv3.Atom, language string, ownerInfo v1.Owne
 
 }
 
-func getCategory(srs *pdoknlv3.SRS) atomfeed.Category {
+func getCategory(srs pdoknlv3.SRS) atomfeed.Category {
 	return atomfeed.Category{
 		Term:  srs.URI,
 		Label: srs.Name,
@@ -192,20 +196,23 @@ func replaceMustachTemplate(hrefTemplate string, identifier string) (string, err
 }
 
 func getCSWDescribedbyLink(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo) (atomfeed.Link, error) {
-	for _, template := range atom.Spec.Service.ServiceMetadataLinks.Templates {
-		if template == "csw" {
-			href, err := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.CSW.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
-			if err != nil {
-				return atomfeed.Link{}, err
+	if atom.Spec.Service.ServiceMetadataLinks != nil {
+		for _, template := range atom.Spec.Service.ServiceMetadataLinks.Templates {
+			if template == "csw" {
+				href, err := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.CSW.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
+				if err != nil {
+					return atomfeed.Link{}, err
+				}
+				return atomfeed.Link{
+					Rel:      "describedby",
+					Href:     href,
+					Type:     "application/xml",
+					Hreflang: &language,
+				}, nil
 			}
-			return atomfeed.Link{
-				Rel:      "describedby",
-				Href:     href,
-				Type:     "application/xml",
-				Hreflang: &language,
-			}, nil
 		}
 	}
+
 	return atomfeed.Link{}, errors.New("ownerInfo doesn't have a CSW template")
 }
 
@@ -282,9 +289,11 @@ func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo, datasetFeed pdo
 		linkDescribedbyLink := atomfeed.Link{
 			Rel:      "describedby",
 			Href:     link.Href,
-			Title:    escapeQuotes(link.Title),
 			Type:     link.Type,
-			Hreflang: &link.Hreflang,
+			Hreflang: link.Hreflang,
+		}
+		if link.Title != nil {
+			linkDescribedbyLink.Title = escapeQuotes(*link.Title)
 		}
 		links = append(links, linkDescribedbyLink)
 	}
@@ -298,12 +307,15 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 
 		datasetEntry := atomfeed.Entry{
 			ID:       atom.Spec.Service.BaseURL + "/" + entry.TechnicalName + ".xml",
-			Title:    escapeQuotes(entry.Title),
 			Link:     []atomfeed.Link{},
 			Rights:   atom.Spec.Service.Rights,
 			Category: []atomfeed.Category{getCategory(entry.SRS)},
 			Polygon:  entry.Polygon.BBox.ToPolygon(),
 			Summary:  escapeQuotes(datasetFeed.Subtitle),
+		}
+
+		if entry.Title != nil {
+			datasetEntry.Title = escapeQuotes(*entry.Title)
 		}
 
 		if entry.Content != nil {
@@ -322,9 +334,6 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 				Title: getDownloadLinkTitle(datasetFeed, entry, downloadLink),
 			}
 
-			if downloadLink.Version != nil {
-				link.Version = downloadLink.Version
-			}
 			if downloadLink.Time != nil {
 				link.Time = downloadLink.Time
 			}
@@ -343,7 +352,7 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 
 func getEmptyRelCount(entry pdoknlv3.Entry) (count int) {
 	for _, downloadLink := range entry.DownloadLinks {
-		if downloadLink.Rel == "" {
+		if downloadLink.Rel == nil || *downloadLink.Rel == "" {
 			count++
 		}
 	}
@@ -352,8 +361,8 @@ func getEmptyRelCount(entry pdoknlv3.Entry) (count int) {
 
 func getDownloadLinkRel(downloadLink pdoknlv3.DownloadLink, emptyRelCount int) (rel string) {
 	switch {
-	case downloadLink.Rel != "":
-		rel = downloadLink.Rel
+	case downloadLink.Rel != nil && *downloadLink.Rel != "":
+		rel = *downloadLink.Rel
 	case emptyRelCount > 1:
 		rel = "section"
 	default:
@@ -364,9 +373,6 @@ func getDownloadLinkRel(downloadLink pdoknlv3.DownloadLink, emptyRelCount int) (
 
 func getDownloadLinkHref(downloadLink pdoknlv3.DownloadLink, atom pdoknlv3.Atom) (href string) {
 	href = atom.Spec.Service.BaseURL + "/downloads"
-	if downloadLink.Version != nil {
-		href += "/" + *downloadLink.Version
-	}
 	href += "/" + downloadLink.GetBlobName()
 	return
 }
@@ -379,15 +385,12 @@ func getDownloadLinkData(downloadLink pdoknlv3.DownloadLink) *string {
 }
 
 func getDownloadLinkTitle(datasetFeed pdoknlv3.DatasetFeed, entry pdoknlv3.Entry, downloadLink pdoknlv3.DownloadLink) (title string) {
-	if entry.Title != "" {
-		title = entry.Title
+	if entry.Title != nil && *entry.Title != "" {
+		title = *entry.Title
 	} else {
 		title = datasetFeed.Title
 	}
 	title += "-"
-	if downloadLink.Version != nil {
-		title += *downloadLink.Version + " "
-	}
 	title += downloadLink.GetBlobName()
 	return
 }

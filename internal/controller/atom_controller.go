@@ -28,6 +28,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	"strconv"
 	"time"
 
@@ -446,13 +447,6 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 		},
 	}
 
-	if atom.Spec.PodSpecPatch != nil {
-		patchedPod, err := smoothoperatorutils.StrategicMergePatch(&podTemplateSpec.Spec, &atom.Spec.PodSpecPatch)
-		if err != nil {
-			return err
-		}
-		podTemplateSpec.Spec = *patchedPod
-	}
 	podTemplateSpec.Spec.InitContainers[0].Image = r.AtomGeneratorImage
 	podTemplateSpec.Spec.Containers[0].Image = r.LighttpdImage
 	deployment.Spec.Template = podTemplateSpec
@@ -754,11 +748,7 @@ func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Rou
 }
 
 func getDownloadLinkRegex(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLink) string {
-	version := ""
-	if downloadLink.Version != nil {
-		version = *downloadLink.Version + "/"
-	}
-	return fmt.Sprintf("^/%s/downloads/%s(%s)", atom.GetBaseURLPath(), version, downloadLink.GetBlobName())
+	return fmt.Sprintf("^/%s/downloads/(%s)", atom.GetBaseURLPath(), downloadLink.GetBlobName())
 }
 
 func getDownloadLinkReplacement(downloadLink *pdoknlv3.DownloadLink) string {
@@ -784,11 +774,13 @@ func (r *AtomReconciler) updateStatus(ctx context.Context, atom *pdoknlv3.Atom, 
 		return
 	}
 
+	if atom.Status == nil {
+		atom.Status = &smoothoperatormodel.OperatorStatus{}
+	}
+
 	changed := false
 	for _, condition := range conditions {
-		if meta.SetStatusCondition(&atom.Status.Conditions, condition) {
-			changed = true
-		}
+		changed = meta.SetStatusCondition(&atom.Status.Conditions, condition) || changed
 	}
 	if !equality.Semantic.DeepEqual(atom.Status.OperationResults, operationResults) {
 		atom.Status.OperationResults = operationResults

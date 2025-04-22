@@ -34,8 +34,8 @@ feeds:
     rights: ""
     updated: "2025-03-05T05:05:05Z"
     author:
-      name: ""
-      email: ""
+      name: "owner"
+      email: "info@test.com"
     entry:
       - id: /https://service.pdok.nl/test/atom/index.xml.xml
         title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM

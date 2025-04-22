@@ -5,6 +5,9 @@ TAG=$1
 echo "Running: make generate"
 make generate
 
+echo "Running: make manifests"
+make manifests
+
 echo ""
 echo "Running: build -t local-registry:5000/atom-operator:$TAG --build-context repos=./.. ."
 docker build -t "local-registry:5000/atom-operator:$TAG" --build-context repos=./.. .

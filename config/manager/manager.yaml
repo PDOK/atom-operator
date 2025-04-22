@@ -54,7 +54,7 @@ spec:
         args:
           - --leader-elect
           - --health-probe-bind-address=:8081
-          - --atom-baseurl=http://localhost
+          - --atom-baseurl=http://localhost:32788
           - --atom-host=localhost
           - --blob-endpoint=http://localazurite.blob.azurite
         image: controller:latest

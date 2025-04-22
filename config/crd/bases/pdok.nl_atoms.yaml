@@ -349,75 +349,76 @@ spec:
             description: AtomSpec defines the desired state of Atom.
             properties:
               lifecycle:
+                description: Optional lifecycle settings
                 properties:
                   ttlInDays:
                     format: int32
                     type: integer
-                required:
-                - ttlInDays
                 type: object
-              podSpecPatch:
-                description: Optional strategic merge patch for the pod in the deployment.
-                  E.g. to patch the resources or add extra env vars.
-                type: object
-                x-kubernetes-preserve-unknown-fields: true
               service:
-                description: Service defines the service configuration for the Atom
-                  feed
+                description: Service specification
                 properties:
-                  author:
-                    description: Author represents the author or owner of the service
-                      or dataset
-                    properties:
-                      email:
-                        type: string
-                      name:
-                        type: string
-                    type: object
                   baseUrl:
+                    description: BaseURL of the Atom service. Will be suffixed with
+                      index.xml for the index.
+                    pattern: https?://
                     type: string
                   datasetFeeds:
+                    description: DatasetFeeds in this service
                     items:
                       description: DatasetFeed represents individual dataset feeds
                         within the Atom service
                       properties:
                         author:
-                          description: Author represents the author or owner of the
-                            service or dataset
+                          description: Author of the dataset, note that this is not
+                            the same as the author of the service.
                           properties:
                             email:
                               type: string
                             name:
                               type: string
+                          required:
+                          - email
+                          - name
                           type: object
                         datasetMetadataLinks:
-                          description: MetadataLink represents a link in the service
-                            or dataset feed
+                          description: Optional links to metadata of the dataset
                           properties:
                             metadataIdentifier:
+                              description: UUID of the metadata record
+                              format: uuid
                               type: string
                             templates:
+                              description: Metadata templates to use
                               items:
                                 type: string
+                              minItems: 1
                               type: array
                           required:
                           - metadataIdentifier
+                          - templates
                           type: object
                         entries:
+                          description: List of entries for this dataset feed, typically
+                            used for downloads
                           items:
                             description: Entry represents an entry within a dataset
                               feed, typically for downloads
                             properties:
                               content:
+                                description: Optional content description of the links.
+                                  Required when more than 1 link is given
                                 type: string
                               downloadlinks:
+                                description: List of download links within this entry
                                 items:
                                   description: DownloadLink specifies download information
                                     for entries
                                   properties:
                                     bbox:
-                                      description: BBox defines a bounding box with
-                                        coordinates
+                                      description: Optional boundingbox of the data.
+                                        If omitted the bounding box of the parent
+                                        entry is used
                                       properties:
                                         maxx:
                                           description: Rechtsonder X coördinaat
@@ -442,20 +443,27 @@ spec:
                                       - miny
                                       type: object
                                     data:
+                                      description: URL to the data
+                                      minLength: 1
                                       type: string
                                     rel:
+                                      description: 'Optional relation if the link,
+                                        for example: describedby, self or alternate'
+                                      minLength: 1
                                       type: string
                                     time:
-                                      type: string
-                                    version:
+                                      description: Optional. Datetime the data in
+                                        the dataset applies to, for use in historical
+                                        datasets
+                                      format: date-time
                                       type: string
                                   required:
                                   - data
                                   type: object
+                                minItems: 1
                                 type: array
                               polygon:
-                                description: Polygon describes the bounding box of
-                                  an entry or download
+                                description: Bounding box of the entry
                                 properties:
                                   bbox:
                                     description: BBox defines a bounding box with
@@ -487,92 +495,195 @@ spec:
                                 - bbox
                                 type: object
                               srs:
-                                description: SRS describes the Spatial Reference System
-                                  for an entry
+                                description: Spatial Reference System
                                 properties:
                                   name:
+                                    description: Name of the SRS
+                                    minLength: 1
                                     type: string
                                   uri:
+                                    description: URI of the SRS
+                                    pattern: https?://
                                     type: string
                                 required:
                                 - name
                                 - uri
                                 type: object
                               technicalName:
+                                description: TechnicalName of the Entry, used as the
+                                  ID
                                 type: string
                               title:
+                                description: Optional title of the Entry
                                 type: string
                               updated:
+                                description: Last updated timestamp
                                 format: date-time
                                 type: string
                             required:
+                            - downloadlinks
+                            - polygon
+                            - srs
                             - technicalName
+                            - updated
                             type: object
+                            x-kubernetes-validations:
+                            - message: Content field is required when 2 or more download
+                                links are given.
+                              rule: self.downloadlinks.size() == 1 || (has(self.content)
+                                && self.content.size() > 0)
+                          minItems: 1
                           type: array
                         links:
+                          description: Optional additional links
                           items:
                             description: Link represents a link in the service or
                               dataset feed
                             properties:
-                              category:
-                                type: string
                               href:
+                                description: Actual href of the link
+                                pattern: https?://
                                 type: string
                               hreflang:
+                                description: Optional language of the link. If omitted
+                                  the language of the service is used
+                                minLength: 2
                                 type: string
                               rel:
+                                description: 'Relation (type) of the link, for example:
+                                  describedby, self or alternate'
+                                minLength: 1
                                 type: string
                               title:
+                                description: Optional title of the link
+                                minLength: 1
                                 type: string
                               type:
+                                description: 'ContentType of the link, for example:
+                                  application/pdf or text/plain'
+                                pattern: ^[a-z]+\/[a-z]+(?:\+[a-z]+)?$
                                 type: string
                             required:
                             - href
+                            - rel
+                            - type
                             type: object
+                          minItems: 1
                           type: array
-                        spatial_dataset_identifier_code:
+                        spatialDatasetIdentifierCode:
+                          description: SpatialDatasetIdentifierCode
+                          format: uuid
                           type: string
-                        spatial_dataset_identifier_namespace:
+                        spatialDatasetIdentifierNamespace:
+                          description: SpatialDatasetIdentifierNamespace
+                          format: uri
                           type: string
                         subtitle:
+                          description: Subtitle of the feed
+                          minLength: 1
                           type: string
                         technicalName:
+                          description: TechnicalName of the feed. Can be seen as an
+                            identifier for the feed.
+                          minLength: 1
                           type: string
                         title:
+                          description: Title of the feed
+                          minLength: 1
                           type: string
                       required:
+                      - author
+                      - entries
+                      - subtitle
                       - technicalName
                       - title
                       type: object
+                    minItems: 1
                     type: array
                   lang:
+                    default: nl
+                    description: Language of the service
+                    minLength: 2
                     type: string
+                  links:
+                    description: Additional links
+                    items:
+                      description: Link represents a link in the service or dataset
+                        feed
+                      properties:
+                        href:
+                          description: Actual href of the link
+                          pattern: https?://
+                          type: string
+                        hreflang:
+                          description: Optional language of the link. If omitted the
+                            language of the service is used
+                          minLength: 2
+                          type: string
+                        rel:
+                          description: 'Relation (type) of the link, for example:
+                            describedby, self or alternate'
+                          minLength: 1
+                          type: string
+                        title:
+                          description: Optional title of the link
+                          minLength: 1
+                          type: string
+                        type:
+                          description: 'ContentType of the link, for example: application/pdf
+                            or text/plain'
+                          pattern: ^[a-z]+\/[a-z]+(?:\+[a-z]+)?$
+                          type: string
+                      required:
+                      - href
+                      - rel
+                      - type
+                      type: object
+                    minItems: 1
+                    type: array
                   ownerInfoRef:
+                    description: Reference to a CR of Kind OwnerInfo
                     type: string
                   rights:
+                    description: License used
+                    minLength: 1
                     type: string
                   serviceMetadataLinks:
-                    description: MetadataLink represents a link in the service or
-                      dataset feed
+                    description: Optional links to metadata of the service
                     properties:
                       metadataIdentifier:
+                        description: UUID of the metadata record
+                        format: uuid
                         type: string
                       templates:
+                        description: Metadata templates to use
                         items:
                           type: string
+                        minItems: 1
                         type: array
                     required:
                     - metadataIdentifier
+                    - templates
                     type: object
                   stylesheet:
+                    description: Optional link to a stylesheet used in pages generated
+                      by the service.
                     type: string
                   subtitle:
+                    description: Subtitle of the service
+                    minLength: 1
                     type: string
                   title:
+                    description: Title of the service
+                    minLength: 1
                     type: string
                 required:
                 - baseUrl
+                - datasetFeeds
+                - lang
                 - ownerInfoRef
+                - rights
+                - subtitle
                 - title
                 type: object
             required:
@@ -649,6 +760,8 @@ spec:
                   for this Atom.
                 type: object
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true
