@@ -28,7 +28,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	"strconv"
 	"time"
 
@@ -49,6 +48,7 @@ import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	"github.com/pdok/atom-operator/internal/controller/generator"
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
 
 	traefikdynamic "github.com/traefik/traefik/v3/pkg/config/dynamic"

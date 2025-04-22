@@ -85,6 +85,6 @@ func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]st
 	}
 
 	if ownerInfo.Spec.Atom == nil {
-		*reasons = append(*reasons, fmt.Sprintf("no atom settings in ownerInfo: %s", ownerInfo.Name))
+		*reasons = append(*reasons, "no atom settings in ownerInfo: "+ownerInfo.Name)
 	}
 }

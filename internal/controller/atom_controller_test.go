@@ -32,17 +32,14 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
-	"unicode"
-
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
@@ -995,14 +992,4 @@ func getTestPolygon() pdoknlv3.Polygon {
 
 func getUpdatedDate() time.Time {
 	return metav1.Date(2025, time.March, 5, 5, 5, 5, 0, time.UTC).UTC()
-}
-
-func removeSpace(s string) string {
-	rr := make([]rune, 0, len(s))
-	for _, r := range s {
-		if !unicode.IsSpace(r) {
-			rr = append(rr, r)
-		}
-	}
-	return string(rr)
 }

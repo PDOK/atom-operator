@@ -2,7 +2,6 @@ package generator
 
 import (
 	"errors"
-	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -20,8 +19,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 	var describedbyLink, searchLink, relatedLink atomfeed.Link
 
 	if ownerInfo.Spec.Atom == nil {
-		err = fmt.Errorf("ownerInfo has no Atom information defined")
-		return
+		return atomGeneratorConfig, errors.New("ownerInfo has no Atom information defined")
 	}
 
 	language := "nl"
