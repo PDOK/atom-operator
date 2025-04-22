@@ -161,12 +161,15 @@ type MetadataLink struct {
 // +kubebuilder:validation:XValidation:message="Content field is required when 2 or more download links are given.",rule="self.downloadlinks.size() == 1 || (has(self.content) && self.content.size() > 0)"
 type Entry struct {
 	// TechnicalName of the Entry, used as the ID
+	// +kubebuilder:validation:MinLength:=1
 	TechnicalName string `json:"technicalName"`
 
 	// Optional title of the Entry
+	// +kubebuilder:validation:MinLength:=1
 	Title *string `json:"title,omitempty"`
 
 	// Optional content description of the links. Required when more than 1 link is given
+	// +kubebuilder:validation:MinLength:=1
 	Content *string `json:"content,omitempty"`
 
 	// List of download links within this entry
