@@ -27,27 +27,24 @@ package controller
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"sync/atomic"
 	"testing"
 	"time"
-	"unicode"
-
-	"k8s.io/apimachinery/pkg/util/intstr"
-
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
+	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
 	policyv1 "k8s.io/api/policy/v1"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
@@ -113,18 +110,18 @@ var _ = Describe("Atom Controller", func() {
 						Name:      ownerInfoResourceName,
 					},
 					Spec: smoothoperatorv1.OwnerInfoSpec{
-						MetadataUrls: smoothoperatorv1.MetadataUrls{
-							CSW: smoothoperatorv1.MetadataURL{
+						MetadataUrls: &smoothoperatorv1.MetadataUrls{
+							CSW: &smoothoperatorv1.MetadataURL{
 								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id={{identifier}}",
 							},
-							OpenSearch: smoothoperatorv1.MetadataURL{
+							OpenSearch: &smoothoperatorv1.MetadataURL{
 								HrefTemplate: "https://www.ngr.nl/geonetwork/opensearch/dut/{{identifier}}/OpenSearchDescription.xml",
 							},
-							HTML: smoothoperatorv1.MetadataURL{
+							HTML: &smoothoperatorv1.MetadataURL{
 								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/{{identifier}}",
 							},
 						},
-						Atom: smoothoperatorv1.Atom{
+						Atom: &smoothoperatorv1.Atom{
 							Author: smoothoperatormodel.Author{
 								Name:  "pdok",
 								Email: "pdokbeheer@kadaster.nl",
@@ -324,7 +321,7 @@ var _ = Describe("Atom Controller", func() {
 			Expect(deployment.Spec.Selector.MatchLabels["dataset-owner"]).Should(Equal("test-datasetowner"))
 			Expect(deployment.Spec.Selector.MatchLabels["service-type"]).Should(Equal("atom"))
 
-			log.Printf("deployment.Spec.Template.ObjectMeta.Annotations[\"cluster-autoscaler.kubernetes.io/safe-to-evict\"]: %v", deployment.Spec.Template.ObjectMeta.Annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"])
+			// log.Printf("deployment.Spec.Template.ObjectMeta.Annotations[\"cluster-autoscaler.kubernetes.io/safe-to-evict\"]: %v", deployment.Spec.Template.ObjectMeta.Annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"])
 
 			/* TODO: de controller vult de volgende niet. Is dat ok?
 			Expect(nil).Should(Equal(deployment.Spec.Template.ObjectMeta.Annotations["cluster-autoscaler.kubernetes.io/safe-to-evict"]))
@@ -682,6 +679,18 @@ var _ = Describe("Atom Controller", func() {
 			Expect(service.Spec.Selector["service-type"]).Should(Equal("atom"))
 		})
 	})
+
+	Context("When manually validating an incoming CRD", func() {
+		It("Should not error", func() {
+			err := smoothoperatorvalidation.LoadSchemasForCRD(cfg, "default", "atoms.pdok.nl")
+			Expect(err).NotTo(HaveOccurred())
+
+			yamlInput := readTestFile("crd/v3_atom.yaml")
+
+			err = smoothoperatorvalidation.ValidateSchema(yamlInput, "atoms.pdok.nl")
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
 })
 
 func getDownloadMiddlewareArray(ctx context.Context, atom metav1.Object) []*traefikiov1alpha1.Middleware {
@@ -697,7 +706,6 @@ func getDownloadMiddlewareArray(ctx context.Context, atom metav1.Object) []*trae
 		downloadMiddlewareArray = append(downloadMiddlewareArray, middlewareDownloadLink)
 		index++
 	}
-	log.Printf("getDownloadMiddlewareArray: %v", len(downloadMiddlewareArray))
 	return downloadMiddlewareArray
 }
 
@@ -795,9 +803,9 @@ func Test_getGeneratorConfig(t *testing.T) {
 			args: args{
 				atom: &pdoknlv3.Atom{
 					Spec: pdoknlv3.AtomSpec{
-						Lifecycle: smoothoperatormodel.Lifecycle{},
+						Lifecycle: &smoothoperatormodel.Lifecycle{},
 						Service: pdoknlv3.Service{
-							ServiceMetadataLinks: pdoknlv3.MetadataLink{
+							ServiceMetadataLinks: &pdoknlv3.MetadataLink{
 								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx",
 								Templates:          []string{"csw", "opensearch", "html"},
 							},
@@ -807,7 +815,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 									Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
 									Subtitle:      "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
 									//Links:         []pdoknlv3.Link{},
-									DatasetMetadataLinks: pdoknlv3.MetadataLink{
+									DatasetMetadataLinks: &pdoknlv3.MetadataLink{
 										MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
 										Templates:          []string{"csw", "html"},
 									},
@@ -815,12 +823,12 @@ func Test_getGeneratorConfig(t *testing.T) {
 										Name:  "owner",
 										Email: "info@test.com",
 									},
-									SpatialDatasetIdentifierCode:      "d893c05b-907e-47f2-9cbd-ceb08e68732c",
-									SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+									SpatialDatasetIdentifierCode:      smoothoperatorutils.Pointer("d893c05b-907e-47f2-9cbd-ceb08e68732c"),
+									SpatialDatasetIdentifierNamespace: smoothoperatorutils.Pointer("http://www.pdok.nl"),
 									Entries: []pdoknlv3.Entry{
 										{
 											TechnicalName: "https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
-											Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie",
+											Title:         smoothoperatorutils.Pointer("BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie"),
 											Content:       smoothoperatorutils.Pointer("Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO)."),
 											DownloadLinks: []pdoknlv3.DownloadLink{
 												{
@@ -828,8 +836,8 @@ func Test_getGeneratorConfig(t *testing.T) {
 												},
 											},
 											Polygon: getTestPolygon(),
-											Updated: &metav1.Time{Time: getUpdatedDate()},
-											SRS: &pdoknlv3.SRS{
+											Updated: metav1.Time{Time: getUpdatedDate()},
+											SRS: pdoknlv3.SRS{
 												Name: "Amersfoort / RD New",
 												URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
 											},
@@ -842,21 +850,27 @@ func Test_getGeneratorConfig(t *testing.T) {
 				},
 				ownerInfo: &smoothoperatorv1.OwnerInfo{
 					Spec: smoothoperatorv1.OwnerInfoSpec{
-						MetadataUrls: smoothoperatorv1.MetadataUrls{
-							CSW: smoothoperatorv1.MetadataURL{
+						MetadataUrls: &smoothoperatorv1.MetadataUrls{
+							CSW: &smoothoperatorv1.MetadataURL{
 								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id={{identifier}}",
 							},
-							OpenSearch: smoothoperatorv1.MetadataURL{
+							OpenSearch: &smoothoperatorv1.MetadataURL{
 								HrefTemplate: "https://www.ngr.nl/geonetwork/opensearch/dut/{{identifier}}/OpenSearchDescription.xml",
 							},
-							HTML: smoothoperatorv1.MetadataURL{
+							HTML: &smoothoperatorv1.MetadataURL{
 								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/{{identifier}}",
+							},
+						},
+						Atom: &smoothoperatorv1.Atom{
+							Author: smoothoperatormodel.Author{
+								Name:  "owner",
+								Email: "info@test.com",
 							},
 						},
 					},
 				},
 			},
-			wantConfig: readTestFile("generator_config_test_data/scenario-2.yaml"),
+			wantConfig: readTestFile("generator_config/scenario-2.yaml"),
 			wantErr:    false,
 		},
 	}
@@ -886,17 +900,17 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 			},
 		},
 		Spec: pdoknlv3.AtomSpec{
-			Lifecycle: smoothoperatormodel.Lifecycle{
+			Lifecycle: &smoothoperatormodel.Lifecycle{
 				TTLInDays: smoothoperatorutils.Pointer(int32(999)),
 			},
 			Service: pdoknlv3.Service{
 				BaseURL:      "https://my.test-resource.test/test-datasetowner/test-dataset/atom",
 				Lang:         "test lang",
-				Stylesheet:   "test stylesheet",
+				Stylesheet:   smoothoperatorutils.Pointer("test stylesheet"),
 				Title:        "test title",
 				Subtitle:     "test subtitle",
 				OwnerInfoRef: ownerInfoResourceName,
-				ServiceMetadataLinks: pdoknlv3.MetadataLink{
+				ServiceMetadataLinks: &pdoknlv3.MetadataLink{
 					MetadataIdentifier: "00000000-0000-0000-0000-000000000000",
 					Templates:          []string{"csw", "opensearch", "html"},
 				},
@@ -906,12 +920,12 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 						TechnicalName: "test-technical-name",
 						Title:         "test-title",
 						Subtitle:      "test-subtitle",
-						DatasetMetadataLinks: pdoknlv3.MetadataLink{
+						DatasetMetadataLinks: &pdoknlv3.MetadataLink{
 							MetadataIdentifier: "11111111-1111-1111-1111-111111111111",
 							Templates:          []string{"csw", "html"},
 						},
-						SpatialDatasetIdentifierCode:      "22222222-2222-2222-2222-222222222222",
-						SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+						SpatialDatasetIdentifierCode:      smoothoperatorutils.Pointer("22222222-2222-2222-2222-222222222222"),
+						SpatialDatasetIdentifierNamespace: smoothoperatorutils.Pointer("http://www.pdok.nl"),
 						Entries: []pdoknlv3.Entry{
 							{
 								TechnicalName: "test-technical-name",
@@ -926,8 +940,8 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 										},
 									},
 								},
-								Updated: &updated,
-								Polygon: &pdoknlv3.Polygon{
+								Updated: updated,
+								Polygon: pdoknlv3.Polygon{
 									BBox: smoothoperatormodel.BBox{
 										MinX: "482.06",
 										MinY: "284182.97",
@@ -935,34 +949,12 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 										MaxY: "637049.52",
 									},
 								},
-								SRS: &pdoknlv3.SRS{
+								SRS: pdoknlv3.SRS{
 									URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
 									Name: "Amersfoort / RD New",
 								},
 							},
 						},
-					},
-				},
-			},
-			PodSpecPatch: &corev1.PodSpec{
-				InitContainers: []corev1.Container{
-					{
-						Name: "atom-generator",
-						VolumeMounts: []corev1.VolumeMount{
-							{Name: "data", MountPath: srvDir + "/data"},
-							{Name: "config", MountPath: srvDir + "/config"},
-						},
-						Image: testImageName1,
-					},
-				},
-				Containers: []corev1.Container{
-					{
-						Name: "atom-service",
-						VolumeMounts: []corev1.VolumeMount{
-							{Name: "socket", MountPath: "/tmp", ReadOnly: false},
-							{Name: "data", MountPath: "var/www"},
-						},
-						Image: testImageName2,
 					},
 				},
 			},
@@ -982,13 +974,13 @@ func getUniqueAtomResourceName(counter int) string {
 }
 
 func readTestFile(fileName string) string {
-	dat, _ := os.ReadFile(fileName)
+	dat, _ := os.ReadFile("test_data/" + fileName)
 
 	return string(dat)
 }
 
-func getTestPolygon() *pdoknlv3.Polygon {
-	return &pdoknlv3.Polygon{
+func getTestPolygon() pdoknlv3.Polygon {
+	return pdoknlv3.Polygon{
 		BBox: smoothoperatormodel.BBox{
 			MinX: "1",
 			MinY: "1",
@@ -1000,14 +992,4 @@ func getTestPolygon() *pdoknlv3.Polygon {
 
 func getUpdatedDate() time.Time {
 	return metav1.Date(2025, time.March, 5, 5, 5, 5, 0, time.UTC).UTC()
-}
-
-func removeSpace(s string) string {
-	rr := make([]rune, 0, len(s))
-	for _, r := range s {
-		if !unicode.IsSpace(r) {
-			rr = append(rr, r)
-		}
-	}
-	return string(rr)
 }

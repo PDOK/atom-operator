@@ -168,7 +168,7 @@ func getFilledAtomv3() *pdoknlv3.Atom {
 			},
 		},
 		Spec: pdoknlv3.AtomSpec{
-			Lifecycle: smoothoperatormodel.Lifecycle{
+			Lifecycle: &smoothoperatormodel.Lifecycle{
 				TTLInDays: &TestTTLInt32,
 			},
 		},

@@ -84,8 +84,7 @@ func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]st
 		*reasons = append(*reasons, fmt.Sprintf("%v", err))
 	}
 
-	// TODO uncomment when Atom is pointer in ownerInfo
-	// if ownerInfo.Spec.Atom == nil {
-	// 	 *reasons = append(*reasons, fmt.Sprintf("no atom settings in ownerInfo: %s", ownerInfo.Name))
-	// }
+	if ownerInfo.Spec.Atom == nil {
+		*reasons = append(*reasons, "no atom settings in ownerInfo: "+ownerInfo.Name)
+	}
 }
