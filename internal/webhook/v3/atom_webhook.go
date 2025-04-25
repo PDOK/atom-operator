@@ -27,12 +27,13 @@ package v3
 import (
 	"context"
 	"fmt"
+	"github.com/pdok/atom-operator/internal/logging"
+	"go.uber.org/zap"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
-	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -41,8 +42,6 @@ import (
 
 // log is for logging in this package.
 //
-
-var atomlog = logf.Log.WithName("atom-resource")
 
 // SetupAtomWebhookWithManager registers the webhook for Atom in the manager.
 func SetupAtomWebhookWithManager(mgr ctrl.Manager) error {
@@ -72,24 +71,24 @@ func (v *AtomCustomValidator) ValidateCreate(_ context.Context, obj runtime.Obje
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object but got %T", obj)
 	}
-	atomlog.Info("Validation for Atom upon creation", "name", atom.GetName())
+	logging.ApplicationLogger.Info("Validation for Atom upon creation", zap.String("name", atom.GetName()))
 
 	return atom.ValidateCreate(v.Client)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Atom.
 func (v *AtomCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	atomlog.Info("reading newAtom")
+	logging.ApplicationLogger.Info("reading newAtom")
 	atom, ok := newObj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object for the newObj but got %T", newObj)
 	}
-	atomlog.Info("reading oldAtom")
+	logging.ApplicationLogger.Info("reading oldAtom")
 	atomOld, ok := oldObj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object for the oldObj but got %T", oldObj)
 	}
-	atomlog.Info("Validation for Atom upon update", "name", atom.GetName())
+	logging.ApplicationLogger.Info("Validation for Atom upon update", zap.String("name", atom.GetName()))
 
 	return atom.ValidateUpdate(v.Client, atomOld)
 }
@@ -100,7 +99,7 @@ func (v *AtomCustomValidator) ValidateDelete(_ context.Context, obj runtime.Obje
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object but got %T", obj)
 	}
-	atomlog.Info("Validation for Atom upon deletion", "name", atom.GetName())
+	logging.ApplicationLogger.Info("Validation for Atom upon deletion", zap.String("name", atom.GetName()))
 
 	// TODO(user): fill in your validation logic upon object deletion.
 
