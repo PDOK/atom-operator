@@ -191,11 +191,11 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	configMap := getBareConfigMap(atom)
 
 	// mutate (also) before to get the hash suffix in the name
-	if err = r.mutateConfigMap(atom, ownerInfo, configMap); err != nil {
+	if err = r.mutateAtomGeneratorConfigMap(atom, ownerInfo, configMap); err != nil {
 		return operationResults, err
 	}
 	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, atom)], err = controllerutil.CreateOrUpdate(ctx, r.Client, configMap, func() error {
-		return r.mutateConfigMap(atom, ownerInfo, configMap)
+		return r.mutateAtomGeneratorConfigMap(atom, ownerInfo, configMap)
 	})
 	if err != nil {
 		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, configMap), err)
@@ -280,7 +280,7 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo) (err error) {
 	configMap := getBareConfigMap(atom)
 	// mutate (also) before to get the hash suffix in the name
-	if err = r.mutateConfigMap(atom, ownerInfo, configMap); err != nil {
+	if err = r.mutateAtomGeneratorConfigMap(atom, ownerInfo, configMap); err != nil {
 		return
 	}
 	objects := []client.Object{
@@ -308,7 +308,7 @@ func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
 	}
 }
 
-func (r *AtomReconciler) mutateConfigMap(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo, configMap *corev1.ConfigMap) error {
+func (r *AtomReconciler) mutateAtomGeneratorConfigMap(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo, configMap *corev1.ConfigMap) error {
 	labels := smoothoperatorutils.CloneOrEmptyMap(atom.GetLabels())
 	labels[appLabelKey] = atomName
 	if err := smoothoperatorutils.SetImmutableLabels(r.Client, configMap, labels); err != nil {
