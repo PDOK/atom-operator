@@ -27,6 +27,7 @@ package v3
 import (
 	"context"
 	"fmt"
+
 	"github.com/pdok/atom-operator/internal/logging"
 	"go.uber.org/zap"
 
