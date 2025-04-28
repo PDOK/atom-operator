@@ -14,9 +14,6 @@ import (
 )
 
 func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) (atomGeneratorConfig atomfeed.Feeds, err error) {
-
-	var describedbyLink, searchLink, relatedLink atomfeed.Link
-
 	if ownerInfo.Spec.Atom == nil {
 		return atomGeneratorConfig, errors.New("ownerInfo has no Atom information defined")
 	}
@@ -48,12 +45,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 		Title:         escapeQuotes(atom.Spec.Service.Title),
 		Subtitle:      escapeQuotes(atom.Spec.Service.Subtitle),
 		// Index Feed Links
-		Link: []atomfeed.Link{
-			selfLink,
-			describedbyLink,
-			searchLink,
-			relatedLink,
-		},
+		Link:   links,
 		Rights: atom.Spec.Service.Rights,
 		Author: getAuthor(ownerInfo.Spec.Atom.Author),
 		Entry:  entries,

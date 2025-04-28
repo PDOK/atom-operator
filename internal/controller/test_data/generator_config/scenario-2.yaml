@@ -15,43 +15,38 @@ feeds:
         data: null
         rel: self
         type: application/atom+xml
-        hreflang: nl
       - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
         data: null
         rel: describedby
         type: application/xml
-        hreflang: nl
       - href: https://www.ngr.nl/geonetwork/opensearch/dut/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx/OpenSearchDescription.xml
         data: null
         rel: search
-        type: application/xml
-        hreflang: nl
+        type: application/opensearchdescription+xml
+        title: Open Search document voor INSPIRE Download service PDOK
       - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
         data: null
         rel: related
         type: text/html
-        hreflang: nl
+        title: NGR pagina voor deze download service
     rights: ""
-    updated: "2025-03-05T05:05:05Z"
     author:
-      name: "owner"
-      email: "info@test.com"
+      name: owner
+      email: info@test.com
     entry:
-      - id: /https://service.pdok.nl/test/atom/index.xml.xml
+      - id: /brocpt.xml
         title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
         summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
         link:
-          - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
+          - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=d893c05b-907e-47f2-9cbd-ceb08e68732c
             data: null
             rel: describedby
             type: application/xml
-            hreflang: nl
-          - href: /https://service.pdok.nl/test/atom/index.xml.xml
+          - href: /brocpt.xml
             data: null
             rel: alternate
             type: application/atom+xml
             title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
-        updated: "2025-03-05T05:05:05Z"
         polygon: 1 1 1 2 2 2 2 1 1 1
         category:
           - term: https://www.opengis.net/def/crs/EPSG/0/28992
@@ -64,11 +59,11 @@ feeds:
     stylesheet: /atom/style/style.xsl
     xmlns: ""
     lang: nl
-    id: /https://service.pdok.nl/test/atom/index.xml.xml
+    id: /brocpt.xml
     title: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
     subtitle: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
     link:
-      - href: /https://service.pdok.nl/test/atom/index.xml.xml
+      - href: /brocpt.xml
         data: null
         rel: self
       - href: /index.xml
@@ -76,23 +71,23 @@ feeds:
         rel: up
         type: application/atom+xml
         title: Top Atom Download Service Feed
-      - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
+      - href: https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id=d893c05b-907e-47f2-9cbd-ceb08e68732c
         data: null
         rel: describedby
-        type: text.html
-      - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx
+        type: application/xml
+      - href: https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/d893c05b-907e-47f2-9cbd-ceb08e68732c
         data: null
-        type: text.html
+        rel: related
+        type: text/html
         title: NGR pagina voor deze dataset
     rights: ""
     author:
       name: owner
       email: info@test.com
     entry:
-      - id: /https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml.xml
+      - id: /bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml
         title: BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie
         content: Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO).
-        summary: BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM
         link:
           - href: /downloads/dataset-1-file
             data: /http://localazurite.blob.azurite/bucket/key1/dataset-1-file
