@@ -93,7 +93,7 @@ var _ = BeforeSuite(func() {
 		CRDInstallOptions: envtest.CRDInstallOptions{
 			Scheme: nil,
 			Paths: []string{
-				filepath.Join("..", "..", "config", "crd", "bases"),
+				filepath.Join("..", "..", "config", "crd", "bases", "pdok.nl_atoms.yaml"),
 				traefikCRDPath,
 				ownerInfoCRDPath,
 			},

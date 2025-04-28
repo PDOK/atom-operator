@@ -49,8 +49,8 @@ import (
 )
 
 const (
-	defaultAtomGeneratorImage = "docker.io/pdok/atom-generator:0.6.2"
-	defaultLighttpdImage      = "docker.io/pdok/lighttpd:1.4.67"
+	defaultAtomGeneratorImage = "acrpdokprodman.azurecr.io/mirror/docker.io/pdok/atom-generator:0.6.2"
+	defaultLighttpdImage      = "acrpdokprodman.azurecr.io/mirror/docker.io/pdok/lighttpd:1.4.67"
 )
 
 var (

@@ -30,10 +30,10 @@ import (
 	"strconv"
 	"time"
 
-	smoothoperatormodel "github.com/pdok/smooth-operator/model"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
+	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
 
@@ -54,44 +54,46 @@ func V3AtomHubFromV2(src *Atom, target *pdoknlv3.Atom) {
 	target.ObjectMeta = src.ObjectMeta
 
 	// Lifecycle
-	if src.Spec.Kubernetes != nil && src.Spec.Kubernetes.Lifecycle != nil && src.Spec.Kubernetes.Lifecycle.TTLInDays != nil {
-		target.Spec.Lifecycle.TTLInDays = GetInt32Pointer(int32(*src.Spec.Kubernetes.Lifecycle.TTLInDays)) //nolint:gosec
+	if a.Spec.Kubernetes != nil && a.Spec.Kubernetes.Lifecycle != nil && a.Spec.Kubernetes.Lifecycle.TTLInDays != nil {
+		dst.Spec.Lifecycle = &smoothoperatormodel.Lifecycle{
+			TTLInDays: GetInt32Pointer(int32(*a.Spec.Kubernetes.Lifecycle.TTLInDays)), //nolint:gosec
+		}
 	}
 
 	// Service
-	target.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), src.Spec.General),
+	dst.Spec.Service = pdoknlv3.Service{
+		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), a.Spec.General),
 		Lang:         "nl",
-		Stylesheet:   pdoknlv3.GetBaseURL() + "/atom/style/style.xsl",
-		Title:        src.Spec.Service.Title,
-		Subtitle:     src.Spec.Service.Subtitle,
+		Title:        a.Spec.Service.Title,
+		Subtitle:     a.Spec.Service.Subtitle,
 		OwnerInfoRef: "pdok",
-		ServiceMetadataLinks: pdoknlv3.MetadataLink{
-			MetadataIdentifier: src.Spec.Service.MetadataIdentifier,
+		ServiceMetadataLinks: &pdoknlv3.MetadataLink{
+			MetadataIdentifier: a.Spec.Service.MetadataIdentifier,
 			Templates:          []string{"csw", "opensearch", "html"},
 		},
-		Rights: src.Spec.Service.Rights,
+		Rights: a.Spec.Service.Rights,
 	}
 
-	target.Spec.Service.DatasetFeeds = []pdoknlv3.DatasetFeed{}
-	for _, srcDataset := range src.Spec.Service.Datasets {
+	dst.Spec.Service.DatasetFeeds = []pdoknlv3.DatasetFeed{}
+	for _, srcDataset := range a.Spec.Service.Datasets {
 		dstDatasetFeed := pdoknlv3.DatasetFeed{
 			TechnicalName: srcDataset.Name,
 			Title:         srcDataset.Title,
 			Subtitle:      srcDataset.Subtitle,
-			DatasetMetadataLinks: pdoknlv3.MetadataLink{
+			DatasetMetadataLinks: &pdoknlv3.MetadataLink{
 				MetadataIdentifier: srcDataset.MetadataIdentifier,
 				Templates:          []string{"csw", "html"},
 			},
-			Author:                            smoothoperatormodel.Author{Name: src.Spec.Service.Author.Name, Email: src.Spec.Service.Author.Email},
-			SpatialDatasetIdentifierCode:      srcDataset.SourceIdentifier,
-			SpatialDatasetIdentifierNamespace: "http://www.pdok.nl",
+			Author:                            smoothoperatormodel.Author{Name: a.Spec.Service.Author.Name, Email: a.Spec.Service.Author.Email},
+			SpatialDatasetIdentifierCode:      smoothoperatorutils.Pointer(srcDataset.SourceIdentifier),
+			SpatialDatasetIdentifierNamespace: smoothoperatorutils.Pointer("http://www.pdok.nl"),
 		}
 
 		// Map the links
 		for _, srcLink := range srcDataset.Links {
 			dstLink := pdoknlv3.Link{
-				Title: srcLink.Type,
+				Rel:   "describedby",
+				Title: &srcLink.Type,
 				Href:  srcLink.URI,
 			}
 			if srcLink.ContentType != nil {
@@ -109,11 +111,11 @@ func V3AtomHubFromV2(src *Atom, target *pdoknlv3.Atom) {
 			dstEntry := pdoknlv3.Entry{
 				TechnicalName: srcDownload.Name,
 				Content:       srcDownload.Content,
-				SRS: &pdoknlv3.SRS{
+				SRS: pdoknlv3.SRS{
 					URI:  srcDownload.Srs.URI,
 					Name: srcDownload.Srs.Code,
 				},
-				Polygon: &pdoknlv3.Polygon{
+				Polygon: pdoknlv3.Polygon{
 					BBox: smoothoperatormodel.BBox{
 						MinX: GetFloat32AsString(srcDataset.Bbox.Minx),
 						MinY: GetFloat32AsString(srcDataset.Bbox.Miny),
@@ -124,23 +126,24 @@ func V3AtomHubFromV2(src *Atom, target *pdoknlv3.Atom) {
 			}
 
 			if srcDownload.Title != nil {
-				dstEntry.Title = *srcDownload.Title
+				dstEntry.Title = srcDownload.Title
 			}
 
 			var updated string
 			if srcDownload.Updated != nil {
 				updated = *srcDownload.Updated
-			} else if src.Spec.Service.Updated != nil {
-				updated = *src.Spec.Service.Updated
+			} else if a.Spec.Service.Updated != nil {
+				updated = *a.Spec.Service.Updated
 			}
 
 			parsedUpdatedTime, err := time.Parse(time.RFC3339, updated)
 			if err != nil {
 				log.Printf("Error parsing updated time: %v", err)
-				dstEntry.Updated = nil
+				dstEntry.Updated = metav1.Now()
+			} else {
+				updatedTime := metav1.NewTime(parsedUpdatedTime)
+				dstEntry.Updated = updatedTime
 			}
-			updatedTime := metav1.NewTime(parsedUpdatedTime)
-			dstEntry.Updated = &updatedTime
 
 			// Map the links
 			for _, srcLink := range srcDownload.Links {
@@ -152,9 +155,6 @@ func V3AtomHubFromV2(src *Atom, target *pdoknlv3.Atom) {
 				if srcLink.Updated != nil {
 					dstDownloadLink.Time = srcLink.Updated
 				}
-				if srcLink.Version != nil {
-					dstDownloadLink.Version = srcLink.Version
-				}
 				if srcLink.Bbox != nil {
 					dstDownloadLink.BBox = &smoothoperatormodel.BBox{
 						MinX: GetFloat32AsString(srcLink.Bbox.Minx),
@@ -164,7 +164,7 @@ func V3AtomHubFromV2(src *Atom, target *pdoknlv3.Atom) {
 					}
 				}
 				if srcLink.Rel != nil {
-					dstDownloadLink.Rel = *srcLink.Rel
+					dstDownloadLink.Rel = srcLink.Rel
 				}
 
 				dstEntry.DownloadLinks = append(dstEntry.DownloadLinks, dstDownloadLink)
@@ -173,13 +173,15 @@ func V3AtomHubFromV2(src *Atom, target *pdoknlv3.Atom) {
 			dstDatasetFeed.Entries = append(dstDatasetFeed.Entries, dstEntry)
 		}
 
-		target.Spec.Service.DatasetFeeds = append(target.Spec.Service.DatasetFeeds, dstDatasetFeed)
+		dst.Spec.Service.DatasetFeeds = append(dst.Spec.Service.DatasetFeeds, dstDatasetFeed)
 	}
+
+	return nil
 }
 
 // ConvertFrom converts the Hub version (v3) to this Atom (v2beta1).
 //
-//nolint:funlen,cyclop
+//nolint:funlen
 func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	src := srcRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertFrom: Converting Atom from Hub version v3 to Spoke version v2beta1;"+
@@ -224,21 +226,21 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			Name:               srcDatasetFeed.TechnicalName,
 			Title:              srcDatasetFeed.Title,
 			Subtitle:           srcDatasetFeed.Subtitle,
-			SourceIdentifier:   srcDatasetFeed.SpatialDatasetIdentifierCode,
+			SourceIdentifier:   smoothoperatorutils.PointerVal(srcDatasetFeed.SpatialDatasetIdentifierCode, ""),
 			MetadataIdentifier: srcDatasetFeed.DatasetMetadataLinks.MetadataIdentifier,
 		}
 
 		// Map the links
 		for _, srcLink := range srcDatasetFeed.Links {
 			dstDataset.Links = append(dstDataset.Links, OtherLink{
-				Type:        srcLink.Title,
+				Type:        smoothoperatorutils.PointerVal(srcLink.Title, ""),
 				URI:         srcLink.Href,
 				ContentType: &srcLink.Type,
-				Language:    &srcLink.Hreflang,
+				Language:    srcLink.Hreflang,
 			})
 		}
 
-		if len(srcDatasetFeed.Entries) > 0 && srcDatasetFeed.Entries[0].Polygon != nil {
+		if len(srcDatasetFeed.Entries) > 0 {
 			// We can assume all entries have the same bbox, so we take the first one
 			firstBbox := srcDatasetFeed.Entries[0].Polygon.BBox
 			dstDataset.Bbox = Bbox{
@@ -253,20 +255,16 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		for _, srcEntry := range srcDatasetFeed.Entries {
 			dstDownload := Download{
 				Name:    srcEntry.TechnicalName,
-				Title:   &srcEntry.Title,
+				Title:   srcEntry.Title,
 				Content: srcEntry.Content,
 			}
 
-			if srcEntry.Updated != nil {
-				updatedString := srcEntry.Updated.Format(time.RFC3339)
-				dstDownload.Updated = &updatedString
-			}
+			updatedString := srcEntry.Updated.Format(time.RFC3339)
+			dstDownload.Updated = &updatedString
 
-			if srcEntry.SRS != nil {
-				dstDownload.Srs = Srs{
-					URI:  srcEntry.SRS.URI,
-					Code: srcEntry.SRS.Name,
-				}
+			dstDownload.Srs = Srs{
+				URI:  srcEntry.SRS.URI,
+				Code: srcEntry.SRS.Name,
 			}
 
 			// Map the links
@@ -275,15 +273,12 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 					BlobKey: &srcDownloadLink.Data,
 				}
 
-				if srcDownloadLink.Rel != "" {
-					dstLink.Rel = &srcDownloadLink.Rel
+				if srcDownloadLink.Rel != nil && *srcDownloadLink.Rel != "" {
+					dstLink.Rel = srcDownloadLink.Rel
 				}
 
 				if srcDownloadLink.Time != nil {
 					dstLink.Updated = srcDownloadLink.Time
-				}
-				if srcDownloadLink.Version != nil {
-					dstLink.Version = srcDownloadLink.Version
 				}
 				if srcDownloadLink.BBox != nil {
 					dstLink.Bbox = &Bbox{
@@ -305,7 +300,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	a.Spec.Kubernetes = &Kubernetes{
 		Lifecycle: &Lifecycle{},
 	}
-	if src.Spec.Lifecycle.TTLInDays != nil {
+	if src.Spec.Lifecycle != nil && src.Spec.Lifecycle.TTLInDays != nil {
 		a.Spec.Kubernetes.Lifecycle.TTLInDays = GetIntPointer(int(*src.Spec.Lifecycle.TTLInDays))
 	}
 
