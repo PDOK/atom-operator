@@ -114,6 +114,7 @@ func main() {
 	flag.StringVar(&slackWebhookURL, "slack-webhook-url", "", "The webhook url for sending slack messages. Disabled if left empty")
 	flag.IntVar(&logLevel, "log-level", 0, "The zapcore loglevel. 0 = info, 1 = warn, 2 = error")
 
+	//nolint:gosec
 	levelEnabler := zapcore.Level(int8(logLevel))
 	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
 	logging2.ApplicationLogger = *zapLogger
