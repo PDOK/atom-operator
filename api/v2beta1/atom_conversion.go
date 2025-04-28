@@ -87,6 +87,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 		// Map the links
 		for _, srcLink := range srcDataset.Links {
 			dstLink := pdoknlv3.Link{
+				Rel:   "describedby",
 				Title: &srcLink.Type,
 				Href:  srcLink.URI,
 			}

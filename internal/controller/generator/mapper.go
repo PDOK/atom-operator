@@ -11,71 +11,61 @@ import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	v1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) (atomGeneratorConfig atomfeed.Feeds, err error) {
-
-	var describedbyLink, searchLink, relatedLink atomfeed.Link
-
 	if ownerInfo.Spec.Atom == nil {
 		return atomGeneratorConfig, errors.New("ownerInfo has no Atom information defined")
 	}
 
-	language := "nl"
-	xmlSheet := pdoknlv3.GetBaseURL() + "/atom/style/style.xsl"
-	selfLink := getSelfLink(atom, language)
-	describedbyLink, err = getCSWDescribedbyLink(atom, language, ownerInfo)
-	if err != nil {
-		return atomfeed.Feeds{}, err
-	}
-	searchLink, err = getSearchLink(atom, language, ownerInfo)
-	if err != nil {
-		return atomfeed.Feeds{}, err
-	}
-	relatedLink, err = getHTMLRelatedLink(atom, language, ownerInfo)
-	if err != nil {
-		return atomfeed.Feeds{}, err
-	}
-	latestUpdated, err := getLatestUpdate(atom.Spec.Service.DatasetFeeds)
-	if err != nil {
-		return atomfeed.Feeds{}, err
+	selfLink := getSelfLink(atom)
+	links := []atomfeed.Link{selfLink}
+	if atom.Spec.Service.ServiceMetadataLinks != nil {
+		err = addMetadataLinks(*atom.Spec.Service.ServiceMetadataLinks, ownerInfo, &links, "NGR pagina voor deze download service", false)
+		if err != nil {
+			return atomfeed.Feeds{}, err
+		}
 	}
 
+	// TODO append custom links to links (requires mapping)
+	// links = append(links, atom.Spec.Service.Links...)
+
 	atomGeneratorConfig.Feeds = []atomfeed.Feed{}
+	entries, err := getServiceEntries(atom, ownerInfo)
+	if err != nil {
+		return atomfeed.Feeds{}, err
+	}
 	serviceFeed := atomfeed.Feed{
-		XMLStylesheet: &xmlSheet,
+		XMLStylesheet: atom.Spec.Service.Stylesheet,
 		Xmlns:         "http://www.w3.org/2005/Atom",
 		Georss:        "http://www.georss.org/georss",
 		InspireDls:    "http://inspire.ec.europa.eu/schemas/inspire_dls/1.0",
-		Lang:          &language,
+		Lang:          &atom.Spec.Service.Lang,
 		ID:            atom.Spec.Service.BaseURL + "/index.xml",
 		Title:         escapeQuotes(atom.Spec.Service.Title),
 		Subtitle:      escapeQuotes(atom.Spec.Service.Subtitle),
-		// Feed Links
-		Link: []atomfeed.Link{
-			selfLink,
-			describedbyLink,
-			searchLink,
-			relatedLink,
-		},
-		Rights:  atom.Spec.Service.Rights,
-		Updated: &latestUpdated,
-		Author:  getServiceAuthor(ownerInfo.Spec.Atom.Author),
-		Entry:   getServiceEntries(atom, language, ownerInfo, &latestUpdated),
+		// Index Feed Links
+		Link:   links,
+		Rights: atom.Spec.Service.Rights,
+		Author: getAuthor(ownerInfo.Spec.Atom.Author),
+		Entry:  entries,
 	}
 	atomGeneratorConfig.Feeds = append(atomGeneratorConfig.Feeds, serviceFeed)
 
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
+		links, err := getDatasetLinks(atom, ownerInfo, datasetFeed)
+		if err != nil {
+			return atomfeed.Feeds{}, err
+		}
 		dsFeed := atomfeed.Feed{
 			ID:            atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml",
 			Title:         escapeQuotes(datasetFeed.Title),
 			Subtitle:      escapeQuotes(datasetFeed.Subtitle),
-			Lang:          &language,
-			Link:          getDatasetLinks(atom, ownerInfo, datasetFeed),
+			Lang:          &atom.Spec.Service.Lang,
+			Link:          links,
 			Rights:        atom.Spec.Service.Rights,
-			XMLStylesheet: &xmlSheet,
-			Author:        getDatasetAuthor(datasetFeed.Author),
+			XMLStylesheet: atom.Spec.Service.Stylesheet,
+			Author:        getAuthor(datasetFeed.Author),
 			Entry:         getDatasetEntries(atom, datasetFeed),
 		}
 		atomGeneratorConfig.Feeds = append(atomGeneratorConfig.Feeds, dsFeed)
@@ -83,38 +73,35 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 	return atomGeneratorConfig, err
 }
 
-func getLatestUpdate(feeds []pdoknlv3.DatasetFeed) (string, error) {
-	if len(feeds) == 0 {
-		return "", errors.New("this atom doesn't have any dataset feeds")
-	}
-
-	var updateTime *metav1.Time
-	for _, datasetFeed := range feeds {
-		for _, entry := range datasetFeed.Entries {
-			if updateTime == nil || updateTime.Before(&entry.Updated) {
-				updateTime = &entry.Updated
-			}
-		}
-	}
-	if updateTime == nil {
-		return "", nil
-	}
-	return updateTime.Format(time.RFC3339), nil
-}
-
-func getServiceEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo, latestUpdated *string) []atomfeed.Entry {
+func getServiceEntries(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) ([]atomfeed.Entry, error) {
 	var retEntriesArray []atomfeed.Entry
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
+		id := atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml"
+		var links []atomfeed.Link
+		if datasetFeed.DatasetMetadataLinks != nil {
+			err := addMetadataLinks(*datasetFeed.DatasetMetadataLinks, ownerInfo, &links, "", true)
+			if err != nil {
+				return nil, err
+			}
+		}
+		alternateLink := atomfeed.Link{
+			Rel:   "alternate",
+			Href:  id,
+			Type:  "application/atom+xml",
+			Title: escapeQuotes(datasetFeed.Title),
+		}
+		links = append(links, alternateLink)
 		datasetEntry := atomfeed.Entry{
-			ID:                                atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml",
+			ID:                                id,
 			Title:                             escapeQuotes(datasetFeed.Title),
 			SpatialDatasetIdentifierCode:      datasetFeed.SpatialDatasetIdentifierCode,
 			SpatialDatasetIdentifierNamespace: datasetFeed.SpatialDatasetIdentifierNamespace,
-			Link:                              getServiceEntryLinks(atom, language, ownerInfo, datasetFeed),
-			Updated:                           latestUpdated,
+			Link:                              links,
 			Summary:                           escapeQuotes(datasetFeed.Subtitle),
 			Category:                          []atomfeed.Category{},
 		}
+
+		// TODO willen we hier een verbetering doorvoeren dat het altijd de max polygon van alle entries maakt?
 		// Take the polygon bbox of the first entry, assuming all are equal
 		if len(datasetFeed.Entries) > 0 {
 			datasetEntry.Polygon = datasetFeed.Entries[0].Polygon.BBox.ToPolygon()
@@ -132,29 +119,7 @@ func getServiceEntries(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerIn
 		retEntriesArray = append(retEntriesArray, datasetEntry)
 	}
 
-	return retEntriesArray
-}
-
-func getServiceEntryLinks(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo, datasetFeed pdoknlv3.DatasetFeed) []atomfeed.Link {
-	describedByLinkHref, _ := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.CSW.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
-	describedByLink := atomfeed.Link{
-		Rel:      "describedby",
-		Href:     describedByLinkHref,
-		Type:     "application/xml",
-		Hreflang: &language,
-	}
-
-	alternateLink := atomfeed.Link{
-		Rel:   "alternate",
-		Href:  atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml",
-		Type:  "application/atom+xml",
-		Title: datasetFeed.Title,
-	}
-	return []atomfeed.Link{
-		describedByLink,
-		alternateLink,
-	}
-
+	return retEntriesArray, nil
 }
 
 func getCategory(srs pdoknlv3.SRS) atomfeed.Category {
@@ -164,94 +129,76 @@ func getCategory(srs pdoknlv3.SRS) atomfeed.Category {
 	}
 }
 
-func getServiceAuthor(author smoothoperatormodel.Author) atomfeed.Author {
+func getAuthor(author smoothoperatormodel.Author) atomfeed.Author {
 	return atomfeed.Author{
 		Name:  author.Name,
 		Email: author.Email,
 	}
 }
 
-func getDatasetAuthor(author smoothoperatormodel.Author) atomfeed.Author {
-	return atomfeed.Author{
-		Name:  author.Name,
-		Email: author.Email,
-	}
-}
-
-func getSelfLink(atom pdoknlv3.Atom, language string) atomfeed.Link {
+func getSelfLink(atom pdoknlv3.Atom) atomfeed.Link {
 	return atomfeed.Link{
-		Rel:      "self",
-		Href:     atom.Spec.Service.BaseURL + "/index.xml",
-		Title:    escapeQuotes(atom.Spec.Service.Title),
-		Type:     "application/atom+xml",
-		Hreflang: &language,
+		Rel:   "self",
+		Href:  atom.Spec.Service.BaseURL + "/index.xml",
+		Title: escapeQuotes(atom.Spec.Service.Title),
+		Type:  "application/atom+xml",
 	}
 }
 
-func replaceMustachTemplate(hrefTemplate string, identifier string) (string, error) {
+func replaceMustacheTemplate(hrefTemplate string, identifier string) (string, error) {
 	templateVariable := map[string]string{"identifier": identifier}
 	return mustache.Render(hrefTemplate, templateVariable)
 }
 
-func getCSWDescribedbyLink(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo) (atomfeed.Link, error) {
-	if atom.Spec.Service.ServiceMetadataLinks != nil {
-		for _, template := range atom.Spec.Service.ServiceMetadataLinks.Templates {
-			if template == "csw" {
-				href, err := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.CSW.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
-				if err != nil {
-					return atomfeed.Link{}, err
-				}
-				return atomfeed.Link{
-					Rel:      "describedby",
-					Href:     href,
-					Type:     "application/xml",
-					Hreflang: &language,
-				}, nil
+func addMetadataLinks(metadataLinks pdoknlv3.MetadataLink, ownerInfo v1.OwnerInfo, links *[]atomfeed.Link, htmlTitle string, onlyCSW bool) error {
+	for _, template := range metadataLinks.Templates {
+		if template == "csw" {
+			href, err := replaceMustacheTemplate(ownerInfo.Spec.MetadataUrls.CSW.HrefTemplate, metadataLinks.MetadataIdentifier)
+			if err != nil {
+				return err
+			}
+			link := atomfeed.Link{
+				Rel:  "describedby",
+				Href: href,
+				Type: "application/xml",
+			}
+			*links = append(*links, link)
+			if onlyCSW {
+				return nil
 			}
 		}
-	}
-
-	return atomfeed.Link{}, errors.New("ownerInfo doesn't have a CSW template")
-}
-
-func getSearchLink(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo) (atomfeed.Link, error) {
-	for _, template := range atom.Spec.Service.ServiceMetadataLinks.Templates {
 		if template == "opensearch" {
-			href, err := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.OpenSearch.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
+			href, err := replaceMustacheTemplate(ownerInfo.Spec.MetadataUrls.OpenSearch.HrefTemplate, metadataLinks.MetadataIdentifier)
 			if err != nil {
-				return atomfeed.Link{}, err
+				return err
 			}
-
-			return atomfeed.Link{
-				Rel:      "search",
-				Href:     href,
-				Type:     "application/xml",
-				Hreflang: &language,
-			}, nil
+			link := atomfeed.Link{
+				Rel:   "search",
+				Href:  href,
+				Title: "Open Search document voor INSPIRE Download service PDOK", // TODO move to ownerRef?
+				Type:  "application/opensearchdescription+xml",
+			}
+			*links = append(*links, link)
 		}
-	}
-	return atomfeed.Link{}, errors.New("ownerInfo doesn't have an opensearch template")
-}
-
-func getHTMLRelatedLink(atom pdoknlv3.Atom, language string, ownerInfo v1.OwnerInfo) (atomfeed.Link, error) {
-	for _, template := range atom.Spec.Service.ServiceMetadataLinks.Templates {
 		if template == "html" {
-			href, err := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.HTML.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
+			href, err := replaceMustacheTemplate(ownerInfo.Spec.MetadataUrls.HTML.HrefTemplate, metadataLinks.MetadataIdentifier)
 			if err != nil {
-				return atomfeed.Link{}, err
+				return err
 			}
-			return atomfeed.Link{
-				Rel:      "related",
-				Href:     href,
-				Type:     "text/html",
-				Hreflang: &language,
-			}, nil
+			link := atomfeed.Link{
+				Rel:   "related",
+				Href:  href,
+				Type:  "text/html",
+				Title: htmlTitle,
+			}
+			*links = append(*links, link)
 		}
 	}
-	return atomfeed.Link{}, errors.New("ownerInfo doesn't have a html template")
+
+	return nil
 }
 
-func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo, datasetFeed pdoknlv3.DatasetFeed) []atomfeed.Link {
+func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo, datasetFeed pdoknlv3.DatasetFeed) ([]atomfeed.Link, error) {
 
 	selfLink := atomfeed.Link{
 		Rel:  "self",
@@ -263,29 +210,22 @@ func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo, datasetFeed pdo
 		Type:  "application/atom+xml",
 		Title: "Top Atom Download Service Feed",
 	}
-	describedByLinkHref, _ := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.CSW.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
-	describedbyLink := atomfeed.Link{
-		Rel:  "describedby",
-		Href: describedByLinkHref,
-		Type: "text.html",
-	}
-	relatedLinkHref, _ := replaceMustachTemplate(ownerInfo.Spec.MetadataUrls.HTML.HrefTemplate, atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier)
-	relatedLink := atomfeed.Link{
-		Href:  relatedLinkHref,
-		Type:  "text.html",
-		Title: "NGR pagina voor deze dataset",
-	}
 
 	links := []atomfeed.Link{
 		selfLink,
 		upLink,
-		describedbyLink,
-		relatedLink,
+	}
+
+	if datasetFeed.DatasetMetadataLinks != nil {
+		err := addMetadataLinks(*datasetFeed.DatasetMetadataLinks, ownerInfo, &links, "NGR pagina voor deze dataset", false)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	for _, link := range datasetFeed.Links {
 		linkDescribedbyLink := atomfeed.Link{
-			Rel:      "describedby",
+			Rel:      link.Rel,
 			Href:     link.Href,
 			Type:     link.Type,
 			Hreflang: link.Hreflang,
@@ -296,7 +236,7 @@ func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo, datasetFeed pdo
 		links = append(links, linkDescribedbyLink)
 	}
 
-	return links
+	return links, nil
 }
 
 func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []atomfeed.Entry {
@@ -309,11 +249,12 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 			Rights:   atom.Spec.Service.Rights,
 			Category: []atomfeed.Category{getCategory(entry.SRS)},
 			Polygon:  entry.Polygon.BBox.ToPolygon(),
-			Summary:  escapeQuotes(datasetFeed.Subtitle),
 		}
 
 		if entry.Title != nil {
 			datasetEntry.Title = escapeQuotes(*entry.Title)
+		} else {
+			datasetEntry.Title = escapeQuotes(datasetFeed.Title)
 		}
 
 		if entry.Content != nil {
@@ -350,6 +291,8 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 
 func getEmptyRelCount(entry pdoknlv3.Entry) (count int) {
 	for _, downloadLink := range entry.DownloadLinks {
+		// TODO zou een "" niet eigenlijk een error moeten zijn?
+		// maar dat hoort mogelijk meer bij de admission
 		if downloadLink.Rel == nil || *downloadLink.Rel == "" {
 			count++
 		}
@@ -369,10 +312,8 @@ func getDownloadLinkRel(downloadLink pdoknlv3.DownloadLink, emptyRelCount int) (
 	return
 }
 
-func getDownloadLinkHref(downloadLink pdoknlv3.DownloadLink, atom pdoknlv3.Atom) (href string) {
-	href = atom.Spec.Service.BaseURL + "/downloads"
-	href += "/" + downloadLink.GetBlobName()
-	return
+func getDownloadLinkHref(downloadLink pdoknlv3.DownloadLink, atom pdoknlv3.Atom) string {
+	return atom.Spec.Service.BaseURL + "/downloads" + "/" + downloadLink.GetBlobName()
 }
 
 // Using internal url, atom generator uses this url to determine content-length and
@@ -386,10 +327,9 @@ func getDownloadLinkTitle(datasetFeed pdoknlv3.DatasetFeed, entry pdoknlv3.Entry
 	if entry.Title != nil && *entry.Title != "" {
 		title = *entry.Title
 	} else {
-		title = datasetFeed.Title
+		title = escapeQuotes(datasetFeed.Title)
 	}
-	title += "-"
-	title += downloadLink.GetBlobName()
+	title += "-" + downloadLink.GetBlobName()
 	return
 }
 

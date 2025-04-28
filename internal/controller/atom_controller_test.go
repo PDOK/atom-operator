@@ -805,13 +805,15 @@ func Test_getGeneratorConfig(t *testing.T) {
 					Spec: pdoknlv3.AtomSpec{
 						Lifecycle: &smoothoperatormodel.Lifecycle{},
 						Service: pdoknlv3.Service{
+							Stylesheet: smoothoperatorutils.Pointer("/atom/style/style.xsl"),
+							Lang:       "nl",
 							ServiceMetadataLinks: &pdoknlv3.MetadataLink{
 								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx",
 								Templates:          []string{"csw", "opensearch", "html"},
 							},
 							DatasetFeeds: []pdoknlv3.DatasetFeed{
 								{
-									TechnicalName: "https://service.pdok.nl/test/atom/index.xml",
+									TechnicalName: "brocpt",
 									Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
 									Subtitle:      "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
 									//Links:         []pdoknlv3.Link{},
@@ -827,7 +829,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 									SpatialDatasetIdentifierNamespace: smoothoperatorutils.Pointer("http://www.pdok.nl"),
 									Entries: []pdoknlv3.Entry{
 										{
-											TechnicalName: "https://service.pdok.nl/test/atom/bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie.xml",
+											TechnicalName: "bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie",
 											Title:         smoothoperatorutils.Pointer("BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie"),
 											Content:       smoothoperatorutils.Pointer("Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO)."),
 											DownloadLinks: []pdoknlv3.DownloadLink{
