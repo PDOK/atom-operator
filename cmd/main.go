@@ -19,13 +19,14 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"os"
+	"path/filepath"
+
 	"github.com/go-logr/zapr"
 	logging2 "github.com/pdok/atom-operator/internal/logging"
 	"github.com/pdok/smooth-operator/pkg/integrations/logging"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"os"
-	"path/filepath"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -85,7 +86,7 @@ func main() {
 	var blobEndpoint string
 	var atomGeneratorImage string
 	var lighttpdImage string
-	var slackWebhookUrl string
+	var slackWebhookURL string
 	var logLevel int
 	var tlsOpts []func(*tls.Config)
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
@@ -110,11 +111,11 @@ func main() {
 	flag.StringVar(&blobEndpoint, "blob-endpoint", "", "The blobstore endpoint used for file downloads.")
 	flag.StringVar(&atomGeneratorImage, "atom-generator-image", defaultAtomGeneratorImage, "The image to use in the Atom generator init-container.")
 	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
-	flag.StringVar(&slackWebhookUrl, "slack-webhook-url", "", "The webhook url for sending slack messages. Disabled if left empty")
+	flag.StringVar(&slackWebhookURL, "slack-webhook-url", "", "The webhook url for sending slack messages. Disabled if left empty")
 	flag.IntVar(&logLevel, "log-level", 0, "The zapcore loglevel. 0 = info, 1 = warn, 2 = error")
 
-	levelEnabler := zapcore.Level(logLevel)
-	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookUrl, levelEnabler)
+	levelEnabler := zapcore.Level(int8(logLevel))
+	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
 	logging2.ApplicationLogger = *zapLogger
 
 	ctrl.SetLogger(zapr.NewLogger(zapLogger))
