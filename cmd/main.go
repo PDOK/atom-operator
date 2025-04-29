@@ -120,8 +120,8 @@ func main() {
 	flag.Parse()
 	//nolint:gosec
 	levelEnabler := zapcore.Level(logLevel)
-	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
-	_ = zapLogger
+	//zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
+	//_ = zapLogger
 	//logrLogger := zapr.NewLogger(zapLogger)
 	//_ = logrLogger
 
