@@ -279,14 +279,11 @@ func (r *Atom) GetBaseURLPath() string {
 	return strings.Replace(url.Path, "/", "", 1)
 }
 
-func (r *Atom) GetIndexedDownloadLinks() (downloadLinks map[int8]DownloadLink) {
-	downloadLinks = make(map[int8]DownloadLink)
-	var index int8
+func (r *Atom) GetDownloadLinks() (downloadLinks []DownloadLink) {
 	for _, datasetFeed := range r.Spec.Service.DatasetFeeds {
 		for _, entry := range datasetFeed.Entries {
 			for _, downloadLink := range entry.DownloadLinks {
-				downloadLinks[index] = downloadLink
-				index++
+				downloadLinks = append(downloadLinks, downloadLink)
 			}
 		}
 	}
