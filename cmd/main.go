@@ -23,8 +23,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/go-logr/zapr"
-	logging2 "github.com/pdok/atom-operator/internal/logging"
 	"github.com/pdok/smooth-operator/pkg/integrations/logging"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -119,8 +117,8 @@ func main() {
 	//nolint:gosec
 	levelEnabler := zapcore.Level(int8(logLevel))
 	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
-	logrLogger := zapr.NewLogger(zapLogger)
-	logging2.ApplicationLogger = logrLogger
+	//logrLogger := zapr.NewLogger(zapLogger)
+	//logging2.ApplicationLogger = logrLogger
 
 	ctrl.SetLogger(logr.Discard())
 
