@@ -108,7 +108,7 @@ func main() {
 	flag.StringVar(&atomGeneratorImage, "atom-generator-image", defaultAtomGeneratorImage, "The image to use in the Atom generator init-container.")
 	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
 
-	opts := zap.Options{Development: true}
+	opts := zap.Options{Development: false}
 	opts.BindFlags(flag.CommandLine)
 
 	flag.Parse()
