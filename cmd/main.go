@@ -85,8 +85,6 @@ func main() {
 	var atomGeneratorImage string
 	var lighttpdImage string
 	var tlsOpts []func(*tls.Config)
-	// var slackWebhookURL string
-	// var logLevel int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", "0", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
@@ -109,22 +107,13 @@ func main() {
 	flag.StringVar(&blobEndpoint, "blob-endpoint", "", "The blobstore endpoint used for file downloads.")
 	flag.StringVar(&atomGeneratorImage, "atom-generator-image", defaultAtomGeneratorImage, "The image to use in the Atom generator init-container.")
 	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
-	// flag.StringVar(&slackWebhookURL, "slack-webhook-url", "", "The webhook url for sending slack messages. Disabled if left empty")
-	// flag.IntVar(&logLevel, "log-level", 0, "The zapcore loglevel. 0 = info, 1 = warn, 2 = error")
 
-	zapOpts := zap.Options{Development: false}
-	zapOpts.BindFlags(flag.CommandLine)
+	opts := zap.Options{Development: false}
+	opts.BindFlags(flag.CommandLine)
 
 	flag.Parse()
 
-	// levelEnabler := zapcore.Level(logLevel)
-	// _ = levelEnabler
-	// zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
-	// _ = zapLogger
-	// logrLogger := zapr.NewLogger(zapLogger)
-	// _ = logrLogger
-
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	if baseURL == "" {
 		setupLog.Error(errors.New("baseURL is required"), "A value for baseURL must be specified.")
