@@ -261,7 +261,7 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 			datasetEntry.Content = *entry.Content
 		}
 
-		updated := entry.Updated.Format(time.RFC3339)
+		updated := entry.Updated.In(time.FixedZone("UTC", 0)).Format(time.RFC3339)
 		datasetEntry.Updated = &updated
 
 		emptyRelCount := getEmptyRelCount(entry)
