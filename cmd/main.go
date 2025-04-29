@@ -23,8 +23,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"go.uber.org/zap"
-
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -121,13 +119,13 @@ func main() {
 	ctrl.SetLogger(logr.Discard())
 
 	if baseURL == "" {
-		zapLogger.Error("A value for baseURL must be specified.")
+		//zapLogger.Error("A value for baseURL must be specified.")
 		os.Exit(1)
 	}
 	pdoknlv3.SetBaseURL(baseURL)
 
 	if host == "" {
-		zapLogger.Error("A value for host must be specified.")
+		//zapLogger.Error("A value for host must be specified.")
 		os.Exit(1)
 	}
 	pdoknlv3.SetHost(host)
@@ -247,7 +245,7 @@ func main() {
 		// LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
-		zapLogger.Error("unable to start manager", zap.Error(err))
+		//zapLogger.Error("unable to start manager", zap.Error(err))
 		os.Exit(1)
 	}
 
