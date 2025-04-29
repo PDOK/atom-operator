@@ -115,6 +115,9 @@ func main() {
 	flag.StringVar(&slackWebhookURL, "slack-webhook-url", "", "The webhook url for sending slack messages. Disabled if left empty")
 	flag.IntVar(&logLevel, "log-level", 0, "The zapcore loglevel. 0 = info, 1 = warn, 2 = error")
 
+	zapOpts := zap.Options{Development: false}
+	zapOpts.BindFlags(flag.CommandLine)
+
 	flag.Parse()
 	//nolint:gosec
 	levelEnabler := zapcore.Level(logLevel)
@@ -122,7 +125,8 @@ func main() {
 	logrLogger := zapr.NewLogger(zapLogger)
 	_ = logrLogger
 
-	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zap.Options{Development: false})))
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
+	//ctrl.SetLogger(logrLogger)
 
 	if baseURL == "" {
 		setupLog.Error(errors.New("baseURL is required"), "A value for baseURL must be specified.")
