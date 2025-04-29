@@ -113,12 +113,14 @@ func main() {
 	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
 	flag.StringVar(&slackWebhookURL, "slack-webhook-url", "", "The webhook url for sending slack messages. Disabled if left empty")
 	flag.IntVar(&logLevel, "log-level", 0, "The zapcore loglevel. 0 = info, 1 = warn, 2 = error")
+
+	flag.Parse()
 	//nolint:gosec
 	levelEnabler := zapcore.Level(logLevel)
 	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
 	logrLogger := zapr.NewLogger(zapLogger)
 	_ = logrLogger
-	flag.Parse()
+
 	ctrl.SetLogger(logr.New(MyLogSink{}))
 
 	if baseURL == "" {
