@@ -1,5 +1,7 @@
 package logging
 
-import "go.uber.org/zap"
+import (
+	"github.com/go-logr/logr"
+)
 
-var ApplicationLogger zap.Logger = *zap.NewNop()
+var ApplicationLogger logr.Logger = logr.Discard()

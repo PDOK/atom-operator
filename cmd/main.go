@@ -118,9 +118,10 @@ func main() {
 	//nolint:gosec
 	levelEnabler := zapcore.Level(int8(logLevel))
 	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
-	logging2.ApplicationLogger = *zapLogger
+	logrLogger := zapr.NewLogger(zapLogger)
+	logging2.ApplicationLogger = logrLogger
 
-	ctrl.SetLogger(zapr.NewLogger(zapLogger))
+	ctrl.SetLogger(logrLogger)
 
 	if baseURL == "" {
 		zapLogger.Error("A value for baseURL must be specified.")
