@@ -120,12 +120,11 @@ func main() {
 	// levelEnabler := zapcore.Level(logLevel)
 	// _ = levelEnabler
 	// zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
-	//_ = zapLogger
-	//logrLogger := zapr.NewLogger(zapLogger)
-	//_ = logrLogger
+	// _ = zapLogger
+	// logrLogger := zapr.NewLogger(zapLogger)
+	// _ = logrLogger
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
-	// ctrl.SetLogger(logrLogger)
 
 	if baseURL == "" {
 		setupLog.Error(errors.New("baseURL is required"), "A value for baseURL must be specified.")
