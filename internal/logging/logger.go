@@ -2,4 +2,4 @@ package logging
 
 import "go.uber.org/zap"
 
-var ApplicationLogger zap.Logger
+var ApplicationLogger zap.Logger = *zap.NewNop()
