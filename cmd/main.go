@@ -23,9 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pdok/smooth-operator/pkg/integrations/logging"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -115,8 +113,8 @@ func main() {
 
 	flag.Parse()
 	//nolint:gosec
-	levelEnabler := zapcore.Level(int8(logLevel))
-	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
+	//levelEnabler := zapcore.Level(int8(logLevel))
+	//zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
 	//logrLogger := zapr.NewLogger(zapLogger)
 	//logging2.ApplicationLogger = logrLogger
 
@@ -135,7 +133,7 @@ func main() {
 	pdoknlv3.SetHost(host)
 
 	if blobEndpoint == "" {
-		zapLogger.Error("A value for blobEndpoint must be specified.")
+		//zapLogger.Error("A value for blobEndpoint must be specified.")
 		os.Exit(1)
 	}
 	pdoknlv3.SetBlobEndpoint(blobEndpoint)
@@ -147,7 +145,7 @@ func main() {
 	// - https://github.com/advisories/GHSA-qppj-fm5r-hxr3
 	// - https://github.com/advisories/GHSA-4374-p667-p6c8
 	disableHTTP2 := func(c *tls.Config) {
-		zapLogger.Info("disabling http/2")
+		//zapLogger.Info("disabling http/2")
 		c.NextProtos = []string{"http/1.1"}
 	}
 
@@ -162,8 +160,8 @@ func main() {
 	webhookTLSOpts := tlsOpts
 
 	if len(webhookCertPath) > 0 {
-		zapLogger.Info("Initializing webhook certificate watcher using provided certificates",
-			zap.String("webhook-cert-path", webhookCertPath), zap.String("webhook-cert-name", webhookCertName), zap.String("webhook-cert-key", webhookCertKey))
+		//zapLogger.Info("Initializing webhook certificate watcher using provided certificates",
+		//	zap.String("webhook-cert-path", webhookCertPath), zap.String("webhook-cert-name", webhookCertName), zap.String("webhook-cert-key", webhookCertKey))
 
 		var err error
 		webhookCertWatcher, err = certwatcher.New(
@@ -171,7 +169,7 @@ func main() {
 			filepath.Join(webhookCertPath, webhookCertKey),
 		)
 		if err != nil {
-			zapLogger.Error("Failed to initialize webhook certificate watcher", zap.Error(err))
+			//zapLogger.Error("Failed to initialize webhook certificate watcher", zap.Error(err))
 			os.Exit(1)
 		}
 
@@ -211,8 +209,8 @@ func main() {
 	// managed by cert-manager for the metrics server.
 	// - [PROMETHEUS-WITH-CERTS] at config/prometheus/kustomization.yaml for TLS certification.
 	if len(metricsCertPath) > 0 {
-		zapLogger.Info("Initializing metrics certificate watcher using provided certificates",
-			zap.String("metrics-cert-path", metricsCertPath), zap.String("metrics-cert-name", metricsCertName), zap.String("metrics-cert-key", metricsCertKey))
+		//zapLogger.Info("Initializing metrics certificate watcher using provided certificates",
+		//	zap.String("metrics-cert-path", metricsCertPath), zap.String("metrics-cert-name", metricsCertName), zap.String("metrics-cert-key", metricsCertKey))
 
 		var err error
 		metricsCertWatcher, err = certwatcher.New(
@@ -220,7 +218,7 @@ func main() {
 			filepath.Join(metricsCertPath, metricsCertKey),
 		)
 		if err != nil {
-			zapLogger.Error("to initialize metrics certificate watcher", zap.Error(err))
+			//zapLogger.Error("to initialize metrics certificate watcher", zap.Error(err))
 			os.Exit(1)
 		}
 
@@ -259,18 +257,18 @@ func main() {
 		AtomGeneratorImage: atomGeneratorImage,
 		LighttpdImage:      lighttpdImage,
 	}).SetupWithManager(mgr); err != nil {
-		zapLogger.Error("unable to create Atom controller", zap.Error(err))
+		//zapLogger.Error("unable to create Atom controller", zap.Error(err))
 		os.Exit(1)
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
 		if err = webhookpdoknlv2beta1.SetupAtomWebhookWithManager(mgr); err != nil {
-			zapLogger.Error("unable to create Atom controller", zap.Error(err))
+			//zapLogger.Error("unable to create Atom controller", zap.Error(err))
 			os.Exit(1)
 		}
 
 		if err = webhookpdoknlv3.SetupAtomWebhookWithManager(mgr); err != nil {
-			zapLogger.Error("unable to create Atom controller", zap.Error(err))
+			//zapLogger.Error("unable to create Atom controller", zap.Error(err))
 			os.Exit(1)
 		}
 
@@ -279,33 +277,33 @@ func main() {
 	// +kubebuilder:scaffold:builder
 
 	if metricsCertWatcher != nil {
-		zapLogger.Info("Adding metrics certificate watcher to manager")
+		//zapLogger.Info("Adding metrics certificate watcher to manager")
 		if err := mgr.Add(metricsCertWatcher); err != nil {
-			zapLogger.Error("unable to add metrics certificate watcher to manager", zap.Error(err))
+			//zapLogger.Error("unable to add metrics certificate watcher to manager", zap.Error(err))
 			os.Exit(1)
 		}
 	}
 
 	if webhookCertWatcher != nil {
-		zapLogger.Info("Adding webhook certificate watcher to manager")
+		//zapLogger.Info("Adding webhook certificate watcher to manager")
 		if err := mgr.Add(webhookCertWatcher); err != nil {
-			zapLogger.Error("unable to add webhook certificate watcher to manager", zap.Error(err))
+			//zapLogger.Error("unable to add webhook certificate watcher to manager", zap.Error(err))
 			os.Exit(1)
 		}
 	}
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
-		zapLogger.Error("unable to set up health check", zap.Error(err))
+		//zapLogger.Error("unable to set up health check", zap.Error(err))
 		os.Exit(1)
 	}
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
-		zapLogger.Error("unable to set up ready check", zap.Error(err))
+		//zapLogger.Error("unable to set up ready check", zap.Error(err))
 		os.Exit(1)
 	}
 
-	zapLogger.Info("starting manager")
+	//zapLogger.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		zapLogger.Error("problem running manager", zap.Error(err))
+		//zapLogger.Error("problem running manager", zap.Error(err))
 		os.Exit(1)
 	}
 }
