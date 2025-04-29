@@ -20,9 +20,9 @@ import (
 	"crypto/tls"
 	"errors"
 	"flag"
-	"github.com/go-logr/logr"
 	"os"
 	"path/filepath"
+
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -116,16 +116,16 @@ func main() {
 	zapOpts.BindFlags(flag.CommandLine)
 
 	flag.Parse()
-	//nolint:gosec
-	//levelEnabler := zapcore.Level(logLevel)
-	//_ = levelEnabler
-	//zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
+
+	// levelEnabler := zapcore.Level(logLevel)
+	// _ = levelEnabler
+	// zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
 	//_ = zapLogger
 	//logrLogger := zapr.NewLogger(zapLogger)
 	//_ = logrLogger
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
-	//ctrl.SetLogger(logrLogger)
+	// ctrl.SetLogger(logrLogger)
 
 	if baseURL == "" {
 		setupLog.Error(errors.New("baseURL is required"), "A value for baseURL must be specified.")
@@ -313,30 +313,4 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
-}
-
-type MyLogSink struct {
-}
-
-func (m MyLogSink) Init(info logr.RuntimeInfo) {
-}
-
-func (m MyLogSink) Enabled(level int) bool {
-	return true
-}
-
-func (m MyLogSink) Info(level int, msg string, keysAndValues ...any) {
-	print(msg)
-}
-
-func (m MyLogSink) Error(err error, msg string, keysAndValues ...any) {
-	print(msg)
-}
-
-func (m MyLogSink) WithValues(keysAndValues ...any) logr.LogSink {
-	return m
-}
-
-func (m MyLogSink) WithName(name string) logr.LogSink {
-	return m
 }
