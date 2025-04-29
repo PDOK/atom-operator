@@ -26,6 +26,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"os"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -121,7 +122,7 @@ func main() {
 	logrLogger := zapr.NewLogger(zapLogger)
 	_ = logrLogger
 
-	ctrl.SetLogger(logr.New(MyLogSink{}))
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zap.Options{Development: false})))
 
 	if baseURL == "" {
 		setupLog.Error(errors.New("baseURL is required"), "A value for baseURL must be specified.")
