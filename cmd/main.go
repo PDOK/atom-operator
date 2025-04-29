@@ -19,6 +19,7 @@ package main
 import (
 	"crypto/tls"
 	"flag"
+	"github.com/go-logr/logr"
 	"os"
 	"path/filepath"
 
@@ -121,7 +122,7 @@ func main() {
 	logrLogger := zapr.NewLogger(zapLogger)
 	logging2.ApplicationLogger = logrLogger
 
-	ctrl.SetLogger(logrLogger)
+	ctrl.SetLogger(logr.Discard())
 
 	if baseURL == "" {
 		zapLogger.Error("A value for baseURL must be specified.")
