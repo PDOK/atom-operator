@@ -20,6 +20,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"flag"
+	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/pdok/smooth-operator/pkg/integrations/logging"
 	"go.uber.org/zap/zapcore"
@@ -116,10 +117,9 @@ func main() {
 	levelEnabler := zapcore.Level(logLevel)
 	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
 	logrLogger := zapr.NewLogger(zapLogger)
-
+	_ = logrLogger
 	flag.Parse()
-
-	ctrl.SetLogger(logrLogger)
+	ctrl.SetLogger(logr.New(MyLogSink{}))
 
 	if baseURL == "" {
 		setupLog.Error(errors.New("baseURL is required"), "A value for baseURL must be specified.")
@@ -307,4 +307,30 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+type MyLogSink struct {
+}
+
+func (m MyLogSink) Init(info logr.RuntimeInfo) {
+}
+
+func (m MyLogSink) Enabled(level int) bool {
+	return true
+}
+
+func (m MyLogSink) Info(level int, msg string, keysAndValues ...any) {
+	print(msg)
+}
+
+func (m MyLogSink) Error(err error, msg string, keysAndValues ...any) {
+	print(msg)
+}
+
+func (m MyLogSink) WithValues(keysAndValues ...any) logr.LogSink {
+	return m
+}
+
+func (m MyLogSink) WithName(name string) logr.LogSink {
+	return m
 }
