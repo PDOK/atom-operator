@@ -21,7 +21,6 @@ import (
 	"errors"
 	"flag"
 	"github.com/go-logr/logr"
-	"github.com/go-logr/zapr"
 	"github.com/pdok/smooth-operator/pkg/integrations/logging"
 	"go.uber.org/zap/zapcore"
 	"os"
@@ -122,8 +121,9 @@ func main() {
 	//nolint:gosec
 	levelEnabler := zapcore.Level(logLevel)
 	zapLogger, _ := logging.SetupLogger("atom-operator", slackWebhookURL, levelEnabler)
-	logrLogger := zapr.NewLogger(zapLogger)
-	_ = logrLogger
+	_ = zapLogger
+	//logrLogger := zapr.NewLogger(zapLogger)
+	//_ = logrLogger
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&zapOpts)))
 	//ctrl.SetLogger(logrLogger)
