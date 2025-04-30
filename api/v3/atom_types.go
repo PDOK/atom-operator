@@ -282,9 +282,7 @@ func (r *Atom) GetBaseURLPath() string {
 func (r *Atom) GetDownloadLinks() (downloadLinks []DownloadLink) {
 	for _, datasetFeed := range r.Spec.Service.DatasetFeeds {
 		for _, entry := range datasetFeed.Entries {
-			for _, downloadLink := range entry.DownloadLinks {
-				downloadLinks = append(downloadLinks, downloadLink)
-			}
+			downloadLinks = append(downloadLinks, entry.DownloadLinks...)
 		}
 	}
 	return
