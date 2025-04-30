@@ -241,7 +241,7 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	}
 
 	// Create or update extra middleware per downloadLink
-	for index, downloadLink := range atom.GetIndexedDownloadLinks() {
+	for index, downloadLink := range atom.GetDownloadLinks() {
 		downloadLinkMiddleware := getBareDownloadLinkMiddleware(atom, index)
 		operationResults[smoothoperatorutils.GetObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
 			return r.mutateDownloadLinkMiddleware(atom, &downloadLink, downloadLinkMiddleware)
@@ -292,7 +292,7 @@ func (r *AtomReconciler) deleteAllForAtom(ctx context.Context, atom *pdoknlv3.At
 		getBareIngressRoute(atom),
 		getBarePodDisruptionBudget(atom),
 	}
-	for index := range atom.GetIndexedDownloadLinks() {
+	for index := range atom.GetDownloadLinks() {
 		objects = append(objects, getBareDownloadLinkMiddleware(atom, index))
 	}
 
@@ -551,10 +551,10 @@ func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middle
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
-func getBareDownloadLinkMiddleware(obj metav1.Object, index int8) *traefikiov1alpha1.Middleware {
+func getBareDownloadLinkMiddleware(obj metav1.Object, index int) *traefikiov1alpha1.Middleware {
 	return &traefikiov1alpha1.Middleware{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + downloadsName + "-" + strconv.Itoa(int(index)),
+			Name: obj.GetName() + "-" + downloadsName + "-" + strconv.Itoa(index),
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 		},
@@ -644,9 +644,9 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		},
 	}
 	// Set additional Azure storage middleware per download link
-	for index := range atom.GetIndexedDownloadLinks() {
+	for index := range atom.GetDownloadLinks() {
 		middlewareRef := traefikiov1alpha1.MiddlewareRef{
-			Name:      atom.Name + "-" + downloadsName + "-" + strconv.Itoa(int(index)),
+			Name:      atom.Name + "-" + downloadsName + "-" + strconv.Itoa(index),
 			Namespace: atom.GetNamespace(),
 		}
 		azureStorageRule.Middlewares = append(azureStorageRule.Middlewares, middlewareRef)

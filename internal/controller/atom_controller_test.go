@@ -696,7 +696,7 @@ var _ = Describe("Atom Controller", func() {
 func getDownloadMiddlewareArray(ctx context.Context, atom metav1.Object) []*traefikiov1alpha1.Middleware {
 	var downloadMiddlewareArray []*traefikiov1alpha1.Middleware
 	var err error
-	index := int8(0)
+	index := 0
 	for err == nil {
 		middlewareDownloadLink := getBareDownloadLinkMiddleware(atom, index)
 		err = k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareDownloadLink), middlewareDownloadLink)
@@ -765,7 +765,7 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 		{obj: &traefikiov1alpha1.IngressRoute{}, key: types.NamespacedName{Namespace: namespace, Name: getBareIngressRoute(atom).GetName()}},
 		{obj: &policyv1.PodDisruptionBudget{}, key: types.NamespacedName{Namespace: namespace, Name: getBarePodDisruptionBudget(atom).GetName()}},
 	}
-	for index := range atom.GetIndexedDownloadLinks() {
+	for index := range atom.GetDownloadLinks() {
 		extraStruct := struct {
 			obj client.Object
 			key types.NamespacedName
