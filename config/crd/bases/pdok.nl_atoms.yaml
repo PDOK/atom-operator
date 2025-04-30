@@ -408,6 +408,7 @@ spec:
                               content:
                                 description: Optional content description of the links.
                                   Required when more than 1 link is given
+                                minLength: 1
                                 type: string
                               downloadlinks:
                                 description: List of download links within this entry
@@ -512,9 +513,11 @@ spec:
                               technicalName:
                                 description: TechnicalName of the Entry, used as the
                                   ID
+                                minLength: 1
                                 type: string
                               title:
                                 description: Optional title of the Entry
+                                minLength: 1
                                 type: string
                               updated:
                                 description: Last updated timestamp

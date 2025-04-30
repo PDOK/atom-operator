@@ -33,6 +33,8 @@ import (
 	"testing"
 	"time"
 
+	policyv1 "k8s.io/api/policy/v1"
+
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
@@ -148,6 +150,16 @@ var _ = Describe("Atom Controller", func() {
 
 			By("Cleanup the specific resource instance OwnerInfo")
 			Expect(k8sClient.Delete(ctx, ownerInfoResource)).To(Succeed())
+
+			// the testEnv does not do garbage collection (https://book.kubebuilder.io/reference/envtest#testing-considerations)
+			By("Cleaning Owned Resources")
+			configMapName, err := getAtomGeneratorConfigMapName(ctx, atom)
+			Expect(err).NotTo(HaveOccurred())
+			for _, d := range getExpectedBareObjectsForAtom(atom, configMapName) {
+				err := k8sClient.Get(ctx, d.key, d.obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(k8sClient.Delete(ctx, d.obj)).To(Succeed())
+			}
 		})
 
 		It("Should successfully reconcile after a change in an owned resource", func() {
@@ -608,6 +620,49 @@ func must[T any](t T, err error) T {
 		panic(err)
 	}
 	return t
+}
+
+func getAtomGeneratorConfigMapName(ctx context.Context, atom *pdoknlv3.Atom) (string, error) {
+	deployment := &appsv1.Deployment{}
+	err := k8sClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: getBareDeployment(atom).GetName()}, deployment)
+	if err != nil {
+		return "", err
+	}
+
+	for _, volume := range deployment.Spec.Template.Spec.Volumes {
+		if volume.Name == "config" && volume.ConfigMap != nil {
+			return volume.ConfigMap.Name, nil
+		}
+	}
+	return "", errors.New("atom generator configmap not found")
+}
+
+func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []struct {
+	obj client.Object
+	key types.NamespacedName
+} {
+	structs := []struct {
+		obj client.Object
+		key types.NamespacedName
+	}{
+		{obj: &appsv1.Deployment{}, key: types.NamespacedName{Namespace: namespace, Name: getBareDeployment(atom).GetName()}},
+		{obj: &corev1.ConfigMap{}, key: types.NamespacedName{Namespace: namespace, Name: configMapName}},
+		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareStripPrefixMiddleware(atom).GetName()}},
+		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareCorsHeadersMiddleware(atom).GetName()}},
+		{obj: &corev1.Service{}, key: types.NamespacedName{Namespace: namespace, Name: getBareService(atom).GetName()}},
+		{obj: &traefikiov1alpha1.IngressRoute{}, key: types.NamespacedName{Namespace: namespace, Name: getBareIngressRoute(atom).GetName()}},
+		{obj: &policyv1.PodDisruptionBudget{}, key: types.NamespacedName{Namespace: namespace, Name: getBarePodDisruptionBudget(atom).GetName()}},
+	}
+	for index := range atom.GetDownloadLinks() {
+		extraStruct := struct {
+			obj client.Object
+			key types.NamespacedName
+		}{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareDownloadLinkMiddleware(atom, index).GetName()}}
+
+		structs = append(structs, extraStruct)
+	}
+
+	return structs
 }
 
 func Test_getGeneratorConfig(t *testing.T) {
