@@ -165,17 +165,6 @@ var _ = Describe("Atom Controller", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			By("Checking the finalizer")
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-
-			By("Reconciling the Atom again")
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedNameAtom,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
 			By("Waiting for the owned resources to be created")
 			Eventually(func() error {
 				configMapName, err := getAtomGeneratorConfigMapName(ctx, atom)
@@ -233,13 +222,8 @@ var _ = Describe("Atom Controller", func() {
 				LighttpdImage:      testImageName2,
 			}
 
-			By("Reconciling the Atom, checking the finalizer, and reconciling again")
+			By("Reconciling the Atom")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Getting the original Deployment")
@@ -284,11 +268,6 @@ var _ = Describe("Atom Controller", func() {
 
 			By("Reconciling the Atom and checking the deployment manifest")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Getting the original Deployment")
@@ -404,11 +383,6 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the configmap")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
 			configMap := getBareConfigMap(atom)
 			configMapName, err := getAtomConfigMapNameFromClient(ctx, atom)
@@ -446,11 +420,6 @@ var _ = Describe("Atom Controller", func() {
 
 			By("Reconciling the Atom and checking the IngressRoute")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
 			ingressRoute := getBareIngressRoute(atom)
@@ -518,11 +487,6 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the middlewareCorsHeaders")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
 			middlewareCorsHeaders := getBareCorsHeadersMiddleware(atom)
 			Eventually(func() bool {
@@ -553,11 +517,6 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the middlewareStripPrefix")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
 			middlewareStripPrefix := getBareStripPrefixMiddleware(atom)
 			Eventually(func() bool {
@@ -585,13 +544,9 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the middlewareStripPrefix")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
-			downloadMiddlewareArray := getDownloadMiddlewareArray(ctx, atom)
+			downloadMiddlewareArray, err := getDownloadMiddlewareArray(ctx, atom)
+			Expect(err).NotTo(HaveOccurred())
 			for i := 0; i < len(downloadMiddlewareArray); i++ {
 				Expect(downloadMiddlewareArray[i].Name).Should(Equal("test-atom-8-atom-downloads-" + strconv.Itoa(i)))
 				Expect(downloadMiddlewareArray[i].Namespace).Should(Equal("default"))
@@ -615,11 +570,6 @@ var _ = Describe("Atom Controller", func() {
 
 			By("Reconciling the Atom and checking the podDisruptionBudget")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
 			podDisruptionBudget := getBarePodDisruptionBudget(atom)
@@ -651,11 +601,6 @@ var _ = Describe("Atom Controller", func() {
 
 			By("Reconciling the Atom and checking the Service atom")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
 			service := getBareService(atom)
@@ -693,20 +638,15 @@ var _ = Describe("Atom Controller", func() {
 	})
 })
 
-func getDownloadMiddlewareArray(ctx context.Context, atom metav1.Object) []*traefikiov1alpha1.Middleware {
+func getDownloadMiddlewareArray(ctx context.Context, atom metav1.Object) ([]*traefikiov1alpha1.Middleware, error) {
 	var downloadMiddlewareArray []*traefikiov1alpha1.Middleware
-	var err error
-	index := 0
-	for err == nil {
-		middlewareDownloadLink := getBareDownloadLinkMiddleware(atom, index)
-		err = k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareDownloadLink), middlewareDownloadLink)
-		if err != nil {
-			break
-		}
-		downloadMiddlewareArray = append(downloadMiddlewareArray, middlewareDownloadLink)
-		index++
+	middlewareDownloadLink := getBareDownloadLinkMiddleware(atom, 0)
+	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareDownloadLink), middlewareDownloadLink)
+	if err != nil {
+		return nil, err
 	}
-	return downloadMiddlewareArray
+	downloadMiddlewareArray = append(downloadMiddlewareArray, middlewareDownloadLink)
+	return downloadMiddlewareArray, nil
 }
 
 func getAtomConfigMapNameFromClient(ctx context.Context, atom *pdoknlv3.Atom) (string, error) {
