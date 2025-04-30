@@ -4,48 +4,48 @@ import (
 	"context"
 	"time"
 
-	v3 "github.com/pdok/atom-operator/api/v3"
-	"github.com/pdok/smooth-operator/model"
+	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func (r *AtomReconciler) logAndUpdateStatusError(ctx context.Context, atom *v3.Atom, err error) {
-	r.updateStatus(ctx, atom, []v1.Condition{{
+func (r *AtomReconciler) logAndUpdateStatusError(ctx context.Context, atom *pdoknlv3.Atom, err error) {
+	r.updateStatus(ctx, atom, []metav1.Condition{{
 		Type:               reconciledConditionType,
-		Status:             v1.ConditionFalse,
+		Status:             metav1.ConditionFalse,
 		Reason:             reconciledConditionReasonError,
 		Message:            err.Error(),
 		ObservedGeneration: atom.Generation,
-		LastTransitionTime: v1.NewTime(time.Now()),
+		LastTransitionTime: metav1.NewTime(time.Now()),
 	}}, nil)
 }
 
-func (r *AtomReconciler) logAndUpdateStatusFinished(ctx context.Context, atom *v3.Atom, operationResults map[string]controllerutil.OperationResult) {
-	lgr := log.FromContext(ctx)
+func (r *AtomReconciler) logAndUpdateStatusFinished(ctx context.Context, atom *pdoknlv3.Atom, operationResults map[string]controllerutil.OperationResult) {
+	lgr := logf.FromContext(ctx)
 	lgr.Info("operation results", "results", operationResults)
-	r.updateStatus(ctx, atom, []v1.Condition{{
+	r.updateStatus(ctx, atom, []metav1.Condition{{
 		Type:               reconciledConditionType,
-		Status:             v1.ConditionTrue,
+		Status:             metav1.ConditionTrue,
 		Reason:             reconciledConditionReasonSucces,
 		ObservedGeneration: atom.Generation,
-		LastTransitionTime: v1.NewTime(time.Now()),
+		LastTransitionTime: metav1.NewTime(time.Now()),
 	}}, operationResults)
 }
 
-func (r *AtomReconciler) updateStatus(ctx context.Context, atom *v3.Atom, conditions []v1.Condition, operationResults map[string]controllerutil.OperationResult) {
-	lgr := log.FromContext(ctx)
+func (r *AtomReconciler) updateStatus(ctx context.Context, atom *pdoknlv3.Atom, conditions []metav1.Condition, operationResults map[string]controllerutil.OperationResult) {
+	lgr := logf.FromContext(ctx)
 	if err := r.Client.Get(ctx, client.ObjectKeyFromObject(atom), atom); err != nil {
-		log.FromContext(ctx).Error(err, "unable to update status")
+		logf.FromContext(ctx).Error(err, "unable to update status")
 		return
 	}
 
 	if atom.Status == nil {
-		atom.Status = &model.OperatorStatus{}
+		atom.Status = &smoothoperatormodel.OperatorStatus{}
 	}
 
 	changed := false

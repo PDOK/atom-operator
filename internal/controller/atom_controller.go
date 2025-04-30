@@ -29,14 +29,14 @@ import (
 	"context"
 	"fmt"
 
-	v1 "k8s.io/api/policy/v1"
+	policyv1 "k8s.io/api/policy/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
-	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
+	smoothutil "github.com/pdok/smooth-operator/pkg/util"
 
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -45,7 +45,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 const (
@@ -97,7 +97,7 @@ type AtomReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.20.0/pkg/reconcile
 func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
-	lgr := log.FromContext(ctx)
+	lgr := logf.FromContext(ctx)
 	lgr.Info("Starting reconcile for atom resource", "name", req.NamespacedName)
 
 	lgr.Info("Fetching atom", "name", req.NamespacedName)
@@ -153,60 +153,60 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	if err = r.mutateAtomGeneratorConfigMap(atom, ownerInfo, configMap); err != nil {
 		return operationResults, err
 	}
-	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, atom)], err = controllerutil.CreateOrUpdate(ctx, r.Client, configMap, func() error {
+	operationResults[smoothutil.GetObjectFullName(r.Client, atom)], err = controllerutil.CreateOrUpdate(ctx, r.Client, configMap, func() error {
 		return r.mutateAtomGeneratorConfigMap(atom, ownerInfo, configMap)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, configMap), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothutil.GetObjectFullName(c, configMap), err)
 	}
 	// endregion
 
 	// region Create or update Deployment
 	deployment := getBareDeployment(atom)
-	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, deployment)], err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
+	operationResults[smoothutil.GetObjectFullName(r.Client, deployment)], err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
 		return r.mutateDeployment(atom, deployment, configMap.GetName())
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, deployment), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothutil.GetObjectFullName(c, deployment), err)
 	}
 	// endregion
 
 	// region Create or update Service
 	service := getBareService(atom)
-	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, service)], err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+	operationResults[smoothutil.GetObjectFullName(r.Client, service)], err = controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
 		return r.mutateService(atom, service)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, service), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothutil.GetObjectFullName(c, service), err)
 	}
 	// endregion
 
 	// region Create or update Middleware
 
 	stripPrefixMiddleware := getBareStripPrefixMiddleware(atom)
-	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, stripPrefixMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, stripPrefixMiddleware, func() error {
+	operationResults[smoothutil.GetObjectFullName(r.Client, stripPrefixMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, stripPrefixMiddleware, func() error {
 		return r.mutateStripPrefixMiddleware(atom, stripPrefixMiddleware)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("could not create or update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, stripPrefixMiddleware), err)
+		return operationResults, fmt.Errorf("could not create or update resource %s: %w", smoothutil.GetObjectFullName(c, stripPrefixMiddleware), err)
 	}
 
 	corsHeadersMiddleware := getBareCorsHeadersMiddleware(atom)
-	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, corsHeadersMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, corsHeadersMiddleware, func() error {
+	operationResults[smoothutil.GetObjectFullName(r.Client, corsHeadersMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, corsHeadersMiddleware, func() error {
 		return r.mutateCorsHeadersMiddleware(atom, corsHeadersMiddleware)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("could not create or update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, corsHeadersMiddleware), err)
+		return operationResults, fmt.Errorf("could not create or update resource %s: %w", smoothutil.GetObjectFullName(c, corsHeadersMiddleware), err)
 	}
 
 	// Create or update extra middleware per downloadLink
 	for index, downloadLink := range atom.GetDownloadLinks() {
 		downloadLinkMiddleware := getBareDownloadLinkMiddleware(atom, index)
-		operationResults[smoothoperatorutils.GetObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
+		operationResults[smoothutil.GetObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
 			return r.mutateDownloadLinkMiddleware(atom, &downloadLink, downloadLinkMiddleware)
 		})
 		if err != nil {
-			return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, downloadLinkMiddleware), err)
+			return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothutil.GetObjectFullName(c, downloadLinkMiddleware), err)
 		}
 	}
 
@@ -214,22 +214,22 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 
 	// region Create or update IngressRoute
 	ingressRoute := getBareIngressRoute(atom)
-	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, ingressRoute)], err = controllerutil.CreateOrUpdate(ctx, r.Client, ingressRoute, func() error {
+	operationResults[smoothutil.GetObjectFullName(r.Client, ingressRoute)], err = controllerutil.CreateOrUpdate(ctx, r.Client, ingressRoute, func() error {
 		return r.mutateIngressRoute(atom, ingressRoute)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, ingressRoute), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothutil.GetObjectFullName(c, ingressRoute), err)
 	}
 
 	// endregion
 
 	// region Create or update PodDisruptionBudget
 	podDisruptionBudget := getBarePodDisruptionBudget(atom)
-	operationResults[smoothoperatorutils.GetObjectFullName(r.Client, podDisruptionBudget)], err = controllerutil.CreateOrUpdate(ctx, r.Client, podDisruptionBudget, func() error {
+	operationResults[smoothutil.GetObjectFullName(r.Client, podDisruptionBudget)], err = controllerutil.CreateOrUpdate(ctx, r.Client, podDisruptionBudget, func() error {
 		return r.mutatePodDisruptionBudget(atom, podDisruptionBudget)
 	})
 	if err != nil {
-		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothoperatorutils.GetObjectFullName(c, podDisruptionBudget), err)
+		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothutil.GetObjectFullName(c, podDisruptionBudget), err)
 	}
 	// endregion
 
@@ -245,7 +245,7 @@ func (r *AtomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&corev1.Service{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&traefikiov1alpha1.Middleware{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&traefikiov1alpha1.IngressRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Owns(&v1.PodDisruptionBudget{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Owns(&policyv1.PodDisruptionBudget{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&smoothoperatorv1.OwnerInfo{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Complete(r)
 }

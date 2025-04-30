@@ -47,9 +47,9 @@ import (
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
-	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
+	smoothutil "github.com/pdok/smooth-operator/pkg/util"
 	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -94,7 +94,7 @@ var _ = Describe("Atom Controller", func() {
 
 			By("creating the custom resource for the Kind Atom")
 			err := k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			if err != nil && k8serrors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				resource := fullAtom.DeepCopy()
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 				Expect(k8sClient.Get(ctx, typeNamespacedNameAtom, atom)).To(Succeed())
@@ -102,7 +102,7 @@ var _ = Describe("Atom Controller", func() {
 
 			By("creating the custom resource for the Kind OwnerInfo")
 			err = k8sClient.Get(ctx, typeNamespacedNameOwnerInfo, ownerInfo)
-			if err != nil && k8serrors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 
 				resource := &smoothoperatorv1.OwnerInfo{
 					ObjectMeta: metav1.ObjectMeta{
@@ -693,7 +693,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 					Spec: pdoknlv3.AtomSpec{
 						Lifecycle: &smoothoperatormodel.Lifecycle{},
 						Service: pdoknlv3.Service{
-							Stylesheet: smoothoperatorutils.Pointer("/atom/style/style.xsl"),
+							Stylesheet: smoothutil.Pointer("/atom/style/style.xsl"),
 							Lang:       "nl",
 							ServiceMetadataLinks: &pdoknlv3.MetadataLink{
 								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx",
@@ -713,13 +713,13 @@ func Test_getGeneratorConfig(t *testing.T) {
 										Name:  "owner",
 										Email: "info@test.com",
 									},
-									SpatialDatasetIdentifierCode:      smoothoperatorutils.Pointer("d893c05b-907e-47f2-9cbd-ceb08e68732c"),
-									SpatialDatasetIdentifierNamespace: smoothoperatorutils.Pointer("http://www.pdok.nl"),
+									SpatialDatasetIdentifierCode:      smoothutil.Pointer("d893c05b-907e-47f2-9cbd-ceb08e68732c"),
+									SpatialDatasetIdentifierNamespace: smoothutil.Pointer("http://www.pdok.nl"),
 									Entries: []pdoknlv3.Entry{
 										{
 											TechnicalName: "bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie",
-											Title:         smoothoperatorutils.Pointer("BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie"),
-											Content:       smoothoperatorutils.Pointer("Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO)."),
+											Title:         smoothutil.Pointer("BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie"),
+											Content:       smoothutil.Pointer("Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO)."),
 											DownloadLinks: []pdoknlv3.DownloadLink{
 												{
 													Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
@@ -791,12 +791,12 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 		},
 		Spec: pdoknlv3.AtomSpec{
 			Lifecycle: &smoothoperatormodel.Lifecycle{
-				TTLInDays: smoothoperatorutils.Pointer(int32(999)),
+				TTLInDays: smoothutil.Pointer(int32(999)),
 			},
 			Service: pdoknlv3.Service{
 				BaseURL:      "https://my.test-resource.test/test-datasetowner/test-dataset/atom",
 				Lang:         "test lang",
-				Stylesheet:   smoothoperatorutils.Pointer("test stylesheet"),
+				Stylesheet:   smoothutil.Pointer("test stylesheet"),
 				Title:        "test title",
 				Subtitle:     "test subtitle",
 				OwnerInfoRef: ownerInfoResourceName,
@@ -814,8 +814,8 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 							MetadataIdentifier: "11111111-1111-1111-1111-111111111111",
 							Templates:          []string{"csw", "html"},
 						},
-						SpatialDatasetIdentifierCode:      smoothoperatorutils.Pointer("22222222-2222-2222-2222-222222222222"),
-						SpatialDatasetIdentifierNamespace: smoothoperatorutils.Pointer("http://www.pdok.nl"),
+						SpatialDatasetIdentifierCode:      smoothutil.Pointer("22222222-2222-2222-2222-222222222222"),
+						SpatialDatasetIdentifierNamespace: smoothutil.Pointer("http://www.pdok.nl"),
 						Entries: []pdoknlv3.Entry{
 							{
 								TechnicalName: "test-technical-name",

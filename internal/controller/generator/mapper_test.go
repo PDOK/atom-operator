@@ -4,30 +4,30 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/pdok/atom-generator/feeds"
-	v3 "github.com/pdok/atom-operator/api/v3"
-	v1 "github.com/pdok/smooth-operator/api/v1"
+	atomfeed "github.com/pdok/atom-generator/feeds"
+	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 )
 
 func TestMapAtomV3ToAtomGeneratorConfig(t *testing.T) {
 	type args struct {
-		atom      v3.Atom
-		ownerInfo v1.OwnerInfo
+		atom      pdoknlv3.Atom
+		ownerInfo smoothoperatorv1.OwnerInfo
 	}
 	tests := []struct {
 		name                    string
 		args                    args
-		wantAtomGeneratorConfig feeds.Feeds
+		wantAtomGeneratorConfig atomfeed.Feeds
 		wantErr                 bool
 	}{
 		// TODO: Add test cases.
 		{
 			name: "error_empty_scenario_01",
 			args: args{
-				atom:      v3.Atom{},
-				ownerInfo: v1.OwnerInfo{},
+				atom:      pdoknlv3.Atom{},
+				ownerInfo: smoothoperatorv1.OwnerInfo{},
 			},
-			wantAtomGeneratorConfig: feeds.Feeds{},
+			wantAtomGeneratorConfig: atomfeed.Feeds{},
 			wantErr:                 true,
 		},
 	}

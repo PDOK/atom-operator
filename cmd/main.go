@@ -31,7 +31,7 @@ import (
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	smoothoperator1 "github.com/pdok/smooth-operator/api/v1"
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -67,7 +67,7 @@ func init() {
 	utilruntime.Must(pdoknlv3.AddToScheme(scheme))
 	utilruntime.Must(pdoknlv2beta1.AddToScheme(scheme))
 	utilruntime.Must(traefikiov1alpha1.AddToScheme(scheme))
-	utilruntime.Must(smoothoperator1.AddToScheme(scheme))
+	utilruntime.Must(smoothoperatorv1.AddToScheme(scheme))
 
 	// +kubebuilder:scaffold:scheme
 }

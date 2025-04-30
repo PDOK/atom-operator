@@ -32,7 +32,7 @@ import (
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
-	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
+	smoothutil "github.com/pdok/smooth-operator/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/conversion"
 )
@@ -80,8 +80,8 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				Templates:          []string{"csw", "html"},
 			},
 			Author:                            smoothoperatormodel.Author{Name: a.Spec.Service.Author.Name, Email: a.Spec.Service.Author.Email},
-			SpatialDatasetIdentifierCode:      smoothoperatorutils.Pointer(srcDataset.SourceIdentifier),
-			SpatialDatasetIdentifierNamespace: smoothoperatorutils.Pointer("http://www.pdok.nl"),
+			SpatialDatasetIdentifierCode:      smoothutil.Pointer(srcDataset.SourceIdentifier),
+			SpatialDatasetIdentifierNamespace: smoothutil.Pointer("http://www.pdok.nl"),
 		}
 
 		// Map the links
@@ -221,14 +221,14 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			Name:               srcDatasetFeed.TechnicalName,
 			Title:              srcDatasetFeed.Title,
 			Subtitle:           srcDatasetFeed.Subtitle,
-			SourceIdentifier:   smoothoperatorutils.PointerVal(srcDatasetFeed.SpatialDatasetIdentifierCode, ""),
+			SourceIdentifier:   smoothutil.PointerVal(srcDatasetFeed.SpatialDatasetIdentifierCode, ""),
 			MetadataIdentifier: srcDatasetFeed.DatasetMetadataLinks.MetadataIdentifier,
 		}
 
 		// Map the links
 		for _, srcLink := range srcDatasetFeed.Links {
 			dstDataset.Links = append(dstDataset.Links, OtherLink{
-				Type:        smoothoperatorutils.PointerVal(srcLink.Title, ""),
+				Type:        smoothutil.PointerVal(srcLink.Title, ""),
 				URI:         srcLink.Href,
 				ContentType: &srcLink.Type,
 				Language:    srcLink.Hreflang,
