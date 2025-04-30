@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
-	sharedValidation "github.com/pdok/smooth-operator/pkg/validation"
+	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
 
 	"strings"
 
@@ -16,7 +16,7 @@ func (atom *Atom) ValidateCreate(c client.Client) ([]string, error) {
 	warnings := []string{}
 	reasons := []string{}
 
-	err := sharedValidation.ValidateLabelsOnCreate(atom.Labels)
+	err := smoothoperatorvalidation.ValidateLabelsOnCreate(atom.Labels)
 	if err != nil {
 		reasons = append(reasons, fmt.Sprintf("%v", err))
 	}
@@ -35,7 +35,7 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 	reasons := []string{}
 
 	// Check labels did not change
-	err := sharedValidation.ValidateLabelsOnUpdate(atomOld.Labels, atom.Labels)
+	err := smoothoperatorvalidation.ValidateLabelsOnUpdate(atomOld.Labels, atom.Labels)
 	if err != nil {
 		reasons = append(reasons, fmt.Sprintf("%v", err))
 	}
@@ -56,7 +56,7 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 
 func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]string) {
 	if strings.Contains(atom.GetName(), "atom") {
-		*warnings = append(*warnings, sharedValidation.FormatValidationWarning("name should not contain atom", atom.GroupVersionKind(), atom.GetName()))
+		*warnings = append(*warnings, smoothoperatorvalidation.FormatValidationWarning("name should not contain atom", atom.GroupVersionKind(), atom.GetName()))
 	}
 
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
@@ -68,7 +68,7 @@ func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]st
 	}
 
 	service := atom.Spec.Service
-	err := sharedValidation.ValidateBaseURL(service.BaseURL)
+	err := smoothoperatorvalidation.ValidateBaseURL(service.BaseURL)
 	if err != nil {
 		*reasons = append(*reasons, fmt.Sprintf("%v", err))
 	}

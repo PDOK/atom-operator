@@ -9,11 +9,11 @@ import (
 	"github.com/cbroglie/mustache"
 	atomfeed "github.com/pdok/atom-generator/feeds"
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
-	v1 "github.com/pdok/smooth-operator/api/v1"
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 )
 
-func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) (atomGeneratorConfig atomfeed.Feeds, err error) {
+func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo) (atomGeneratorConfig atomfeed.Feeds, err error) {
 	if ownerInfo.Spec.Atom == nil {
 		return atomGeneratorConfig, errors.New("ownerInfo has no Atom information defined")
 	}
@@ -73,7 +73,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) 
 	return atomGeneratorConfig, err
 }
 
-func getServiceEntries(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo) ([]atomfeed.Entry, error) {
+func getServiceEntries(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo) ([]atomfeed.Entry, error) {
 	var retEntriesArray []atomfeed.Entry
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
 		id := atom.Spec.Service.BaseURL + "/" + datasetFeed.TechnicalName + ".xml"
@@ -150,7 +150,7 @@ func replaceMustacheTemplate(hrefTemplate string, identifier string) (string, er
 	return mustache.Render(hrefTemplate, templateVariable)
 }
 
-func addMetadataLinks(metadataLinks pdoknlv3.MetadataLink, ownerInfo v1.OwnerInfo, links *[]atomfeed.Link, htmlTitle string, onlyCSW bool) error {
+func addMetadataLinks(metadataLinks pdoknlv3.MetadataLink, ownerInfo smoothoperatorv1.OwnerInfo, links *[]atomfeed.Link, htmlTitle string, onlyCSW bool) error {
 	for _, template := range metadataLinks.Templates {
 		if template == "csw" {
 			href, err := replaceMustacheTemplate(ownerInfo.Spec.MetadataUrls.CSW.HrefTemplate, metadataLinks.MetadataIdentifier)
@@ -198,7 +198,7 @@ func addMetadataLinks(metadataLinks pdoknlv3.MetadataLink, ownerInfo v1.OwnerInf
 	return nil
 }
 
-func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo v1.OwnerInfo, datasetFeed pdoknlv3.DatasetFeed) ([]atomfeed.Link, error) {
+func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo, datasetFeed pdoknlv3.DatasetFeed) ([]atomfeed.Link, error) {
 
 	selfLink := atomfeed.Link{
 		Rel:  "self",

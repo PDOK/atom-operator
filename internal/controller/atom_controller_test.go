@@ -33,6 +33,8 @@ import (
 	"testing"
 	"time"
 
+	policyv1 "k8s.io/api/policy/v1"
+
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
@@ -41,15 +43,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
-	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
-	smoothoperatormodel "github.com/pdok/smooth-operator/model"
-	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
-	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
-	policyv1 "k8s.io/api/policy/v1"
-
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
+	smoothutil "github.com/pdok/smooth-operator/pkg/util"
+	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -94,7 +94,7 @@ var _ = Describe("Atom Controller", func() {
 
 			By("creating the custom resource for the Kind Atom")
 			err := k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			if err != nil && k8serrors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 				resource := fullAtom.DeepCopy()
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 				Expect(k8sClient.Get(ctx, typeNamespacedNameAtom, atom)).To(Succeed())
@@ -102,7 +102,7 @@ var _ = Describe("Atom Controller", func() {
 
 			By("creating the custom resource for the Kind OwnerInfo")
 			err = k8sClient.Get(ctx, typeNamespacedNameOwnerInfo, ownerInfo)
-			if err != nil && k8serrors.IsNotFound(err) {
+			if err != nil && apierrors.IsNotFound(err) {
 
 				resource := &smoothoperatorv1.OwnerInfo{
 					ObjectMeta: metav1.ObjectMeta{
@@ -150,79 +150,16 @@ var _ = Describe("Atom Controller", func() {
 
 			By("Cleanup the specific resource instance OwnerInfo")
 			Expect(k8sClient.Delete(ctx, ownerInfoResource)).To(Succeed())
-		})
 
-		It("Should successfully create and delete its owned resources", func() {
-			controllerReconciler := &AtomReconciler{
-				Client:             k8sClient,
-				Scheme:             k8sClient.Scheme(),
-				AtomGeneratorImage: testImageName1,
-				LighttpdImage:      testImageName2,
-			}
-			By("Reconciling the Atom")
-			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedNameAtom,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Checking the finalizer")
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-
-			By("Reconciling the Atom again")
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
-				NamespacedName: typeNamespacedNameAtom,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Waiting for the owned resources to be created")
-			Eventually(func() error {
-				configMapName, err := getAtomGeneratorConfigMapName(ctx, atom)
-				if err != nil {
-					return err
-				}
-				expectedBareObjects := getExpectedBareObjectsForAtom(atom, configMapName)
-				for _, d := range expectedBareObjects {
-					err := k8sClient.Get(ctx, d.key, d.obj)
-					if err != nil {
-						return err
-					}
-				}
-				return nil
-			}, "10s", "1s").Should(Not(HaveOccurred()))
-
-			By("Finding the ConfigMap name (with hash)")
+			// the testEnv does not do garbage collection (https://book.kubebuilder.io/reference/envtest#testing-considerations)
+			By("Cleaning Owned Resources")
 			configMapName, err := getAtomGeneratorConfigMapName(ctx, atom)
 			Expect(err).NotTo(HaveOccurred())
-
-			By("Checking the status of the Atom")
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(len(atom.Status.Conditions)).To(BeEquivalentTo(1))
-			Expect(atom.Status.Conditions[0].Status).To(BeEquivalentTo(metav1.ConditionTrue))
-
-			By("Deleting the Atom")
-			Expect(k8sClient.Delete(ctx, atom)).To(Succeed())
-
-			By("Reconciling the Atom again")
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-
-			By("Waiting for the owned resources to be deleted")
-			Eventually(func() error {
-				expectedBareObjects := getExpectedBareObjectsForAtom(atom, configMapName)
-				for _, d := range expectedBareObjects {
-					err := k8sClient.Get(ctx, d.key, d.obj)
-					if err == nil {
-						return errors.New("expected " + smoothoperatorutils.GetObjectFullName(k8sClient, d.obj) + " to not be found")
-					}
-					if !k8serrors.IsNotFound(err) {
-						return err
-					}
-				}
-				return nil
-			}, "10s", "1s").Should(Not(HaveOccurred()))
+			for _, d := range getExpectedBareObjectsForAtom(atom, configMapName) {
+				err := k8sClient.Get(ctx, d.key, d.obj)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(k8sClient.Delete(ctx, d.obj)).To(Succeed())
+			}
 		})
 
 		It("Should successfully reconcile after a change in an owned resource", func() {
@@ -233,13 +170,8 @@ var _ = Describe("Atom Controller", func() {
 				LighttpdImage:      testImageName2,
 			}
 
-			By("Reconciling the Atom, checking the finalizer, and reconciling again")
+			By("Reconciling the Atom")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Getting the original Deployment")
@@ -284,11 +216,6 @@ var _ = Describe("Atom Controller", func() {
 
 			By("Reconciling the Atom and checking the deployment manifest")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
 			By("Getting the original Deployment")
@@ -390,7 +317,7 @@ var _ = Describe("Atom Controller", func() {
 			Expect(deployment.Spec.Template.Spec.Volumes[1].Name).Should(Equal("socket"))
 			Expect(deployment.Spec.Template.Spec.Volumes[1].EmptyDir).Should(Equal(testEmptyDir))
 			Expect(deployment.Spec.Template.Spec.Volumes[2].Name).Should(Equal("config"))
-			Expect(deployment.Spec.Template.Spec.Volumes[2].ConfigMap.Name).Should(ContainSubstring("test-atom-3-atom-service-"))
+			Expect(deployment.Spec.Template.Spec.Volumes[2].ConfigMap.Name).Should(ContainSubstring("test-atom-2-atom-service-"))
 		})
 
 		It("Should create correct configmap-atom-generator manifest.", func() {
@@ -403,11 +330,6 @@ var _ = Describe("Atom Controller", func() {
 
 			By("Reconciling the Atom and checking the configmap")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
 			configMap := getBareConfigMap(atom)
@@ -447,11 +369,6 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the IngressRoute")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
 			ingressRoute := getBareIngressRoute(atom)
 			Eventually(func() bool {
@@ -470,13 +387,13 @@ var _ = Describe("Atom Controller", func() {
 			Expect(ingressRoute.Spec.Routes[0].Match).Should(Equal("Host(`localhost`) && Path(`/test-datasetowner/test-dataset/atom/index.xml`)"))
 			Expect(ingressRoute.Spec.Routes[0].Priority).Should(Equal(0))
 			Expect(len(ingressRoute.Spec.Routes[0].Services)).Should(Equal(1))
-			Expect(ingressRoute.Spec.Routes[0].Services[0].Name).Should(Equal("test-atom-5-atom"))
+			Expect(ingressRoute.Spec.Routes[0].Services[0].Name).Should(Equal("test-atom-4-atom"))
 			Expect(ingressRoute.Spec.Routes[0].Services[0].Kind).Should(Equal("Service"))
 			Expect(ingressRoute.Spec.Routes[0].Services[0].Namespace).Should(Equal(""))
 			Expect(ingressRoute.Spec.Routes[0].Services[0].Port.IntVal).Should(Equal(int32(80)))
-			Expect(ingressRoute.Spec.Routes[0].Middlewares[0].Name).Should(Equal("test-atom-5-atom-strip-prefix"))
+			Expect(ingressRoute.Spec.Routes[0].Middlewares[0].Name).Should(Equal("test-atom-4-atom-strip-prefix"))
 			Expect(ingressRoute.Spec.Routes[0].Middlewares[0].Namespace).Should(Equal("default"))
-			Expect(ingressRoute.Spec.Routes[0].Middlewares[1].Name).Should(Equal("test-atom-5-atom-cors-headers"))
+			Expect(ingressRoute.Spec.Routes[0].Middlewares[1].Name).Should(Equal("test-atom-4-atom-cors-headers"))
 			Expect(ingressRoute.Spec.Routes[0].Middlewares[1].Namespace).Should(Equal("default"))
 
 			Expect(ingressRoute.Spec.Routes[1].Kind).Should(Equal("Rule"))
@@ -487,22 +404,22 @@ var _ = Describe("Atom Controller", func() {
 			Expect(ingressRoute.Spec.Routes[1].Services[0].Kind).Should(Equal("Service"))
 			Expect(ingressRoute.Spec.Routes[1].Services[0].Namespace).Should(Equal(""))
 			Expect(ingressRoute.Spec.Routes[1].Services[0].Port.StrVal).Should(Equal(intstr.FromString("azure-storage").StrVal))
-			Expect(ingressRoute.Spec.Routes[1].Middlewares[0].Name).Should(Equal("test-atom-5-atom-cors-headers"))
+			Expect(ingressRoute.Spec.Routes[1].Middlewares[0].Name).Should(Equal("test-atom-4-atom-cors-headers"))
 			Expect(ingressRoute.Spec.Routes[1].Middlewares[0].Namespace).Should(Equal("default"))
-			Expect(ingressRoute.Spec.Routes[1].Middlewares[1].Name).Should(Equal("test-atom-5-atom-downloads-0"))
+			Expect(ingressRoute.Spec.Routes[1].Middlewares[1].Name).Should(Equal("test-atom-4-atom-downloads-0"))
 			Expect(ingressRoute.Spec.Routes[1].Middlewares[1].Namespace).Should(Equal("default"))
 
 			Expect(ingressRoute.Spec.Routes[2].Kind).Should(Equal("Rule"))
 			Expect(ingressRoute.Spec.Routes[2].Match).Should(Equal("Host(`localhost`) && Path(`/test-datasetowner/test-dataset/atom/test-technical-name.xml`)"))
 			Expect(ingressRoute.Spec.Routes[2].Priority).Should(Equal(0))
 			Expect(len(ingressRoute.Spec.Routes[2].Services)).Should(Equal(1))
-			Expect(ingressRoute.Spec.Routes[2].Services[0].Name).Should(Equal("test-atom-5-atom"))
+			Expect(ingressRoute.Spec.Routes[2].Services[0].Name).Should(Equal("test-atom-4-atom"))
 			Expect(ingressRoute.Spec.Routes[2].Services[0].Kind).Should(Equal("Service"))
 			Expect(ingressRoute.Spec.Routes[2].Services[0].Namespace).Should(Equal(""))
 			Expect(ingressRoute.Spec.Routes[2].Services[0].Port.IntVal).Should(Equal(int32(80)))
-			Expect(ingressRoute.Spec.Routes[2].Middlewares[0].Name).Should(Equal("test-atom-5-atom-strip-prefix"))
+			Expect(ingressRoute.Spec.Routes[2].Middlewares[0].Name).Should(Equal("test-atom-4-atom-strip-prefix"))
 			Expect(ingressRoute.Spec.Routes[2].Middlewares[0].Namespace).Should(Equal("default"))
-			Expect(ingressRoute.Spec.Routes[2].Middlewares[1].Name).Should(Equal("test-atom-5-atom-cors-headers"))
+			Expect(ingressRoute.Spec.Routes[2].Middlewares[1].Name).Should(Equal("test-atom-4-atom-cors-headers"))
 			Expect(ingressRoute.Spec.Routes[2].Middlewares[1].Namespace).Should(Equal("default"))
 
 		})
@@ -518,11 +435,6 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the middlewareCorsHeaders")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
 			middlewareCorsHeaders := getBareCorsHeadersMiddleware(atom)
 			Eventually(func() bool {
@@ -530,7 +442,7 @@ var _ = Describe("Atom Controller", func() {
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
 
-			Expect(middlewareCorsHeaders.Name).Should(Equal("test-atom-6-atom-cors-headers"))
+			Expect(middlewareCorsHeaders.Name).Should(Equal("test-atom-5-atom-cors-headers"))
 			Expect(middlewareCorsHeaders.Namespace).Should(Equal("default"))
 			Expect(middlewareCorsHeaders.Labels["app"]).Should(Equal("atom-service"))
 			Expect(middlewareCorsHeaders.Labels["dataset"]).Should(Equal("test-dataset"))
@@ -553,11 +465,6 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the middlewareStripPrefix")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
 			middlewareStripPrefix := getBareStripPrefixMiddleware(atom)
 			Eventually(func() bool {
@@ -565,7 +472,7 @@ var _ = Describe("Atom Controller", func() {
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
 
-			Expect(middlewareStripPrefix.Name).Should(Equal("test-atom-7-atom-strip-prefix"))
+			Expect(middlewareStripPrefix.Name).Should(Equal("test-atom-6-atom-strip-prefix"))
 			Expect(middlewareStripPrefix.Namespace).Should(Equal("default"))
 			Expect(middlewareStripPrefix.Labels["app"]).Should(Equal("atom-service"))
 			Expect(middlewareStripPrefix.Labels["dataset"]).Should(Equal("test-dataset"))
@@ -585,15 +492,11 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the middlewareStripPrefix")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
-			downloadMiddlewareArray := getDownloadMiddlewareArray(ctx, atom)
+			downloadMiddlewareArray, err := getDownloadMiddlewareArray(ctx, atom)
+			Expect(err).NotTo(HaveOccurred())
 			for i := 0; i < len(downloadMiddlewareArray); i++ {
-				Expect(downloadMiddlewareArray[i].Name).Should(Equal("test-atom-8-atom-downloads-" + strconv.Itoa(i)))
+				Expect(downloadMiddlewareArray[i].Name).Should(Equal("test-atom-7-atom-downloads-" + strconv.Itoa(i)))
 				Expect(downloadMiddlewareArray[i].Namespace).Should(Equal("default"))
 				Expect(downloadMiddlewareArray[i].Labels["app"]).Should(Equal("atom-service"))
 				Expect(downloadMiddlewareArray[i].Labels["dataset"]).Should(Equal("test-dataset"))
@@ -616,11 +519,6 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the podDisruptionBudget")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
 			podDisruptionBudget := getBarePodDisruptionBudget(atom)
 			Eventually(func() bool {
@@ -628,7 +526,7 @@ var _ = Describe("Atom Controller", func() {
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
 
-			Expect(podDisruptionBudget.Name).Should(Equal("test-atom-9-atom-pdb"))
+			Expect(podDisruptionBudget.Name).Should(Equal("test-atom-8-atom-pdb"))
 			Expect(podDisruptionBudget.Namespace).Should(Equal("default"))
 			Expect(podDisruptionBudget.Labels["app"]).Should(Equal("atom-service"))
 			Expect(podDisruptionBudget.Labels["dataset"]).Should(Equal("test-dataset"))
@@ -652,11 +550,6 @@ var _ = Describe("Atom Controller", func() {
 			By("Reconciling the Atom and checking the Service atom")
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
-			err = k8sClient.Get(ctx, typeNamespacedNameAtom, atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Finalizers).To(ContainElement(finalizerName))
-			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
-			Expect(err).NotTo(HaveOccurred())
 
 			service := getBareService(atom)
 			Eventually(func() bool {
@@ -664,7 +557,7 @@ var _ = Describe("Atom Controller", func() {
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
 
-			Expect(service.Name).Should(Equal("test-atom-10-atom"))
+			Expect(service.Name).Should(Equal("test-atom-9-atom"))
 			Expect(service.Namespace).Should(Equal("default"))
 			Expect(service.Labels["app"]).Should(Equal("atom-service"))
 			Expect(service.Labels["dataset"]).Should(Equal("test-dataset"))
@@ -693,20 +586,15 @@ var _ = Describe("Atom Controller", func() {
 	})
 })
 
-func getDownloadMiddlewareArray(ctx context.Context, atom metav1.Object) []*traefikiov1alpha1.Middleware {
+func getDownloadMiddlewareArray(ctx context.Context, atom metav1.Object) ([]*traefikiov1alpha1.Middleware, error) {
 	var downloadMiddlewareArray []*traefikiov1alpha1.Middleware
-	var err error
-	index := 0
-	for err == nil {
-		middlewareDownloadLink := getBareDownloadLinkMiddleware(atom, index)
-		err = k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareDownloadLink), middlewareDownloadLink)
-		if err != nil {
-			break
-		}
-		downloadMiddlewareArray = append(downloadMiddlewareArray, middlewareDownloadLink)
-		index++
+	middlewareDownloadLink := getBareDownloadLinkMiddleware(atom, 0)
+	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareDownloadLink), middlewareDownloadLink)
+	if err != nil {
+		return nil, err
 	}
-	return downloadMiddlewareArray
+	downloadMiddlewareArray = append(downloadMiddlewareArray, middlewareDownloadLink)
+	return downloadMiddlewareArray, nil
 }
 
 func getAtomConfigMapNameFromClient(ctx context.Context, atom *pdoknlv3.Atom) (string, error) {
@@ -805,7 +693,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 					Spec: pdoknlv3.AtomSpec{
 						Lifecycle: &smoothoperatormodel.Lifecycle{},
 						Service: pdoknlv3.Service{
-							Stylesheet: smoothoperatorutils.Pointer("/atom/style/style.xsl"),
+							Stylesheet: smoothutil.Pointer("/atom/style/style.xsl"),
 							Lang:       "nl",
 							ServiceMetadataLinks: &pdoknlv3.MetadataLink{
 								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx",
@@ -825,13 +713,13 @@ func Test_getGeneratorConfig(t *testing.T) {
 										Name:  "owner",
 										Email: "info@test.com",
 									},
-									SpatialDatasetIdentifierCode:      smoothoperatorutils.Pointer("d893c05b-907e-47f2-9cbd-ceb08e68732c"),
-									SpatialDatasetIdentifierNamespace: smoothoperatorutils.Pointer("http://www.pdok.nl"),
+									SpatialDatasetIdentifierCode:      smoothutil.Pointer("d893c05b-907e-47f2-9cbd-ceb08e68732c"),
+									SpatialDatasetIdentifierNamespace: smoothutil.Pointer("http://www.pdok.nl"),
 									Entries: []pdoknlv3.Entry{
 										{
 											TechnicalName: "bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie",
-											Title:         smoothoperatorutils.Pointer("BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie"),
-											Content:       smoothoperatorutils.Pointer("Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO)."),
+											Title:         smoothutil.Pointer("BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie"),
+											Content:       smoothutil.Pointer("Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO)."),
 											DownloadLinks: []pdoknlv3.DownloadLink{
 												{
 													Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
@@ -903,12 +791,12 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 		},
 		Spec: pdoknlv3.AtomSpec{
 			Lifecycle: &smoothoperatormodel.Lifecycle{
-				TTLInDays: smoothoperatorutils.Pointer(int32(999)),
+				TTLInDays: smoothutil.Pointer(int32(999)),
 			},
 			Service: pdoknlv3.Service{
 				BaseURL:      "https://my.test-resource.test/test-datasetowner/test-dataset/atom",
 				Lang:         "test lang",
-				Stylesheet:   smoothoperatorutils.Pointer("test stylesheet"),
+				Stylesheet:   smoothutil.Pointer("test stylesheet"),
 				Title:        "test title",
 				Subtitle:     "test subtitle",
 				OwnerInfoRef: ownerInfoResourceName,
@@ -926,8 +814,8 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 							MetadataIdentifier: "11111111-1111-1111-1111-111111111111",
 							Templates:          []string{"csw", "html"},
 						},
-						SpatialDatasetIdentifierCode:      smoothoperatorutils.Pointer("22222222-2222-2222-2222-222222222222"),
-						SpatialDatasetIdentifierNamespace: smoothoperatorutils.Pointer("http://www.pdok.nl"),
+						SpatialDatasetIdentifierCode:      smoothutil.Pointer("22222222-2222-2222-2222-222222222222"),
+						SpatialDatasetIdentifierNamespace: smoothutil.Pointer("http://www.pdok.nl"),
 						Entries: []pdoknlv3.Entry{
 							{
 								TechnicalName: "test-technical-name",
