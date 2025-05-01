@@ -48,7 +48,7 @@ type AtomSpec struct {
 // Service defines the service configuration for the Atom feed
 type Service struct {
 	// BaseURL of the Atom service. Will be suffixed with index.xml for the index.
-	// +kubebuilder:validation:Pattern:="https?://"
+	// +kubebuilder:validation:Pattern:="https?://.*"
 	BaseURL string `json:"baseUrl"`
 
 	// Language of the service
@@ -89,7 +89,7 @@ type Service struct {
 // Link represents a link in the service or dataset feed
 type Link struct {
 	// Actual href of the link
-	// +kubebuilder:validation:Pattern:="https?://"
+	// +kubebuilder:validation:Pattern:="https?://.*"
 	Href string `json:"href"`
 
 	// Relation (type) of the link, for example: describedby, self or alternate
@@ -213,7 +213,7 @@ type Polygon struct {
 // SRS describes the Spatial Reference System for an entry
 type SRS struct {
 	// URI of the SRS
-	// +kubebuilder:validation:Pattern:="https?://"
+	// +kubebuilder:validation:Pattern:="https?://.*"
 	URI string `json:"uri"`
 
 	// Name of the SRS
