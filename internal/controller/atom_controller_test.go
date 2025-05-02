@@ -128,9 +128,9 @@ var _ = Describe("Atom Controller", func() {
 		})
 
 		It("Should generate a correct PodDisruptionBudget", func() {
-			//testMutate(getBareDeployment(&atom), "test_data/basic-atom/expected-output/deployment.yaml", func(d *appsv1.Deployment) error {
-			//	return reconciler.mutateDeployment(&atom, d, "basic-atom-generator")
-			//})
+			testMutate(getBarePodDisruptionBudget(&atom), "test_data/basic-atom/expected-output/poddisruptionbudget.yaml", func(p *policyv1.PodDisruptionBudget) error {
+				return reconciler.mutatePodDisruptionBudget(&atom, p)
+			})
 		})
 	})
 

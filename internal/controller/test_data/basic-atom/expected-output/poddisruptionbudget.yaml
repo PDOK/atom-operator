@@ -1,0 +1,21 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: basic-atom-service
+  namespace: test
+  labels:
+    test: test
+    app: atom-service
+  ownerReferences:
+    - apiVersion: pdok.nl/v3
+      kind: Atom
+      name: basic
+      uid: ""
+      blockOwnerDeletion: true
+      controller: true
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      test: test
+      app: atom-service
