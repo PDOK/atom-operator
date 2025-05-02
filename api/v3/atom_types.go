@@ -279,6 +279,10 @@ func (r *Atom) GetBaseURL() url.URL {
 	return *baseURL
 }
 
+func (r *Atom) GetBaseUrl() string {
+	return r.Spec.Service.BaseURL
+}
+
 func (r *Atom) GetDownloadLinks() (downloadLinks []DownloadLink) {
 	for _, datasetFeed := range r.Spec.Service.DatasetFeeds {
 		for _, entry := range datasetFeed.Entries {

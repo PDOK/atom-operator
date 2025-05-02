@@ -40,10 +40,7 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 		reasons = append(reasons, fmt.Sprintf("%v", err))
 	}
 
-	// Check service.baseURL did not change
-	if atom.Spec.Service.BaseURL != atomOld.Spec.Service.BaseURL {
-		reasons = append(reasons, fmt.Sprintf("service.baseURL is immutable, oldBaseUrl: %s, newBaseUrl: %s", atomOld.Spec.Service.BaseURL, atom.Spec.Service.BaseURL))
-	}
+	smoothoperatorvalidation.CheckBaseUrlImmutability(atomOld, atom, &reasons)
 
 	validateAtom(c, atom, &warnings, &reasons)
 
