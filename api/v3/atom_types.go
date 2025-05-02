@@ -254,6 +254,7 @@ func SetBaseURL(atomBaseURL string) {
 	baseURL = strings.TrimSuffix(atomBaseURL, "/")
 }
 
+//nolint:revive
 func GetBaseURL() string {
 	return baseURL
 }
