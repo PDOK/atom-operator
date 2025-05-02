@@ -24,17 +24,14 @@ func getBareIngressRoute(obj metav1.Object) *traefikiov1alpha1.IngressRoute {
 }
 
 func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *traefikiov1alpha1.IngressRoute) error {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = appName
+	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, ingressRoute, labels); err != nil {
 		return err
 	}
 
-	baseUrl, err := url.Parse(atom.Spec.Service.BaseURL)
-	if err != nil {
-		return err
-	}
+	baseUrl := atom.GetBaseURL()
 
+	// TODO move to smoothoperator function
 	ingressRoute.Annotations = map[string]string{
 		"uptime.pdok.nl/id":   fmt.Sprintf("%x", sha1.Sum([]byte(atom.Name+nameSuffix))), //nolint:gosec  // sha1 is only used for ID generation here, not crypto
 		"uptime.pdok.nl/name": fmt.Sprintf("%s ATOM", atom.Spec.Service.Title),
@@ -46,7 +43,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		Routes: []traefikiov1alpha1.Route{
 			{
 				Kind:  "Rule",
-				Match: getMatchRule(*baseUrl, "index.xml", false),
+				Match: getMatchRule(baseUrl, "index.xml", false),
 				Services: []traefikiov1alpha1.Service{
 					{
 						LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
@@ -72,14 +69,14 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 
 	// Set additional routes per datasetFeed
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		matchRule := getMatchRule(*baseUrl, datasetFeed.TechnicalName+".xml", false)
+		matchRule := getMatchRule(baseUrl, datasetFeed.TechnicalName+".xml", false)
 		rule := getDefaultRule(atom, matchRule)
 		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)
 	}
 
 	azureStorageRule := traefikiov1alpha1.Route{
 		Kind:  "Rule",
-		Match: getMatchRule(*baseUrl, "downloads/", true),
+		Match: getMatchRule(baseUrl, "downloads/", true),
 		Services: []traefikiov1alpha1.Service{
 			{
 				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{

@@ -18,8 +18,7 @@ func getBareService(obj metav1.Object) *corev1.Service {
 }
 
 func (r *AtomReconciler) mutateService(atom *pdoknlv3.Atom, service *corev1.Service) error {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = appName
+	labels := getLabels(atom)
 	selector := labels
 	if err := smoothutil.SetImmutableLabels(r.Client, service, labels); err != nil {
 		return err

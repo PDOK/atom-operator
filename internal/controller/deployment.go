@@ -31,8 +31,7 @@ func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
 
 //nolint:funlen
 func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv1.Deployment, configMapName string) error {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = appName
+	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, deployment, labels); err != nil {
 		return err
 	}

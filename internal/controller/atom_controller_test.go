@@ -103,10 +103,22 @@ var _ = Describe("Atom Controller", func() {
 			})
 		})
 
-		It("Should generate a correct Middlewares", func() {
-			//testMutate(getBareService(&atom), "test_data/basic-atom/expected-output/service.yaml", func(s *corev1.Service) error {
-			//	return reconciler.mutateService(&atom, s)
-			//})
+		It("Should generate a correct Prefix Strip Middleware", func() {
+			testMutate(getBareStripPrefixMiddleware(&atom), "test_data/basic-atom/expected-output/middleware-prefixstrip.yaml", func(m *traefikiov1alpha1.Middleware) error {
+				return reconciler.mutateStripPrefixMiddleware(&atom, m)
+			})
+		})
+
+		It("Should generate a correct Headers Middleware", func() {
+			testMutate(getBareHeadersMiddleware(&atom), "test_data/basic-atom/expected-output/middleware-headers.yaml", func(m *traefikiov1alpha1.Middleware) error {
+				return reconciler.mutateHeadersMiddleware(&atom, m)
+			})
+		})
+
+		It("Should generate a correct Download Middleware", func() {
+			testMutate(getBareDownloadLinkMiddleware(&atom, 0), "test_data/basic-atom/expected-output/middleware-downloads.yaml", func(m *traefikiov1alpha1.Middleware) error {
+				return reconciler.mutateDownloadLinkMiddleware(&atom, &atom.Spec.Service.DatasetFeeds[0].Entries[0].DownloadLinks[0], m)
+			})
 		})
 
 		It("Should generate a correct IngressRoute", func() {
@@ -489,7 +501,7 @@ var _ = Describe("Atom Controller", func() {
 	//		_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 	//		Expect(err).NotTo(HaveOccurred())
 	//
-	//		middlewareCorsHeaders := getBareCorsHeadersMiddleware(atom)
+	//		middlewareCorsHeaders := getBareHeadersMiddleware(atom)
 	//		Eventually(func() bool {
 	//			err = k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareCorsHeaders), middlewareCorsHeaders)
 	//			return Expect(err).NotTo(HaveOccurred())
@@ -718,7 +730,7 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 		{obj: &appsv1.Deployment{}, key: types.NamespacedName{Namespace: namespace, Name: getBareDeployment(atom).GetName()}},
 		{obj: &corev1.ConfigMap{}, key: types.NamespacedName{Namespace: namespace, Name: configMapName}},
 		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareStripPrefixMiddleware(atom).GetName()}},
-		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareCorsHeadersMiddleware(atom).GetName()}},
+		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareHeadersMiddleware(atom).GetName()}},
 		{obj: &corev1.Service{}, key: types.NamespacedName{Namespace: namespace, Name: getBareService(atom).GetName()}},
 		{obj: &traefikiov1alpha1.IngressRoute{}, key: types.NamespacedName{Namespace: namespace, Name: getBareIngressRoute(atom).GetName()}},
 		{obj: &policyv1.PodDisruptionBudget{}, key: types.NamespacedName{Namespace: namespace, Name: getBarePodDisruptionBudget(atom).GetName()}},
