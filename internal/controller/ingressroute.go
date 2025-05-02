@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec  // sha1 is only used for ID generation here, not crypto
 	"fmt"
 	"net/url"
 	"strconv"
@@ -29,13 +29,13 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		return err
 	}
 
-	baseUrl := atom.GetBaseURL()
+	baseURL := atom.GetBaseURL()
 
 	// TODO move to smoothoperator function
 	ingressRoute.Annotations = map[string]string{
 		"uptime.pdok.nl/id":   fmt.Sprintf("%x", sha1.Sum([]byte(atom.Name+nameSuffix))), //nolint:gosec  // sha1 is only used for ID generation here, not crypto
-		"uptime.pdok.nl/name": fmt.Sprintf("%s ATOM", atom.Spec.Service.Title),
-		"uptime.pdok.nl/url":  baseUrl.String() + "index.xml",
+		"uptime.pdok.nl/name": atom.Spec.Service.Title + " ATOM",
+		"uptime.pdok.nl/url":  baseURL.String() + "index.xml",
 		"uptime.pdok.nl/tags": "public-stats,atom",
 	}
 
@@ -43,7 +43,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		Routes: []traefikiov1alpha1.Route{
 			{
 				Kind:  "Rule",
-				Match: getMatchRule(baseUrl, "index.xml", false),
+				Match: getMatchRule(baseURL, "index.xml", false),
 				Services: []traefikiov1alpha1.Service{
 					{
 						LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
@@ -69,14 +69,14 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 
 	// Set additional routes per datasetFeed
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		matchRule := getMatchRule(baseUrl, datasetFeed.TechnicalName+".xml", false)
+		matchRule := getMatchRule(baseURL, datasetFeed.TechnicalName+".xml", false)
 		rule := getDefaultRule(atom, matchRule)
 		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)
 	}
 
 	azureStorageRule := traefikiov1alpha1.Route{
 		Kind:  "Rule",
-		Match: getMatchRule(baseUrl, "downloads/", true),
+		Match: getMatchRule(baseURL, "downloads/", true),
 		Services: []traefikiov1alpha1.Service{
 			{
 				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{

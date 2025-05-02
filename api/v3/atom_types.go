@@ -275,8 +275,8 @@ func GetBlobEndpoint() string {
 }
 
 func (r *Atom) GetBaseURL() url.URL {
-	baseUrl, _ := url.Parse(r.Spec.Service.BaseURL)
-	return *baseUrl
+	baseURL, _ := url.Parse(r.Spec.Service.BaseURL)
+	return *baseURL
 }
 
 func (r *Atom) GetDownloadLinks() (downloadLinks []DownloadLink) {

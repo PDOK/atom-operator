@@ -88,11 +88,11 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downl
 		return err
 	}
 
-	baseUrl := atom.GetBaseURL()
+	baseURL := atom.GetBaseURL()
 
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		ReplacePathRegex: &dynamic.ReplacePathRegex{
-			Regex:       getDownloadLinkRegex(baseUrl, downloadLink),
+			Regex:       getDownloadLinkRegex(baseURL, downloadLink),
 			Replacement: getDownloadLinkReplacement(downloadLink),
 		},
 	}
@@ -103,8 +103,8 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downl
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
-func getDownloadLinkRegex(baseUrl url.URL, downloadLink *pdoknlv3.DownloadLink) string {
-	return fmt.Sprintf("^%sdownloads/(%s)", baseUrl.Path, downloadLink.GetBlobName())
+func getDownloadLinkRegex(baseURL url.URL, downloadLink *pdoknlv3.DownloadLink) string {
+	return fmt.Sprintf("^%sdownloads/(%s)", baseURL.Path, downloadLink.GetBlobName())
 }
 
 func getDownloadLinkReplacement(downloadLink *pdoknlv3.DownloadLink) string {
