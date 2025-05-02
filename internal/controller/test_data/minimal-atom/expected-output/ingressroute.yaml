@@ -1,10 +1,10 @@
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: basic-atom
+  name: minimal-atom
   namespace: test
   annotations:
-    uptime.pdok.nl/id: ced35aeb7bdc1b53ffd909e1c2252c4d275f6cd3
+    uptime.pdok.nl/id: 3ffebdf07a34c3d11a8396af8398877b41b148f6
     uptime.pdok.nl/name: service-title ATOM
     uptime.pdok.nl/url: https://test.com/path/index.xml
     uptime.pdok.nl/tags: public-stats,atom
@@ -14,7 +14,7 @@ metadata:
   ownerReferences:
     - apiVersion: pdok.nl/v3
       kind: Atom
-      name: basic
+      name: minimal
       uid: ""
       blockOwnerDeletion: true
       controller: true
@@ -24,23 +24,23 @@ spec:
       match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/index.xml`)
       services:
         - kind: Service
-          name: basic-atom
+          name: minimal-atom
           port: 80
       middlewares:
-        - name: basic-atom-headers
+        - name: minimal-atom-headers
           namespace: test
-        - name: basic-atom-prefixstrip
+        - name: minimal-atom-prefixstrip
           namespace: test
     - kind: Rule
       match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/feed.xml`)
       services:
         - kind: Service
-          name: basic-atom
+          name: minimal-atom
           port: 80
       middlewares:
-        - name: basic-atom-headers
+        - name: minimal-atom-headers
           namespace: test
-        - name: basic-atom-prefixstrip
+        - name: minimal-atom-prefixstrip
           namespace: test
     - kind: Rule
       match: (Host(`localhost`) || Host(`test.com`)) && PathPrefix(`/path/downloads/`)
@@ -50,7 +50,7 @@ spec:
           port: azure-storage
           passHostHeader: false
       middlewares:
-        - name: basic-atom-headers
+        - name: minimal-atom-headers
           namespace: test
-        - name: basic-atom-downloads-0
+        - name: minimal-atom-downloads-0
           namespace: test

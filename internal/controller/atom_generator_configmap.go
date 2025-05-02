@@ -16,7 +16,7 @@ import (
 func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getBareDeployment(obj).GetName(),
+			Name:      obj.GetName() + generatorSuffix,
 			Namespace: obj.GetNamespace(),
 		},
 	}

@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: basic-atom-service
+  name: minimal-atom-service
   namespace: test
   labels:
     test: test
@@ -9,7 +9,7 @@ metadata:
   ownerReferences:
     - apiVersion: pdok.nl/v3
       kind: Atom
-      name: basic
+      name: minimal
       uid: ""
       blockOwnerDeletion: true
       controller: true
@@ -89,4 +89,4 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: basic-atom-generator
+            name: minimal-atom-generator

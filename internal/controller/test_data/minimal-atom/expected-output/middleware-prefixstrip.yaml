@@ -1,7 +1,7 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: basic-atom-downloads-0
+  name: minimal-atom-prefixstrip
   namespace: test
   labels:
     test: test
@@ -9,11 +9,11 @@ metadata:
   ownerReferences:
     - apiVersion: pdok.nl/v3
       kind: Atom
-      name: basic
+      name: minimal
       uid: ""
       blockOwnerDeletion: true
       controller: true
 spec:
-  replacePathRegex:
-    regex: ^/path/downloads/(file.ext)
-    replacement: /container/prefix/$1
+  stripPrefix:
+    prefixes:
+      - /path/

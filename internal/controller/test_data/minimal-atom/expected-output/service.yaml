@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: basic-atom
+  name: minimal-atom
   namespace: test
   labels:
     test: test
@@ -9,7 +9,7 @@ metadata:
   ownerReferences:
     - apiVersion: pdok.nl/v3
       kind: Atom
-      name: basic
+      name: minimal
       uid: ""
       blockOwnerDeletion: true
       controller: true

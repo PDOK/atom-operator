@@ -64,6 +64,7 @@ const (
 	headersSuffix     = "-atom-headers"
 	downloadsSuffix   = "-atom-downloads-"
 	nameSuffix        = "-atom"
+	generatorSuffix   = "-atom-generator"
 
 	srvDir = "/srv"
 )

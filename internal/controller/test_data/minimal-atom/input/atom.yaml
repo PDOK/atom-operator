@@ -1,7 +1,7 @@
 apiVersion: pdok.nl/v3
 kind: Atom
 metadata:
-  name: basic
+  name: minimal
   namespace: test
   labels:
     test: test
@@ -27,7 +27,7 @@ spec:
               - data: container/prefix/file.ext
             srs:
               name: srs
-              uri: http://srs.test
+              uri: https://srs.test
             polygon:
               bbox:
                 maxx: "10"
