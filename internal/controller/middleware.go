@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
@@ -15,7 +16,7 @@ import (
 func getBareStripPrefixMiddleware(obj metav1.Object) *traefikiov1alpha1.Middleware {
 	return &traefikiov1alpha1.Middleware{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + stripPrefixName,
+			Name: obj.GetName() + stripPrefixSuffix,
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 		},
@@ -23,13 +24,13 @@ func getBareStripPrefixMiddleware(obj metav1.Object) *traefikiov1alpha1.Middlewa
 }
 
 func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware) error {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
+	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, middleware, labels); err != nil {
 		return err
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		StripPrefix: &dynamic.StripPrefix{
-			Prefixes: []string{"/" + atom.GetBaseURLPath() + "/"}},
+			Prefixes: []string{atom.GetBaseURL().Path}},
 	}
 
 	if err := smoothutil.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
@@ -38,10 +39,10 @@ func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middle
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
-func getBareCorsHeadersMiddleware(obj metav1.Object) *traefikiov1alpha1.Middleware {
+func getBareHeadersMiddleware(obj metav1.Object) *traefikiov1alpha1.Middleware {
 	return &traefikiov1alpha1.Middleware{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + corsHeadersName,
+			Name: obj.GetName() + headersSuffix,
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 			UID:       obj.GetUID(),
@@ -49,8 +50,8 @@ func getBareCorsHeadersMiddleware(obj metav1.Object) *traefikiov1alpha1.Middlewa
 	}
 }
 
-func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware) error {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
+func (r *AtomReconciler) mutateHeadersMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware) error {
+	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, middleware, labels); err != nil {
 		return err
 	}
@@ -58,7 +59,7 @@ func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middle
 		Headers: &dynamic.Headers{
 			CustomResponseHeaders: map[string]string{
 				"Access-Control-Allow-Headers": "Content-Type",
-				"Access-Control-Allow-Method":  "GET, HEAD, OPTIONS",
+				"Access-Control-Allow-Method":  "GET, OPTIONS, HEAD",
 				"Access-Control-Allow-Origin":  "*",
 			},
 		},
@@ -74,7 +75,7 @@ func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middle
 func getBareDownloadLinkMiddleware(obj metav1.Object, index int) *traefikiov1alpha1.Middleware {
 	return &traefikiov1alpha1.Middleware{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + downloadsName + "-" + strconv.Itoa(index),
+			Name: obj.GetName() + downloadsSuffix + strconv.Itoa(index),
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 		},
@@ -82,14 +83,16 @@ func getBareDownloadLinkMiddleware(obj metav1.Object, index int) *traefikiov1alp
 }
 
 func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLink, middleware *traefikiov1alpha1.Middleware) error {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
+	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, middleware, labels); err != nil {
 		return err
 	}
 
+	baseURL := atom.GetBaseURL()
+
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		ReplacePathRegex: &dynamic.ReplacePathRegex{
-			Regex:       getDownloadLinkRegex(atom, downloadLink),
+			Regex:       getDownloadLinkRegex(baseURL, downloadLink),
 			Replacement: getDownloadLinkReplacement(downloadLink),
 		},
 	}
@@ -100,8 +103,8 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downl
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
-func getDownloadLinkRegex(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLink) string {
-	return fmt.Sprintf("^/%s/downloads/(%s)", atom.GetBaseURLPath(), downloadLink.GetBlobName())
+func getDownloadLinkRegex(baseURL url.URL, downloadLink *pdoknlv3.DownloadLink) string {
+	return fmt.Sprintf("^%sdownloads/(%s)", baseURL.Path, downloadLink.GetBlobName())
 }
 
 func getDownloadLinkReplacement(downloadLink *pdoknlv3.DownloadLink) string {

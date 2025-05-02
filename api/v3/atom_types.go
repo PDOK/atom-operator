@@ -48,8 +48,8 @@ type AtomSpec struct {
 // Service defines the service configuration for the Atom feed
 type Service struct {
 	// BaseURL of the Atom service. Will be suffixed with index.xml for the index.
-	// +kubebuilder:validation:Pattern:="https?://"
-	BaseURL string `json:"baseUrl"`
+	// +kubebuilder:validation:Pattern:="https?://.*"
+	BaseURL string `json:"baseUrl"` // TODO use URL type
 
 	// Language of the service
 	// +kubebuilder:default:="nl"
@@ -89,7 +89,7 @@ type Service struct {
 // Link represents a link in the service or dataset feed
 type Link struct {
 	// Actual href of the link
-	// +kubebuilder:validation:Pattern:="https?://"
+	// +kubebuilder:validation:Pattern:="https?://.*"
 	Href string `json:"href"`
 
 	// Relation (type) of the link, for example: describedby, self or alternate
@@ -213,7 +213,7 @@ type Polygon struct {
 // SRS describes the Spatial Reference System for an entry
 type SRS struct {
 	// URI of the SRS
-	// +kubebuilder:validation:Pattern:="https?://"
+	// +kubebuilder:validation:Pattern:="https?://.*"
 	URI string `json:"uri"`
 
 	// Name of the SRS
@@ -274,9 +274,9 @@ func GetBlobEndpoint() string {
 	return blobEndpoint
 }
 
-func (r *Atom) GetBaseURLPath() string {
-	url, _ := url.Parse(r.Spec.Service.BaseURL)
-	return strings.Replace(url.Path, "/", "", 1)
+func (r *Atom) GetBaseURL() url.URL {
+	baseURL, _ := url.Parse(r.Spec.Service.BaseURL)
+	return *baseURL
 }
 
 func (r *Atom) GetDownloadLinks() (downloadLinks []DownloadLink) {

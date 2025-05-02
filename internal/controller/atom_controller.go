@@ -55,14 +55,16 @@ const (
 )
 
 const (
-	appLabelKey     = "app"
-	atomName        = "atom-service"
-	configFileName  = "values.yaml"
-	atomPortName    = "atom-service"
-	atomPortNr      = 80
-	stripPrefixName = "atom-strip-prefix"
-	corsHeadersName = "atom-cors-headers"
-	downloadsName   = "atom-downloads"
+	appLabelKey       = "app"
+	appName           = "atom-service"
+	configFileName    = "values.yaml"
+	atomPortName      = "atom-service"
+	atomPortNr        = 80
+	stripPrefixSuffix = "-atom-prefixstrip"
+	headersSuffix     = "-atom-headers"
+	downloadsSuffix   = "-atom-downloads-"
+	nameSuffix        = "-atom"
+	generatorSuffix   = "-atom-generator"
 
 	srvDir = "/srv"
 )
@@ -191,9 +193,9 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 		return operationResults, fmt.Errorf("could not create or update resource %s: %w", smoothutil.GetObjectFullName(c, stripPrefixMiddleware), err)
 	}
 
-	corsHeadersMiddleware := getBareCorsHeadersMiddleware(atom)
+	corsHeadersMiddleware := getBareHeadersMiddleware(atom)
 	operationResults[smoothutil.GetObjectFullName(r.Client, corsHeadersMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, corsHeadersMiddleware, func() error {
-		return r.mutateCorsHeadersMiddleware(atom, corsHeadersMiddleware)
+		return r.mutateHeadersMiddleware(atom, corsHeadersMiddleware)
 	})
 	if err != nil {
 		return operationResults, fmt.Errorf("could not create or update resource %s: %w", smoothutil.GetObjectFullName(c, corsHeadersMiddleware), err)
@@ -248,4 +250,10 @@ func (r *AtomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&policyv1.PodDisruptionBudget{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&smoothoperatorv1.OwnerInfo{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Complete(r)
+}
+
+func getLabels(atom *pdoknlv3.Atom) map[string]string {
+	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
+	labels[appLabelKey] = appName
+	return labels
 }
