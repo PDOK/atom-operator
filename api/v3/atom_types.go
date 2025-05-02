@@ -49,7 +49,7 @@ type AtomSpec struct {
 type Service struct {
 	// BaseURL of the Atom service. Will be suffixed with index.xml for the index.
 	// +kubebuilder:validation:Pattern:="https?://.*"
-	BaseURL string `json:"baseUrl"`
+	BaseURL string `json:"baseUrl"` // TODO use URL type
 
 	// Language of the service
 	// +kubebuilder:default:="nl"

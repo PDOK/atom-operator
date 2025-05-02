@@ -11,7 +11,7 @@ import (
 func getBareService(obj metav1.Object) *corev1.Service {
 	return &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      obj.GetName() + "-" + atomName,
+			Name:      obj.GetName() + nameSuffix,
 			Namespace: obj.GetNamespace(),
 		},
 	}
@@ -19,7 +19,7 @@ func getBareService(obj metav1.Object) *corev1.Service {
 
 func (r *AtomReconciler) mutateService(atom *pdoknlv3.Atom, service *corev1.Service) error {
 	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = atomName
+	labels[appLabelKey] = appName
 	selector := labels
 	if err := smoothutil.SetImmutableLabels(r.Client, service, labels); err != nil {
 		return err

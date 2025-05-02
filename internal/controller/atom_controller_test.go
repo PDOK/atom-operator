@@ -85,6 +85,12 @@ var _ = Describe("Atom Controller", func() {
 			}
 		})
 
+		It("Should generate a correct Configmap", func() {
+			//testMutate(getBareDeployment(&atom), "test_data/basic-atom/expected-output/deployment.yaml", func(d *appsv1.Deployment) error {
+			//	return reconciler.mutateDeployment(&atom, d, "basic-atom-generator")
+			//})
+		})
+
 		It("Should generate a correct Deployment", func() {
 			testMutate(getBareDeployment(&atom), "test_data/basic-atom/expected-output/deployment.yaml", func(d *appsv1.Deployment) error {
 				return reconciler.mutateDeployment(&atom, d, "basic-atom-generator")
@@ -95,6 +101,24 @@ var _ = Describe("Atom Controller", func() {
 			testMutate(getBareService(&atom), "test_data/basic-atom/expected-output/service.yaml", func(s *corev1.Service) error {
 				return reconciler.mutateService(&atom, s)
 			})
+		})
+
+		It("Should generate a correct Middlewares", func() {
+			//testMutate(getBareService(&atom), "test_data/basic-atom/expected-output/service.yaml", func(s *corev1.Service) error {
+			//	return reconciler.mutateService(&atom, s)
+			//})
+		})
+
+		It("Should generate a correct IngressRoute", func() {
+			testMutate(getBareIngressRoute(&atom), "test_data/basic-atom/expected-output/ingressroute.yaml", func(i *traefikiov1alpha1.IngressRoute) error {
+				return reconciler.mutateIngressRoute(&atom, i)
+			})
+		})
+
+		It("Should generate a correct PodDisruptionBudget", func() {
+			//testMutate(getBareDeployment(&atom), "test_data/basic-atom/expected-output/deployment.yaml", func(d *appsv1.Deployment) error {
+			//	return reconciler.mutateDeployment(&atom, d, "basic-atom-generator")
+			//})
 		})
 	})
 

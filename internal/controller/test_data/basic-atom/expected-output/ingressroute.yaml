@@ -1,0 +1,56 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: basic-atom
+  namespace: test
+  annotations:
+    uptime.pdok.nl/id: ced35aeb7bdc1b53ffd909e1c2252c4d275f6cd3
+    uptime.pdok.nl/name: service-title ATOM
+    uptime.pdok.nl/url: https://test.com/path/index.xml
+    uptime.pdok.nl/tags: public-stats,atom
+  labels:
+    test: test
+    app: atom-service
+  ownerReferences:
+    - apiVersion: pdok.nl/v3
+      kind: Atom
+      name: basic
+      uid: ""
+      blockOwnerDeletion: true
+      controller: true
+spec:
+  routes:
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/index.xml`)
+      services:
+        - kind: Service
+          name: basic-atom
+          port: 80
+      middlewares:
+        - name: basic-atom-headers
+          namespace: test
+        - name: basic-atom-prefixstrip
+          namespace: test
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/feed.xml`)
+      services:
+        - kind: Service
+          name: basic-atom
+          port: 80
+      middlewares:
+        - name: basic-atom-headers
+          namespace: test
+        - name: basic-atom-prefixstrip
+          namespace: test
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && PathPrefix(`/path/downloads/`)
+      services:
+        - kind: Service
+          name: azure-storage
+          port: azure-storage
+          passHostHeader: false
+      middlewares:
+        - name: basic-atom-headers
+          namespace: test
+        - name: basic-atom-downloads-0
+          namespace: test

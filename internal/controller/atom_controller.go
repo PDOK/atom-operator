@@ -55,14 +55,15 @@ const (
 )
 
 const (
-	appLabelKey     = "app"
-	atomName        = "atom-service"
-	configFileName  = "values.yaml"
-	atomPortName    = "atom-service"
-	atomPortNr      = 80
-	stripPrefixName = "atom-strip-prefix"
-	corsHeadersName = "atom-cors-headers"
-	downloadsName   = "atom-downloads"
+	appLabelKey       = "app"
+	appName           = "atom-service"
+	configFileName    = "values.yaml"
+	atomPortName      = "atom-service"
+	atomPortNr        = 80
+	stripPrefixSuffix = "-atom-prefixstrip"
+	headersSuffix     = "-atom-headers"
+	downloadsSuffix   = "-atom-downloads-"
+	nameSuffix        = "-atom"
 
 	srvDir = "/srv"
 )

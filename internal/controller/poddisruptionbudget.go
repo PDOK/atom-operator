@@ -12,7 +12,7 @@ import (
 func getBarePodDisruptionBudget(obj metav1.Object) *policyv1.PodDisruptionBudget {
 	return &policyv1.PodDisruptionBudget{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      obj.GetName() + "-atom-pdb",
+			Name:      obj.GetName() + "-" + appName,
 			Namespace: obj.GetNamespace(),
 		},
 	}
@@ -20,7 +20,7 @@ func getBarePodDisruptionBudget(obj metav1.Object) *policyv1.PodDisruptionBudget
 
 func (r *AtomReconciler) mutatePodDisruptionBudget(atom *pdoknlv3.Atom, podDisruptionBudget *policyv1.PodDisruptionBudget) error {
 	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = atomName
+	labels[appLabelKey] = appName
 	if err := smoothutil.SetImmutableLabels(r.Client, podDisruptionBudget, labels); err != nil {
 		return err
 	}

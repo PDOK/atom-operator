@@ -22,7 +22,7 @@ const (
 func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + atomName,
+			Name: obj.GetName() + "-" + appName,
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 		},
@@ -32,7 +32,7 @@ func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
 //nolint:funlen
 func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv1.Deployment, configMapName string) error {
 	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = atomName
+	labels[appLabelKey] = appName
 	if err := smoothutil.SetImmutableLabels(r.Client, deployment, labels); err != nil {
 		return err
 	}

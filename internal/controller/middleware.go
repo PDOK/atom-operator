@@ -15,7 +15,7 @@ import (
 func getBareStripPrefixMiddleware(obj metav1.Object) *traefikiov1alpha1.Middleware {
 	return &traefikiov1alpha1.Middleware{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + stripPrefixName,
+			Name: obj.GetName() + "-" + stripPrefixSuffix,
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 		},
@@ -41,7 +41,7 @@ func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middle
 func getBareCorsHeadersMiddleware(obj metav1.Object) *traefikiov1alpha1.Middleware {
 	return &traefikiov1alpha1.Middleware{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + corsHeadersName,
+			Name: obj.GetName() + headersSuffix,
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 			UID:       obj.GetUID(),
@@ -74,7 +74,7 @@ func (r *AtomReconciler) mutateCorsHeadersMiddleware(atom *pdoknlv3.Atom, middle
 func getBareDownloadLinkMiddleware(obj metav1.Object, index int) *traefikiov1alpha1.Middleware {
 	return &traefikiov1alpha1.Middleware{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + downloadsName + "-" + strconv.Itoa(index),
+			Name: obj.GetName() + downloadsSuffix + strconv.Itoa(index),
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 		},

@@ -24,7 +24,7 @@ func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
 
 func (r *AtomReconciler) mutateAtomGeneratorConfigMap(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo, configMap *corev1.ConfigMap) error {
 	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = atomName
+	labels[appLabelKey] = appName
 	if err := smoothutil.SetImmutableLabels(r.Client, configMap, labels); err != nil {
 		return err
 	}
