@@ -38,8 +38,6 @@ import (
 )
 
 // ConvertTo converts this Atom (v2beta1) to the Hub version (v3).
-//
-//nolint:cyclop,funlen
 func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+

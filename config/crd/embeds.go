@@ -1,5 +1,6 @@
 package crd
 
+//nolint:goimports
 import (
 	_ "embed"
 	"github.com/pdok/smooth-operator/pkg/validation"
