@@ -16,15 +16,14 @@ import (
 func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      getBareDeployment(obj).GetName(),
+			Name:      obj.GetName() + generatorSuffix,
 			Namespace: obj.GetNamespace(),
 		},
 	}
 }
 
 func (r *AtomReconciler) mutateAtomGeneratorConfigMap(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo, configMap *corev1.ConfigMap) error {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = atomName
+	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, configMap, labels); err != nil {
 		return err
 	}

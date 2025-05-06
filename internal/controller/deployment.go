@@ -11,10 +11,18 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 )
 
+const (
+	evictAnnotation            = "cluster-autoscaler.kubernetes.io/safe-to-evict"
+	evictValue                 = "true"
+	defaultContainerAnnotation = "kubectl.kubernetes.io/default-container"
+	versionCheckerAnnotation   = "priority.version-checker.io/atom-service"
+	versionCheckerPriority     = "8"
+)
+
 func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: obj.GetName() + "-" + atomName,
+			Name: obj.GetName() + "-" + appName,
 			// name might become too long. not handling here. will just fail on apply.
 			Namespace: obj.GetNamespace(),
 		},
@@ -23,21 +31,21 @@ func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
 
 //nolint:funlen
 func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv1.Deployment, configMapName string) error {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = atomName
+	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, deployment, labels); err != nil {
 		return err
 	}
 
 	podTemplateAnnotations := smoothutil.CloneOrEmptyMap(deployment.Spec.Template.GetAnnotations())
+	podTemplateAnnotations[evictAnnotation] = evictValue
+	podTemplateAnnotations[defaultContainerAnnotation] = "atom-service"
+	podTemplateAnnotations[versionCheckerAnnotation] = versionCheckerPriority
 
-	matchLabels := smoothutil.CloneOrEmptyMap(labels)
 	deployment.Spec.Selector = &metav1.LabelSelector{
-		MatchLabels: matchLabels,
+		MatchLabels: labels,
 	}
 
 	deployment.Spec.MinReadySeconds = 0
-	deployment.Spec.ProgressDeadlineSeconds = smoothutil.Pointer(int32(600))
 	deployment.Spec.Strategy = appsv1.DeploymentStrategy{
 		Type: appsv1.RollingUpdateDeploymentStrategyType,
 		RollingUpdate: &appsv1.RollingUpdateDeployment{
@@ -50,7 +58,7 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 
 	podTemplateSpec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      matchLabels,
+			Labels:      labels,
 			Annotations: podTemplateAnnotations,
 		},
 		Spec: corev1.PodSpec{
@@ -79,7 +87,6 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 					Name: "atom-service",
 					Ports: []corev1.ContainerPort{
 						{
-							Name:          atomPortName,
 							ContainerPort: atomPortNr,
 						},
 					},
@@ -118,7 +125,7 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{Name: "socket", MountPath: "/tmp", ReadOnly: false},
-						{Name: "data", MountPath: "var/www"},
+						{Name: "data", MountPath: "/var/www/"},
 					},
 				},
 			},
