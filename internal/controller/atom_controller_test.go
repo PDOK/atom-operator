@@ -27,14 +27,13 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/google/go-cmp/cmp"
+	"github.com/pdok/atom-generator/feeds"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/pdok/atom-generator/feeds"
 	"sigs.k8s.io/yaml"
-
+	yaml2 "sigs.k8s.io/yaml/goyaml.v2"
 	"testing"
 	"time"
 
@@ -66,113 +65,14 @@ const (
 
 var _ = Describe("Testing Atom Controller", func() {
 
-	Context("Testing Mutate functions for Minimal Atom", func() {
+	//Context("Testing Mutate functions for Minimal Atom", func() {
+	//	testAtomMutates("minimal")
+	//})
 
-		pdoknlv3.SetBlobEndpoint("http://localazurite.blob.azurite")
+	Context("Testing Mutate functions for Maximal Atom", func() {
 
-		var reconciler AtomReconciler
+		testAtomMutates("maximum")
 
-		testPath := "test_data/minimal-atom"
-		outputPath := testPath + "/expected-output/"
-
-		atom := pdoknlv3.Atom{}
-		owner := smoothoperatorv1.OwnerInfo{}
-
-		BeforeEach(func() {
-			reconciler = AtomReconciler{
-				Client:             k8sClient,
-				Scheme:             k8sClient.Scheme(),
-				AtomGeneratorImage: testImageName1,
-				LighttpdImage:      testImageName2,
-			}
-		})
-
-		It("Should parse the input files correctly", func() {
-
-			data, err := os.ReadFile(testPath + "/input/atom.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			err = yaml.UnmarshalStrict(data, &atom)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(atom.Name).Should(Equal("minimal"))
-
-			data, err = os.ReadFile(testPath + "/input/ownerinfo.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			err = yaml.UnmarshalStrict(data, &owner)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(owner.Name).Should(Equal("owner"))
-		})
-
-		It("Should generate a correct Configmap", func() {
-
-			result := getBareConfigMap(&atom)
-			err := reconciler.mutateAtomGeneratorConfigMap(&atom, &owner, result)
-			Expect(err).NotTo(HaveOccurred())
-
-			var expected corev1.ConfigMap
-			data, err := os.ReadFile(outputPath + "configmap.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			err = yaml.UnmarshalStrict(data, &expected)
-			Expect(err).NotTo(HaveOccurred())
-
-			diff := cmp.Diff(expected, *result)
-			if diff != "" {
-
-				var expectedValues, gottenValues feeds.Feeds
-				err = yaml.UnmarshalStrict([]byte(expected.Data["values.yaml"]), &expectedValues)
-				Expect(err).NotTo(HaveOccurred())
-				err = yaml.UnmarshalStrict([]byte(result.Data["values.yaml"]), &gottenValues)
-				Expect(err).NotTo(HaveOccurred())
-
-				valuesDiff := cmp.Diff(expectedValues, gottenValues)
-				if valuesDiff != "" {
-					Fail(valuesDiff)
-				}
-
-				Fail(diff)
-			}
-		})
-
-		It("Should generate a Deployment correctly", func() {
-			testMutate("Deployment", getBareDeployment(&atom), outputPath+"deployment.yaml", func(d *appsv1.Deployment) error {
-				return reconciler.mutateDeployment(&atom, d, "minimal-atom-generator")
-			})
-		})
-
-		It("Should generate a correct Service", func() {
-			testMutate("Service", getBareService(&atom), outputPath+"service.yaml", func(s *corev1.Service) error {
-				return reconciler.mutateService(&atom, s)
-			})
-		})
-
-		It("Should generate a correct Prefix Strip Middleware", func() {
-			testMutate("Prefix Strip Middleware", getBareStripPrefixMiddleware(&atom), outputPath+"middleware-prefixstrip.yaml", func(m *traefikiov1alpha1.Middleware) error {
-				return reconciler.mutateStripPrefixMiddleware(&atom, m)
-			})
-		})
-
-		It("Should generate a correct Headers Middleware", func() {
-			testMutate("Headers Middleware", getBareHeadersMiddleware(&atom), outputPath+"middleware-headers.yaml", func(m *traefikiov1alpha1.Middleware) error {
-				return reconciler.mutateHeadersMiddleware(&atom, m)
-			})
-		})
-
-		It("Should generate a correct Download Middleware", func() {
-			testMutate("Download Middleware", getBareDownloadLinkMiddleware(&atom, 0), outputPath+"middleware-downloads.yaml", func(m *traefikiov1alpha1.Middleware) error {
-				return reconciler.mutateDownloadLinkMiddleware(&atom, &atom.Spec.Service.DatasetFeeds[0].Entries[0].DownloadLinks[0], m)
-			})
-		})
-
-		It("Should generate a correct IngressRoute", func() {
-			testMutate("IngressRoute", getBareIngressRoute(&atom), outputPath+"ingressroute.yaml", func(i *traefikiov1alpha1.IngressRoute) error {
-				return reconciler.mutateIngressRoute(&atom, i)
-			})
-		})
-
-		It("Should generate a correct PodDisruptionBudget", func() {
-			testMutate("PodDisruptionBudget", getBarePodDisruptionBudget(&atom), outputPath+"poddisruptionbudget.yaml", func(p *policyv1.PodDisruptionBudget) error {
-				return reconciler.mutatePodDisruptionBudget(&atom, p)
-			})
-		})
 	})
 
 	Context("When reconciling a resource", func() {
@@ -340,6 +240,116 @@ var _ = Describe("Testing Atom Controller", func() {
 		})
 	})
 })
+
+func testAtomMutates(name string) {
+
+	pdoknlv3.SetBlobEndpoint("http://localazurite.blob.azurite")
+
+	var reconciler AtomReconciler
+
+	testPath := fmt.Sprintf("test_data/%s-atom", name)
+	outputPath := testPath + "/expected-output/"
+
+	atom := pdoknlv3.Atom{}
+	owner := smoothoperatorv1.OwnerInfo{}
+
+	BeforeEach(func() {
+		reconciler = AtomReconciler{
+			Client:             k8sClient,
+			Scheme:             k8sClient.Scheme(),
+			AtomGeneratorImage: testImageName1,
+			LighttpdImage:      testImageName2,
+		}
+	})
+
+	It("Should parse the input files correctly", func() {
+
+		data, err := os.ReadFile(testPath + "/input/atom.yaml")
+		Expect(err).NotTo(HaveOccurred())
+		err = yaml.UnmarshalStrict(data, &atom)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(atom.Name).Should(Equal(name))
+
+		data, err = os.ReadFile(testPath + "/input/ownerinfo.yaml")
+		Expect(err).NotTo(HaveOccurred())
+		err = yaml.UnmarshalStrict(data, &owner)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(owner.Name).Should(Equal("owner"))
+	})
+
+	It("Should generate a correct Configmap", func() {
+
+		result := getBareConfigMap(&atom)
+		err := reconciler.mutateAtomGeneratorConfigMap(&atom, &owner, result)
+		Expect(err).NotTo(HaveOccurred())
+
+		var expected corev1.ConfigMap
+		data, err := os.ReadFile(outputPath + "configmap.yaml")
+		Expect(err).NotTo(HaveOccurred())
+		err = yaml.UnmarshalStrict(data, &expected)
+		Expect(err).NotTo(HaveOccurred())
+
+		var expectedValues, gottenValues feeds.Feeds
+		err = yaml2.Unmarshal([]byte(expected.Data["values.yaml"]), &expectedValues)
+		Expect(err).NotTo(HaveOccurred())
+		err = yaml2.Unmarshal([]byte(result.Data["values.yaml"]), &gottenValues)
+		Expect(err).NotTo(HaveOccurred())
+
+		valuesDiff := cmp.Diff(expectedValues, gottenValues)
+		if valuesDiff != "" {
+			Fail(valuesDiff)
+		}
+
+		expected.Data["values.yaml"] = `"feed": []`
+		result.Data["values.yaml"] = `"feed": []`
+		diff := cmp.Diff(expected, *result)
+
+		if diff != "" {
+			Fail(diff)
+		}
+
+	})
+
+	It("Should generate a Deployment correctly", func() {
+		testMutate("Deployment", getBareDeployment(&atom), outputPath+"deployment.yaml", func(d *appsv1.Deployment) error {
+			return reconciler.mutateDeployment(&atom, d, name+"-atom-generator")
+		})
+	})
+
+	It("Should generate a correct Service", func() {
+		testMutate("Service", getBareService(&atom), outputPath+"service.yaml", func(s *corev1.Service) error {
+			return reconciler.mutateService(&atom, s)
+		})
+	})
+
+	It("Should generate a correct Prefix Strip Middleware", func() {
+		testMutate("Prefix Strip Middleware", getBareStripPrefixMiddleware(&atom), outputPath+"middleware-prefixstrip.yaml", func(m *traefikiov1alpha1.Middleware) error {
+			return reconciler.mutateStripPrefixMiddleware(&atom, m)
+		})
+	})
+
+	It("Should generate a correct Headers Middleware", func() {
+		testMutate("Headers Middleware", getBareHeadersMiddleware(&atom), outputPath+"middleware-headers.yaml", func(m *traefikiov1alpha1.Middleware) error {
+			return reconciler.mutateHeadersMiddleware(&atom, m)
+		})
+	})
+
+	It("Should generate a correct Download Middlewares", func() {
+		for index, group := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
+			testMutate(fmt.Sprintf("Download Middleware %d", index), getBareDownloadLinkMiddleware(&atom, index), outputPath+fmt.Sprintf("middleware-downloads-%d.yaml", index), func(m *traefikiov1alpha1.Middleware) error {
+				return reconciler.mutateDownloadLinkMiddleware(&atom, group.prefix, group.files, m)
+			})
+		}
+
+	})
+
+	It("Should generate a correct PodDisruptionBudget", func() {
+		testMutate("PodDisruptionBudget", getBarePodDisruptionBudget(&atom), outputPath+"poddisruptionbudget.yaml", func(p *policyv1.PodDisruptionBudget) error {
+			return reconciler.mutatePodDisruptionBudget(&atom, p)
+		})
+	})
+
+}
 
 // TODO move to smoothOperator?
 func testMutate[T any](kind string, result *T, expectedFile string, mutate func(*T) error) {

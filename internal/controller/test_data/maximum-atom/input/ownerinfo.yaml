@@ -1,0 +1,17 @@
+apiVersion: pdok.nl/v1
+kind: OwnerInfo
+metadata:
+  name: owner
+  namespace: default
+spec:
+  metadataUrls:
+    csw:
+      hrefTemplate: "https://test.com/csw?uuid={{identifier}}"
+    opensearch:
+      hrefTemplate: "https://test.com/open/{{identifier}}.xml"
+    html:
+      hrefTemplate: "https://test.com/html/{{identifier}}"
+  atom:
+    author:
+      email: owner@author.com
+      name: owner-author
