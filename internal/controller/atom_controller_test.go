@@ -132,44 +132,44 @@ var _ = Describe("Testing Atom Controller", func() {
 			}
 		})
 
-		It("Should generate a correct Deployment", func() {
-			testMutate(getBareDeployment(&atom), outputPath+"deployment.yaml", func(d *appsv1.Deployment) error {
+		It("Should generate a Deployment correctly", func() {
+			testMutate("Deployment", getBareDeployment(&atom), outputPath+"deployment.yaml", func(d *appsv1.Deployment) error {
 				return reconciler.mutateDeployment(&atom, d, "minimal-atom-generator")
 			})
 		})
 
 		It("Should generate a correct Service", func() {
-			testMutate(getBareService(&atom), outputPath+"service.yaml", func(s *corev1.Service) error {
+			testMutate("Service", getBareService(&atom), outputPath+"service.yaml", func(s *corev1.Service) error {
 				return reconciler.mutateService(&atom, s)
 			})
 		})
 
 		It("Should generate a correct Prefix Strip Middleware", func() {
-			testMutate(getBareStripPrefixMiddleware(&atom), outputPath+"middleware-prefixstrip.yaml", func(m *traefikiov1alpha1.Middleware) error {
+			testMutate("Prefix Strip Middleware", getBareStripPrefixMiddleware(&atom), outputPath+"middleware-prefixstrip.yaml", func(m *traefikiov1alpha1.Middleware) error {
 				return reconciler.mutateStripPrefixMiddleware(&atom, m)
 			})
 		})
 
 		It("Should generate a correct Headers Middleware", func() {
-			testMutate(getBareHeadersMiddleware(&atom), outputPath+"middleware-headers.yaml", func(m *traefikiov1alpha1.Middleware) error {
+			testMutate("Headers Middleware", getBareHeadersMiddleware(&atom), outputPath+"middleware-headers.yaml", func(m *traefikiov1alpha1.Middleware) error {
 				return reconciler.mutateHeadersMiddleware(&atom, m)
 			})
 		})
 
 		It("Should generate a correct Download Middleware", func() {
-			testMutate(getBareDownloadLinkMiddleware(&atom, 0), outputPath+"middleware-downloads.yaml", func(m *traefikiov1alpha1.Middleware) error {
+			testMutate("Download Middleware", getBareDownloadLinkMiddleware(&atom, 0), outputPath+"middleware-downloads.yaml", func(m *traefikiov1alpha1.Middleware) error {
 				return reconciler.mutateDownloadLinkMiddleware(&atom, &atom.Spec.Service.DatasetFeeds[0].Entries[0].DownloadLinks[0], m)
 			})
 		})
 
 		It("Should generate a correct IngressRoute", func() {
-			testMutate(getBareIngressRoute(&atom), outputPath+"ingressroute.yaml", func(i *traefikiov1alpha1.IngressRoute) error {
+			testMutate("IngressRoute", getBareIngressRoute(&atom), outputPath+"ingressroute.yaml", func(i *traefikiov1alpha1.IngressRoute) error {
 				return reconciler.mutateIngressRoute(&atom, i)
 			})
 		})
 
 		It("Should generate a correct PodDisruptionBudget", func() {
-			testMutate(getBarePodDisruptionBudget(&atom), outputPath+"poddisruptionbudget.yaml", func(p *policyv1.PodDisruptionBudget) error {
+			testMutate("PodDisruptionBudget", getBarePodDisruptionBudget(&atom), outputPath+"poddisruptionbudget.yaml", func(p *policyv1.PodDisruptionBudget) error {
 				return reconciler.mutatePodDisruptionBudget(&atom, p)
 			})
 		})
@@ -342,7 +342,8 @@ var _ = Describe("Testing Atom Controller", func() {
 })
 
 // TODO move to smoothOperator?
-func testMutate[T any](result *T, expectedFile string, mutate func(*T) error) {
+func testMutate[T any](kind string, result *T, expectedFile string, mutate func(*T) error) {
+	By(fmt.Sprintf("Testing mutating the %s", kind))
 	err := mutate(result)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -353,6 +354,15 @@ func testMutate[T any](result *T, expectedFile string, mutate func(*T) error) {
 	Expect(err).NotTo(HaveOccurred())
 
 	diff := cmp.Diff(expected, *result)
+	if diff != "" {
+		Fail(diff)
+	}
+
+	By(fmt.Sprintf("Testing mutating the %s twice has the same result", kind))
+	generated := *result
+	err = mutate(result)
+	Expect(err).NotTo(HaveOccurred())
+	diff = cmp.Diff(generated, *result)
 	if diff != "" {
 		Fail(diff)
 	}
