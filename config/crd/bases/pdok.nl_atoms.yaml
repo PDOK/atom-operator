@@ -361,7 +361,7 @@ spec:
                   baseUrl:
                     description: BaseURL of the Atom service. Will be suffixed with
                       index.xml for the index.
-                    pattern: https?://
+                    pattern: https?://.*
                     type: string
                   datasetFeeds:
                     description: DatasetFeeds in this service
@@ -504,7 +504,7 @@ spec:
                                     type: string
                                   uri:
                                     description: URI of the SRS
-                                    pattern: https?://
+                                    pattern: https?://.*
                                     type: string
                                 required:
                                 - name
@@ -545,7 +545,7 @@ spec:
                             properties:
                               href:
                                 description: Actual href of the link
-                                pattern: https?://
+                                pattern: https?://.*
                                 type: string
                               hreflang:
                                 description: Optional language of the link. If omitted
@@ -616,7 +616,7 @@ spec:
                       properties:
                         href:
                           description: Actual href of the link
-                          pattern: https?://
+                          pattern: https?://.*
                           type: string
                         hreflang:
                           description: Optional language of the link. If omitted the

@@ -30,18 +30,19 @@ import (
 	"os"
 	"strconv"
 	"sync/atomic"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/pdok/atom-generator/feeds"
+	"sigs.k8s.io/yaml"
+
 	"testing"
 	"time"
 
 	policyv1 "k8s.io/api/policy/v1"
-
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/require"
-	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
-	appsv1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
@@ -49,7 +50,11 @@ import (
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	smoothutil "github.com/pdok/smooth-operator/pkg/util"
 	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/require"
+	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	appsv1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -67,7 +72,112 @@ const (
 
 var updated = metav1.NewTime(time.Now())
 
-var _ = Describe("Atom Controller", func() {
+var _ = Describe("Testing Atom Controller", func() {
+
+	Context("Testing Mutate functions for Minimal Atom", func() {
+
+		pdoknlv3.SetBlobEndpoint("http://localazurite.blob.azurite")
+
+		var reconciler AtomReconciler
+
+		testPath := "test_data/minimal-atom"
+		outputPath := testPath + "/expected-output/"
+
+		atom := pdoknlv3.Atom{}
+		data, _ := os.ReadFile(testPath + "/input/atom.yaml")
+		_ = yaml.Unmarshal(data, &atom)
+
+		owner := smoothoperatorv1.OwnerInfo{}
+		data, _ = os.ReadFile(testPath + "/input/ownerinfo.yaml")
+		_ = yaml.Unmarshal(data, &owner)
+
+		BeforeEach(func() {
+			reconciler = AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+		})
+
+		It("Should parse the input correctly", func() {
+			Expect(atom.Name).Should(Equal("minimal"))
+			Expect(owner.Name).Should(Equal("owner"))
+		})
+
+		It("Should generate a correct Configmap", func() {
+
+			result := getBareConfigMap(&atom)
+			err := reconciler.mutateAtomGeneratorConfigMap(&atom, &owner, result)
+			Expect(err).NotTo(HaveOccurred())
+
+			var expected corev1.ConfigMap
+			data, err := os.ReadFile(outputPath + "configmap.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			err = yaml.Unmarshal(data, &expected)
+			Expect(err).NotTo(HaveOccurred())
+
+			diff := cmp.Diff(expected, *result)
+			if diff != "" {
+
+				var expectedValues, gottenValues feeds.Feeds
+				err = yaml.Unmarshal([]byte(expected.Data["values.yaml"]), &expectedValues)
+				Expect(err).NotTo(HaveOccurred())
+				err = yaml.Unmarshal([]byte(result.Data["values.yaml"]), &gottenValues)
+				Expect(err).NotTo(HaveOccurred())
+
+				valuesDiff := cmp.Diff(expectedValues, gottenValues)
+				if valuesDiff != "" {
+					Fail(valuesDiff)
+				}
+
+				Fail(diff)
+			}
+		})
+
+		It("Should generate a correct Deployment", func() {
+			testMutate(getBareDeployment(&atom), outputPath+"deployment.yaml", func(d *appsv1.Deployment) error {
+				return reconciler.mutateDeployment(&atom, d, "minimal-atom-generator")
+			})
+		})
+
+		It("Should generate a correct Service", func() {
+			testMutate(getBareService(&atom), outputPath+"service.yaml", func(s *corev1.Service) error {
+				return reconciler.mutateService(&atom, s)
+			})
+		})
+
+		It("Should generate a correct Prefix Strip Middleware", func() {
+			testMutate(getBareStripPrefixMiddleware(&atom), outputPath+"middleware-prefixstrip.yaml", func(m *traefikiov1alpha1.Middleware) error {
+				return reconciler.mutateStripPrefixMiddleware(&atom, m)
+			})
+		})
+
+		It("Should generate a correct Headers Middleware", func() {
+			testMutate(getBareHeadersMiddleware(&atom), outputPath+"middleware-headers.yaml", func(m *traefikiov1alpha1.Middleware) error {
+				return reconciler.mutateHeadersMiddleware(&atom, m)
+			})
+		})
+
+		It("Should generate a correct Download Middleware", func() {
+			testMutate(getBareDownloadLinkMiddleware(&atom, 0), outputPath+"middleware-downloads.yaml", func(m *traefikiov1alpha1.Middleware) error {
+				return reconciler.mutateDownloadLinkMiddleware(&atom, &atom.Spec.Service.DatasetFeeds[0].Entries[0].DownloadLinks[0], m)
+			})
+		})
+
+		It("Should generate a correct IngressRoute", func() {
+			testMutate(getBareIngressRoute(&atom), outputPath+"ingressroute.yaml", func(i *traefikiov1alpha1.IngressRoute) error {
+				return reconciler.mutateIngressRoute(&atom, i)
+			})
+		})
+
+		It("Should generate a correct PodDisruptionBudget", func() {
+			testMutate(getBarePodDisruptionBudget(&atom), outputPath+"poddisruptionbudget.yaml", func(p *policyv1.PodDisruptionBudget) error {
+				return reconciler.mutatePodDisruptionBudget(&atom, p)
+			})
+		})
+	})
+
 	Context("When reconciling a resource", func() {
 
 		ctx := context.Background()
@@ -265,7 +375,6 @@ var _ = Describe("Atom Controller", func() {
 
 			Expect(deployment.Spec.Template.Spec.Containers[0].Name).Should(Equal("atom-service"))
 
-			Expect(deployment.Spec.Template.Spec.Containers[0].Ports[0].Name).Should(Equal("atom-service"))
 			Expect(deployment.Spec.Template.Spec.Containers[0].Ports[0].ContainerPort).Should(Equal(int32(80)))
 			Expect(deployment.Spec.Template.Spec.Containers[0].Image).Should(Equal(testImageName2))
 			Expect(deployment.Spec.Template.Spec.Containers[0].ImagePullPolicy).Should(Equal(corev1.PullIfNotPresent))
@@ -293,7 +402,7 @@ var _ = Describe("Atom Controller", func() {
 
 			expectedVolumeMounts := []corev1.VolumeMount{
 				{Name: "socket", MountPath: "/tmp", ReadOnly: false},
-				{Name: "data", MountPath: "var/www"},
+				{Name: "data", MountPath: "/var/www/"},
 			}
 			Expect(deployment.Spec.Template.Spec.Containers[0].VolumeMounts).Should(Equal(expectedVolumeMounts))
 
@@ -317,7 +426,7 @@ var _ = Describe("Atom Controller", func() {
 			Expect(deployment.Spec.Template.Spec.Volumes[1].Name).Should(Equal("socket"))
 			Expect(deployment.Spec.Template.Spec.Volumes[1].EmptyDir).Should(Equal(testEmptyDir))
 			Expect(deployment.Spec.Template.Spec.Volumes[2].Name).Should(Equal("config"))
-			Expect(deployment.Spec.Template.Spec.Volumes[2].ConfigMap.Name).Should(ContainSubstring("test-atom-2-atom-service-"))
+			Expect(deployment.Spec.Template.Spec.Volumes[2].ConfigMap.Name).Should(ContainSubstring("test-atom-2-atom-generator-"))
 		})
 
 		It("Should create correct configmap-atom-generator manifest.", func() {
@@ -376,7 +485,7 @@ var _ = Describe("Atom Controller", func() {
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
 
-			Expect(ingressRoute.Name).Should(Equal(atom.Name))
+			Expect(ingressRoute.Name).Should(Equal(atom.Name + "-atom"))
 			Expect(ingressRoute.Namespace).Should(Equal(atom.Namespace))
 			Expect(ingressRoute.Labels["app"]).Should(Equal(atom.Labels["app"]))
 			Expect(ingressRoute.Labels["dataset"]).Should(Equal(atom.Labels["dataset"]))
@@ -384,42 +493,42 @@ var _ = Describe("Atom Controller", func() {
 			Expect(ingressRoute.Labels["service-type"]).Should(Equal(atom.Labels["service-type"]))
 
 			Expect(ingressRoute.Spec.Routes[0].Kind).Should(Equal("Rule"))
-			Expect(ingressRoute.Spec.Routes[0].Match).Should(Equal("Host(`localhost`) && Path(`/test-datasetowner/test-dataset/atom/index.xml`)"))
+			Expect(ingressRoute.Spec.Routes[0].Match).Should(Equal("(Host(`localhost`) || Host(`my.test-resource.test`)) && Path(`/test-datasetowner/test-dataset/atom/index.xml`)"))
 			Expect(ingressRoute.Spec.Routes[0].Priority).Should(Equal(0))
 			Expect(len(ingressRoute.Spec.Routes[0].Services)).Should(Equal(1))
 			Expect(ingressRoute.Spec.Routes[0].Services[0].Name).Should(Equal("test-atom-4-atom"))
 			Expect(ingressRoute.Spec.Routes[0].Services[0].Kind).Should(Equal("Service"))
 			Expect(ingressRoute.Spec.Routes[0].Services[0].Namespace).Should(Equal(""))
 			Expect(ingressRoute.Spec.Routes[0].Services[0].Port.IntVal).Should(Equal(int32(80)))
-			Expect(ingressRoute.Spec.Routes[0].Middlewares[0].Name).Should(Equal("test-atom-4-atom-strip-prefix"))
+			Expect(ingressRoute.Spec.Routes[0].Middlewares[0].Name).Should(Equal("test-atom-4-atom-headers"))
 			Expect(ingressRoute.Spec.Routes[0].Middlewares[0].Namespace).Should(Equal("default"))
-			Expect(ingressRoute.Spec.Routes[0].Middlewares[1].Name).Should(Equal("test-atom-4-atom-cors-headers"))
+			Expect(ingressRoute.Spec.Routes[0].Middlewares[1].Name).Should(Equal("test-atom-4-atom-prefixstrip"))
 			Expect(ingressRoute.Spec.Routes[0].Middlewares[1].Namespace).Should(Equal("default"))
 
 			Expect(ingressRoute.Spec.Routes[1].Kind).Should(Equal("Rule"))
-			Expect(ingressRoute.Spec.Routes[1].Match).Should(Equal("Host(`localhost`) && PathPrefix(`/test-datasetowner/test-dataset/atom/downloads/`)"))
+			Expect(ingressRoute.Spec.Routes[1].Match).Should(Equal("(Host(`localhost`) || Host(`my.test-resource.test`)) && Path(`/test-datasetowner/test-dataset/atom/test-technical-name.xml`)"))
 			Expect(ingressRoute.Spec.Routes[1].Priority).Should(Equal(0))
 			Expect(len(ingressRoute.Spec.Routes[1].Services)).Should(Equal(1))
-			Expect(ingressRoute.Spec.Routes[1].Services[0].Name).Should(Equal("azure-storage"))
+			Expect(ingressRoute.Spec.Routes[1].Services[0].Name).Should(Equal("test-atom-4-atom"))
 			Expect(ingressRoute.Spec.Routes[1].Services[0].Kind).Should(Equal("Service"))
 			Expect(ingressRoute.Spec.Routes[1].Services[0].Namespace).Should(Equal(""))
-			Expect(ingressRoute.Spec.Routes[1].Services[0].Port.StrVal).Should(Equal(intstr.FromString("azure-storage").StrVal))
-			Expect(ingressRoute.Spec.Routes[1].Middlewares[0].Name).Should(Equal("test-atom-4-atom-cors-headers"))
+			Expect(ingressRoute.Spec.Routes[1].Services[0].Port.IntVal).Should(Equal(int32(80)))
+			Expect(ingressRoute.Spec.Routes[1].Middlewares[0].Name).Should(Equal("test-atom-4-atom-headers"))
 			Expect(ingressRoute.Spec.Routes[1].Middlewares[0].Namespace).Should(Equal("default"))
-			Expect(ingressRoute.Spec.Routes[1].Middlewares[1].Name).Should(Equal("test-atom-4-atom-downloads-0"))
+			Expect(ingressRoute.Spec.Routes[1].Middlewares[1].Name).Should(Equal("test-atom-4-atom-prefixstrip"))
 			Expect(ingressRoute.Spec.Routes[1].Middlewares[1].Namespace).Should(Equal("default"))
 
 			Expect(ingressRoute.Spec.Routes[2].Kind).Should(Equal("Rule"))
-			Expect(ingressRoute.Spec.Routes[2].Match).Should(Equal("Host(`localhost`) && Path(`/test-datasetowner/test-dataset/atom/test-technical-name.xml`)"))
+			Expect(ingressRoute.Spec.Routes[2].Match).Should(Equal("(Host(`localhost`) || Host(`my.test-resource.test`)) && PathPrefix(`/test-datasetowner/test-dataset/atom/downloads/`)"))
 			Expect(ingressRoute.Spec.Routes[2].Priority).Should(Equal(0))
 			Expect(len(ingressRoute.Spec.Routes[2].Services)).Should(Equal(1))
-			Expect(ingressRoute.Spec.Routes[2].Services[0].Name).Should(Equal("test-atom-4-atom"))
+			Expect(ingressRoute.Spec.Routes[2].Services[0].Name).Should(Equal("azure-storage"))
 			Expect(ingressRoute.Spec.Routes[2].Services[0].Kind).Should(Equal("Service"))
 			Expect(ingressRoute.Spec.Routes[2].Services[0].Namespace).Should(Equal(""))
-			Expect(ingressRoute.Spec.Routes[2].Services[0].Port.IntVal).Should(Equal(int32(80)))
-			Expect(ingressRoute.Spec.Routes[2].Middlewares[0].Name).Should(Equal("test-atom-4-atom-strip-prefix"))
+			Expect(ingressRoute.Spec.Routes[2].Services[0].Port.StrVal).Should(Equal(intstr.FromString("azure-storage").StrVal))
+			Expect(ingressRoute.Spec.Routes[2].Middlewares[0].Name).Should(Equal("test-atom-4-atom-headers"))
 			Expect(ingressRoute.Spec.Routes[2].Middlewares[0].Namespace).Should(Equal("default"))
-			Expect(ingressRoute.Spec.Routes[2].Middlewares[1].Name).Should(Equal("test-atom-4-atom-cors-headers"))
+			Expect(ingressRoute.Spec.Routes[2].Middlewares[1].Name).Should(Equal("test-atom-4-atom-downloads-0"))
 			Expect(ingressRoute.Spec.Routes[2].Middlewares[1].Namespace).Should(Equal("default"))
 
 		})
@@ -436,13 +545,13 @@ var _ = Describe("Atom Controller", func() {
 			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: typeNamespacedNameAtom})
 			Expect(err).NotTo(HaveOccurred())
 
-			middlewareCorsHeaders := getBareCorsHeadersMiddleware(atom)
+			middlewareCorsHeaders := getBareHeadersMiddleware(atom)
 			Eventually(func() bool {
 				err = k8sClient.Get(ctx, client.ObjectKeyFromObject(middlewareCorsHeaders), middlewareCorsHeaders)
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
 
-			Expect(middlewareCorsHeaders.Name).Should(Equal("test-atom-5-atom-cors-headers"))
+			Expect(middlewareCorsHeaders.Name).Should(Equal("test-atom-5-atom-headers"))
 			Expect(middlewareCorsHeaders.Namespace).Should(Equal("default"))
 			Expect(middlewareCorsHeaders.Labels["app"]).Should(Equal("atom-service"))
 			Expect(middlewareCorsHeaders.Labels["dataset"]).Should(Equal("test-dataset"))
@@ -450,7 +559,7 @@ var _ = Describe("Atom Controller", func() {
 			Expect(middlewareCorsHeaders.Labels["service-type"]).Should(Equal("atom"))
 			Expect(middlewareCorsHeaders.Spec.Headers.FrameDeny).Should(Equal(true))
 			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Headers"]).Should(Equal("Content-Type"))
-			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Method"]).Should(Equal("GET, HEAD, OPTIONS"))
+			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Method"]).Should(Equal("GET, OPTIONS, HEAD"))
 			Expect(middlewareCorsHeaders.Spec.Headers.CustomResponseHeaders["Access-Control-Allow-Origin"]).Should(Equal("*"))
 		})
 
@@ -472,7 +581,7 @@ var _ = Describe("Atom Controller", func() {
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
 
-			Expect(middlewareStripPrefix.Name).Should(Equal("test-atom-6-atom-strip-prefix"))
+			Expect(middlewareStripPrefix.Name).Should(Equal("test-atom-6-atom-prefixstrip"))
 			Expect(middlewareStripPrefix.Namespace).Should(Equal("default"))
 			Expect(middlewareStripPrefix.Labels["app"]).Should(Equal("atom-service"))
 			Expect(middlewareStripPrefix.Labels["dataset"]).Should(Equal("test-dataset"))
@@ -526,7 +635,7 @@ var _ = Describe("Atom Controller", func() {
 				return Expect(err).NotTo(HaveOccurred())
 			}, "10s", "1s").Should(BeTrue())
 
-			Expect(podDisruptionBudget.Name).Should(Equal("test-atom-8-atom-pdb"))
+			Expect(podDisruptionBudget.Name).Should(Equal("test-atom-8-atom-service"))
 			Expect(podDisruptionBudget.Namespace).Should(Equal("default"))
 			Expect(podDisruptionBudget.Labels["app"]).Should(Equal("atom-service"))
 			Expect(podDisruptionBudget.Labels["dataset"]).Should(Equal("test-dataset"))
@@ -585,6 +694,23 @@ var _ = Describe("Atom Controller", func() {
 		})
 	})
 })
+
+// TODO move to smoothOperator?
+func testMutate[T any](result *T, expectedFile string, mutate func(*T) error) {
+	err := mutate(result)
+	Expect(err).NotTo(HaveOccurred())
+
+	var expected T
+	data, err := os.ReadFile(expectedFile)
+	Expect(err).NotTo(HaveOccurred())
+	err = yaml.Unmarshal(data, &expected)
+	Expect(err).NotTo(HaveOccurred())
+
+	diff := cmp.Diff(expected, *result)
+	if diff != "" {
+		Fail(diff)
+	}
+}
 
 func getDownloadMiddlewareArray(ctx context.Context, atom metav1.Object) ([]*traefikiov1alpha1.Middleware, error) {
 	var downloadMiddlewareArray []*traefikiov1alpha1.Middleware
@@ -648,7 +774,7 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 		{obj: &appsv1.Deployment{}, key: types.NamespacedName{Namespace: namespace, Name: getBareDeployment(atom).GetName()}},
 		{obj: &corev1.ConfigMap{}, key: types.NamespacedName{Namespace: namespace, Name: configMapName}},
 		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareStripPrefixMiddleware(atom).GetName()}},
-		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareCorsHeadersMiddleware(atom).GetName()}},
+		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareHeadersMiddleware(atom).GetName()}},
 		{obj: &corev1.Service{}, key: types.NamespacedName{Namespace: namespace, Name: getBareService(atom).GetName()}},
 		{obj: &traefikiov1alpha1.IngressRoute{}, key: types.NamespacedName{Namespace: namespace, Name: getBareIngressRoute(atom).GetName()}},
 		{obj: &policyv1.PodDisruptionBudget{}, key: types.NamespacedName{Namespace: namespace, Name: getBarePodDisruptionBudget(atom).GetName()}},
@@ -693,6 +819,7 @@ func Test_getGeneratorConfig(t *testing.T) {
 					Spec: pdoknlv3.AtomSpec{
 						Lifecycle: &smoothoperatormodel.Lifecycle{},
 						Service: pdoknlv3.Service{
+							BaseURL:    "/",
 							Stylesheet: smoothutil.Pointer("/atom/style/style.xsl"),
 							Lang:       "nl",
 							ServiceMetadataLinks: &pdoknlv3.MetadataLink{
@@ -794,7 +921,7 @@ func getUniqueFullAtom(counter int) pdoknlv3.Atom {
 				TTLInDays: smoothutil.Pointer(int32(999)),
 			},
 			Service: pdoknlv3.Service{
-				BaseURL:      "https://my.test-resource.test/test-datasetowner/test-dataset/atom",
+				BaseURL:      "https://my.test-resource.test/test-datasetowner/test-dataset/atom/",
 				Lang:         "test lang",
 				Stylesheet:   smoothutil.Pointer("test stylesheet"),
 				Title:        "test title",

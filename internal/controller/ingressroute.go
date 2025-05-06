@@ -1,6 +1,9 @@
 package controller
 
 import (
+	"crypto/sha1" //nolint:gosec  // sha1 is only used for ID generation here, not crypto
+	"fmt"
+	"net/url"
 	"strconv"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
@@ -14,23 +17,33 @@ import (
 func getBareIngressRoute(obj metav1.Object) *traefikiov1alpha1.IngressRoute {
 	return &traefikiov1alpha1.IngressRoute{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      obj.GetName(),
+			Name:      obj.GetName() + nameSuffix,
 			Namespace: obj.GetNamespace(),
 		},
 	}
 }
 
 func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *traefikiov1alpha1.IngressRoute) error {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
+	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, ingressRoute, labels); err != nil {
 		return err
+	}
+
+	baseURL := atom.GetBaseURL()
+
+	// TODO move to smoothoperator function
+	ingressRoute.Annotations = map[string]string{
+		"uptime.pdok.nl/id":   fmt.Sprintf("%x", sha1.Sum([]byte(atom.Name+nameSuffix))), //nolint:gosec  // sha1 is only used for ID generation here, not crypto
+		"uptime.pdok.nl/name": atom.Spec.Service.Title + " ATOM",
+		"uptime.pdok.nl/url":  baseURL.String() + "index.xml",
+		"uptime.pdok.nl/tags": "public-stats,atom",
 	}
 
 	ingressRoute.Spec = traefikiov1alpha1.IngressRouteSpec{
 		Routes: []traefikiov1alpha1.Route{
 			{
 				Kind:  "Rule",
-				Match: getMatchRuleForIndex(atom),
+				Match: getMatchRule(baseURL, "index.xml", false),
 				Services: []traefikiov1alpha1.Service{
 					{
 						LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
@@ -42,11 +55,11 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 				},
 				Middlewares: []traefikiov1alpha1.MiddlewareRef{
 					{
-						Name:      atom.Name + "-" + stripPrefixName,
+						Name:      atom.Name + headersSuffix,
 						Namespace: atom.GetNamespace(),
 					},
 					{
-						Name:      atom.Name + "-" + corsHeadersName,
+						Name:      atom.Name + stripPrefixSuffix,
 						Namespace: atom.GetNamespace(),
 					},
 				},
@@ -54,9 +67,16 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		},
 	}
 
+	// Set additional routes per datasetFeed
+	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
+		matchRule := getMatchRule(baseURL, datasetFeed.TechnicalName+".xml", false)
+		rule := getDefaultRule(atom, matchRule)
+		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)
+	}
+
 	azureStorageRule := traefikiov1alpha1.Route{
 		Kind:  "Rule",
-		Match: getMatchRuleForDownloads(atom),
+		Match: getMatchRule(baseURL, "downloads/", true),
 		Services: []traefikiov1alpha1.Service{
 			{
 				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
@@ -69,7 +89,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		},
 		Middlewares: []traefikiov1alpha1.MiddlewareRef{
 			{
-				Name:      atom.Name + "-" + corsHeadersName,
+				Name:      atom.Name + headersSuffix,
 				Namespace: atom.GetNamespace(),
 			},
 		},
@@ -77,19 +97,12 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 	// Set additional Azure storage middleware per download link
 	for index := range atom.GetDownloadLinks() {
 		middlewareRef := traefikiov1alpha1.MiddlewareRef{
-			Name:      atom.Name + "-" + downloadsName + "-" + strconv.Itoa(index),
+			Name:      atom.Name + downloadsSuffix + strconv.Itoa(index),
 			Namespace: atom.GetNamespace(),
 		}
 		azureStorageRule.Middlewares = append(azureStorageRule.Middlewares, middlewareRef)
 	}
 	ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, azureStorageRule)
-
-	// Set additional routes per datasetFeed
-	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		matchRule := getMatchRuleForDatasetFeed(atom, &datasetFeed)
-		rule := getDefaultRule(atom, matchRule)
-		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)
-	}
 
 	if err := smoothutil.EnsureSetGVK(r.Client, ingressRoute, ingressRoute); err != nil {
 		return err
@@ -97,16 +110,13 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 	return ctrl.SetControllerReference(atom, ingressRoute, r.Scheme)
 }
 
-func getMatchRuleForIndex(atom *pdoknlv3.Atom) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetBaseURLPath() + "/index.xml`)"
-}
-
-func getMatchRuleForDownloads(atom *pdoknlv3.Atom) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && PathPrefix(`/" + atom.GetBaseURLPath() + "/downloads/`)"
-}
-
-func getMatchRuleForDatasetFeed(atom *pdoknlv3.Atom, datasetFeed *pdoknlv3.DatasetFeed) string {
-	return "Host(`" + pdoknlv3.GetHost() + "`) && Path(`/" + atom.GetBaseURLPath() + "/" + datasetFeed.TechnicalName + ".xml`)"
+func getMatchRule(url url.URL, pathSuffix string, pathPrefix bool) string {
+	host := fmt.Sprintf("(Host(`localhost`) || Host(`%s`))", url.Hostname())
+	path := fmt.Sprintf("Path(`%s`)", url.Path+pathSuffix)
+	if pathPrefix {
+		path = fmt.Sprintf("PathPrefix(`%s`)", url.Path+pathSuffix)
+	}
+	return fmt.Sprintf("%s && %s", host, path)
 }
 
 func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Route {
@@ -124,11 +134,11 @@ func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Rou
 		},
 		Middlewares: []traefikiov1alpha1.MiddlewareRef{
 			{
-				Name:      atom.Name + "-" + stripPrefixName,
+				Name:      atom.Name + headersSuffix,
 				Namespace: atom.GetNamespace(),
 			},
 			{
-				Name:      atom.Name + "-" + corsHeadersName,
+				Name:      atom.Name + stripPrefixSuffix,
 				Namespace: atom.GetNamespace(),
 			},
 		},
