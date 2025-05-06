@@ -580,7 +580,7 @@ var _ = Describe("Atom Controller", func() {
 
 			yamlInput := readTestFile("crd/v3_atom.yaml")
 
-			err = smoothoperatorvalidation.ValidateSchema(yamlInput, "atoms.pdok.nl")
+			err = smoothoperatorvalidation.ValidateSchema(yamlInput)
 			Expect(err).NotTo(HaveOccurred())
 		})
 	})

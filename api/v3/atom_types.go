@@ -134,7 +134,7 @@ type DatasetFeed struct {
 	Author smoothoperatormodel.Author `json:"author"`
 
 	// SpatialDatasetIdentifierCode
-	// +kubebuilder:validation:Format:=uuid
+	// +kubebuilder:validation:Pattern:=`^[0-9a-zA-Z]{8}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{12}$`
 	SpatialDatasetIdentifierCode *string `json:"spatialDatasetIdentifierCode,omitempty"`
 
 	// SpatialDatasetIdentifierNamespace
@@ -149,7 +149,7 @@ type DatasetFeed struct {
 // MetadataLink represents a link in the service or dataset feed
 type MetadataLink struct {
 	// UUID of the metadata record
-	// +kubebuilder:validation:Format:=uuid
+	// +kubebuilder:validation:Pattern:=`^[0-9a-zA-Z]{8}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{12}$`
 	MetadataIdentifier string `json:"metadataIdentifier"`
 
 	// Metadata templates to use
