@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: minimal-atom-generator-55ght59fth
-  namespace: test
+  namespace: default
   labels:
     test: test
     app: atom-service

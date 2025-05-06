@@ -2,7 +2,7 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: minimal-atom-service
-  namespace: test
+  namespace: default
   labels:
     test: test
     app: atom-service

@@ -2,7 +2,7 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: minimal-atom
-  namespace: test
+  namespace: default
   annotations:
     uptime.pdok.nl/id: 3ffebdf07a34c3d11a8396af8398877b41b148f6
     uptime.pdok.nl/name: service-title ATOM
@@ -28,9 +28,9 @@ spec:
           port: 80
       middlewares:
         - name: minimal-atom-headers
-          namespace: test
+          namespace: default
         - name: minimal-atom-prefixstrip
-          namespace: test
+          namespace: default
     - kind: Rule
       match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/feed.xml`)
       services:
@@ -39,9 +39,9 @@ spec:
           port: 80
       middlewares:
         - name: minimal-atom-headers
-          namespace: test
+          namespace: default
         - name: minimal-atom-prefixstrip
-          namespace: test
+          namespace: default
     - kind: Rule
       match: (Host(`localhost`) || Host(`test.com`)) && PathPrefix(`/path/downloads/`)
       services:
@@ -51,6 +51,6 @@ spec:
           passHostHeader: false
       middlewares:
         - name: minimal-atom-headers
-          namespace: test
+          namespace: default
         - name: minimal-atom-downloads-0
-          namespace: test
+          namespace: default
