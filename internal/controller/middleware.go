@@ -108,26 +108,37 @@ func getDownloadLinkRegex(baseURL url.URL, files []string) string {
 	return fmt.Sprintf("^%sdownloads/(%s)", baseURL.Path, strings.Join(files, "|"))
 }
 
-func getDownloadLinkGroups(links []pdoknlv3.DownloadLink) []struct {
-	prefix string
-	files  []string
+func getDownloadLinkGroups(links []pdoknlv3.DownloadLink) map[string]struct {
+	index *int
+	files []string
 } {
-	temp := make(map[string][]string)
+	result := make(map[string]struct {
+		index *int
+		files []string
+	})
+
+	counter := 0
 
 	for _, link := range links {
-		temp[link.GetBlobPrefix()] = append(temp[link.GetBlobPrefix()], link.GetBlobName())
-	}
-
-	var result []struct {
-		prefix string
-		files  []string
-	}
-
-	for prefix, files := range temp {
-		result = append(result, struct {
-			prefix string
-			files  []string
-		}{prefix: prefix, files: files})
+		prefix := link.GetBlobPrefix()
+		file := link.GetBlobName()
+		val, ok := result[prefix]
+		if ok {
+			if val.index == nil {
+				index := counter
+				val.index = &index
+				counter++
+			}
+			val.files = append(val.files, file)
+			result[prefix] = val
+		} else {
+			index := counter
+			counter++
+			result[prefix] = struct {
+				index *int
+				files []string
+			}{index: &index, files: []string{file}}
+		}
 	}
 
 	return result

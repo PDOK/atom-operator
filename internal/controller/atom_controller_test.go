@@ -342,9 +342,9 @@ func testAtomMutates(name string) {
 	})
 
 	It("Should generate a correct Download Middlewares", func() {
-		for index, group := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
-			testMutate(fmt.Sprintf("Download Middleware %d", index), getBareDownloadLinkMiddleware(&atom, index), outputPath+fmt.Sprintf("middleware-downloads-%d.yaml", index), func(m *traefikiov1alpha1.Middleware) error {
-				return reconciler.mutateDownloadLinkMiddleware(&atom, group.prefix, group.files, m)
+		for prefix, group := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
+			testMutate(fmt.Sprintf("Download Middleware %d", *group.index), getBareDownloadLinkMiddleware(&atom, *group.index), outputPath+fmt.Sprintf("middleware-downloads-%d.yaml", *group.index), func(m *traefikiov1alpha1.Middleware) error {
+				return reconciler.mutateDownloadLinkMiddleware(&atom, prefix, group.files, m)
 			})
 		}
 
@@ -429,11 +429,11 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 		{obj: &traefikiov1alpha1.IngressRoute{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBareIngressRoute(atom).GetName()}},
 		{obj: &policyv1.PodDisruptionBudget{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBarePodDisruptionBudget(atom).GetName()}},
 	}
-	for index := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
+	for _, group := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
 		extraStruct := struct {
 			obj client.Object
 			key types.NamespacedName
-		}{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBareDownloadLinkMiddleware(atom, index).GetName()}}
+		}{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBareDownloadLinkMiddleware(atom, *group.index).GetName()}}
 
 		structs = append(structs, extraStruct)
 	}
