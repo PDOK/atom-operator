@@ -262,10 +262,6 @@ func SetHost(atomHost string) {
 	host = strings.TrimSuffix(atomHost, "/")
 }
 
-func GetHost() string {
-	return host
-}
-
 func SetBlobEndpoint(atomBlobEndpoint string) {
 	blobEndpoint = atomBlobEndpoint
 }

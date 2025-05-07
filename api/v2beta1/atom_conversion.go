@@ -62,7 +62,7 @@ func (a *Atom) ToV3(dst *pdoknlv3.Atom) error {
 
 	// Service
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(pdoknlv3.GetHost(), a.Spec.General),
+		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), a.Spec.General),
 		Lang:         "nl",
 		Title:        a.Spec.Service.Title,
 		Subtitle:     a.Spec.Service.Subtitle,
