@@ -30,13 +30,18 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 	// TODO append custom links to links (requires mapping)
 	// links = append(links, atom.Spec.Service.Links...)
 
+	styleSheet := atom.Spec.Service.Stylesheet
+	if styleSheet == nil {
+		styleSheet = ownerInfo.Spec.Atom.DefaultStylesheet
+	}
+
 	atomGeneratorConfig.Feeds = []atomfeed.Feed{}
 	entries, err := getServiceEntries(atom, ownerInfo)
 	if err != nil {
 		return atomfeed.Feeds{}, err
 	}
 	serviceFeed := atomfeed.Feed{
-		XMLStylesheet: atom.Spec.Service.Stylesheet,
+		XMLStylesheet: styleSheet,
 		Xmlns:         "http://www.w3.org/2005/Atom",
 		Georss:        "http://www.georss.org/georss",
 		InspireDls:    "http://inspire.ec.europa.eu/schemas/inspire_dls/1.0",
