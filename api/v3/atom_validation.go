@@ -21,7 +21,7 @@ func (atom *Atom) ValidateCreate(c client.Client) ([]string, error) {
 		reasons = append(reasons, fmt.Sprintf("%v", err))
 	}
 
-	validateAtom(c, atom, &warnings, &reasons)
+	ValidateAtom(c, atom, &warnings, &reasons)
 
 	if len(reasons) > 0 {
 		return warnings, fmt.Errorf("%s", strings.Join(reasons, ". "))
@@ -42,7 +42,7 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 
 	smoothoperatorvalidation.CheckBaseUrlImmutability(atomOld, atom, &reasons)
 
-	validateAtom(c, atom, &warnings, &reasons)
+	ValidateAtom(c, atom, &warnings, &reasons)
 
 	if len(reasons) > 0 {
 		return warnings, fmt.Errorf("%s", strings.Join(reasons, ". "))
@@ -51,7 +51,26 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 	return warnings, nil
 }
 
-func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]string) {
+func ValidateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]string) {
+	ValidateAtomWithoutClusterChecks(atom, warnings, reasons)
+
+	ownerInfo := &smoothoperatorv1.OwnerInfo{}
+	objectKey := client.ObjectKey{
+		Namespace: atom.Namespace,
+		Name:      atom.Spec.Service.OwnerInfoRef,
+	}
+	ctx := context.Background()
+	err := c.Get(ctx, objectKey, ownerInfo)
+	if err != nil {
+		*reasons = append(*reasons, fmt.Sprintf("%v", err))
+	}
+
+	if ownerInfo.Spec.Atom == nil {
+		*reasons = append(*reasons, "no atom settings in ownerInfo: "+ownerInfo.Name)
+	}
+}
+
+func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, reasons *[]string) {
 	if strings.Contains(atom.GetName(), "atom") {
 		*warnings = append(*warnings, smoothoperatorvalidation.FormatValidationWarning("name should not contain atom", atom.GroupVersionKind(), atom.GetName()))
 	}
@@ -68,20 +87,5 @@ func validateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]st
 	err := smoothoperatorvalidation.ValidateBaseURL(service.BaseURL)
 	if err != nil {
 		*reasons = append(*reasons, fmt.Sprintf("%v", err))
-	}
-
-	ownerInfo := &smoothoperatorv1.OwnerInfo{}
-	objectKey := client.ObjectKey{
-		Namespace: atom.Namespace,
-		Name:      atom.Spec.Service.OwnerInfoRef,
-	}
-	ctx := context.Background()
-	err = c.Get(ctx, objectKey, ownerInfo)
-	if err != nil {
-		*reasons = append(*reasons, fmt.Sprintf("%v", err))
-	}
-
-	if ownerInfo.Spec.Atom == nil {
-		*reasons = append(*reasons, "no atom settings in ownerInfo: "+ownerInfo.Name)
 	}
 }

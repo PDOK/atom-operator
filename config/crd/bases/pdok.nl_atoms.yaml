@@ -386,7 +386,7 @@ spec:
                           properties:
                             metadataIdentifier:
                               description: UUID of the metadata record
-                              format: uuid
+                              pattern: ^[0-9a-zA-Z]{8}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{12}$
                               type: string
                             templates:
                               description: Metadata templates to use
@@ -575,7 +575,7 @@ spec:
                           type: array
                         spatialDatasetIdentifierCode:
                           description: SpatialDatasetIdentifierCode
-                          format: uuid
+                          pattern: ^[0-9a-zA-Z]{8}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{12}$
                           type: string
                         spatialDatasetIdentifierNamespace:
                           description: SpatialDatasetIdentifierNamespace
@@ -656,7 +656,7 @@ spec:
                     properties:
                       metadataIdentifier:
                         description: UUID of the metadata record
-                        format: uuid
+                        pattern: ^[0-9a-zA-Z]{8}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{4}\-[0-9a-zA-Z]{12}$
                         type: string
                       templates:
                         description: Metadata templates to use

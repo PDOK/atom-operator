@@ -38,13 +38,18 @@ import (
 )
 
 // ConvertTo converts this Atom (v2beta1) to the Hub version (v3).
-//
-//nolint:cyclop,funlen
 func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 	dst := dstRaw.(*pdoknlv3.Atom)
 	log.Printf("ConvertTo: Converting Atom from Spoke version v2beta1 to Hub version v3;"+
 		"source: %s/%s", a.Namespace, a.Name)
 
+	return a.ToV3(dst)
+}
+
+// ConvertTo converts this Atom (v2beta1) to the Hub version (v3).
+//
+//nolint:cyclop,funlen
+func (a *Atom) ToV3(dst *pdoknlv3.Atom) error {
 	// ObjectMeta
 	dst.ObjectMeta = a.ObjectMeta
 
@@ -57,7 +62,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 
 	// Service
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), a.Spec.General),
+		BaseURL:      createBaseURL(pdoknlv3.GetHost(), a.Spec.General),
 		Lang:         "nl",
 		Title:        a.Spec.Service.Title,
 		Subtitle:     a.Spec.Service.Subtitle,
@@ -95,7 +100,7 @@ func (a *Atom) ConvertTo(dstRaw conversion.Hub) error {
 				dstLink.Type = *srcLink.ContentType
 			}
 			if srcLink.Language != nil {
-				dstLink.Href = *srcLink.Language
+				dstLink.Hreflang = srcLink.Language
 			}
 
 			dstDatasetFeed.Links = append(dstDatasetFeed.Links, dstLink)
@@ -326,7 +331,7 @@ func GetIntPointer(value int) *int {
 }
 
 func GetFloat32AsString(value float32) string {
-	return strconv.FormatFloat(float64(value), 'f', 0, 32)
+	return strconv.FormatFloat(float64(value), 'f', -1, 32)
 }
 
 func GetStringAsFloat32(value string) float32 {
