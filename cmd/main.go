@@ -82,7 +82,6 @@ func main() {
 	var secureMetrics bool
 	var enableHTTP2 bool
 	var baseURL string
-	var host string
 	var blobEndpoint string
 	var atomGeneratorImage string
 	var lighttpdImage string
@@ -108,7 +107,6 @@ func main() {
 	flag.BoolVar(&enableHTTP2, "enable-http2", false,
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.StringVar(&baseURL, "atom-baseurl", "", "The base url which is used in the atom service.")
-	flag.StringVar(&host, "atom-host", "", "The host which is used in the atom service.")
 	flag.StringVar(&blobEndpoint, "blob-endpoint", "", "The blobstore endpoint used for file downloads.")
 	flag.StringVar(&atomGeneratorImage, "atom-generator-image", defaultAtomGeneratorImage, "The image to use in the Atom generator init-container.")
 	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
@@ -129,12 +127,6 @@ func main() {
 		os.Exit(1)
 	}
 	pdoknlv3.SetBaseURL(baseURL)
-
-	if host == "" {
-		setupLog.Error(errors.New("host is required"), "A value for host must be specified.")
-		os.Exit(1)
-	}
-	pdoknlv3.SetHost(host)
 
 	if blobEndpoint == "" {
 		setupLog.Error(errors.New("blobEndpoint is required"), "A value for blobEndpoint must be specified.")

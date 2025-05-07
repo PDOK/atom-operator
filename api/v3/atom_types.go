@@ -33,7 +33,6 @@ import (
 )
 
 var baseURL string
-var host string
 var blobEndpoint string
 
 // AtomSpec defines the desired state of Atom.
@@ -256,10 +255,6 @@ func SetBaseURL(atomBaseURL string) {
 
 func GetBaseURL() string {
 	return baseURL
-}
-
-func SetHost(atomHost string) {
-	host = strings.TrimSuffix(atomHost, "/")
 }
 
 func SetBlobEndpoint(atomBlobEndpoint string) {

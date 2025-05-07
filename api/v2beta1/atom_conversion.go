@@ -318,7 +318,7 @@ func createBaseURL(host string, general General) (baseURL string) {
 		atomURI += "/" + *general.ServiceVersion
 	}
 
-	baseURL = fmt.Sprintf("%s/%s", host, atomURI)
+	baseURL = fmt.Sprintf("%s/%s/", host, atomURI)
 	return
 }
 
