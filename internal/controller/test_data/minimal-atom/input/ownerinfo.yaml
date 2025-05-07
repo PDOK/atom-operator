@@ -2,7 +2,7 @@ apiVersion: pdok.nl/v1
 kind: OwnerInfo
 metadata:
   name: owner
-  namespace: test
+  namespace: default
 spec:
   atom:
     author:

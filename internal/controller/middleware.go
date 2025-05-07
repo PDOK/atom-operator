@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"strings"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothutil "github.com/pdok/smooth-operator/pkg/util"
@@ -82,7 +83,7 @@ func getBareDownloadLinkMiddleware(obj metav1.Object, index int) *traefikiov1alp
 	}
 }
 
-func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downloadLink *pdoknlv3.DownloadLink, middleware *traefikiov1alpha1.Middleware) error {
+func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, prefix string, files []string, middleware *traefikiov1alpha1.Middleware) error {
 	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, middleware, labels); err != nil {
 		return err
@@ -92,8 +93,8 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downl
 
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		ReplacePathRegex: &dynamic.ReplacePathRegex{
-			Regex:       getDownloadLinkRegex(baseURL, downloadLink),
-			Replacement: getDownloadLinkReplacement(downloadLink),
+			Regex:       getDownloadLinkRegex(baseURL, files),
+			Replacement: "/" + prefix + "/$1",
 		},
 	}
 
@@ -103,10 +104,42 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, downl
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
-func getDownloadLinkRegex(baseURL url.URL, downloadLink *pdoknlv3.DownloadLink) string {
-	return fmt.Sprintf("^%sdownloads/(%s)", baseURL.Path, downloadLink.GetBlobName())
+func getDownloadLinkRegex(baseURL url.URL, files []string) string {
+	return fmt.Sprintf("^%sdownloads/(%s)", baseURL.Path, strings.Join(files, "|"))
 }
 
-func getDownloadLinkReplacement(downloadLink *pdoknlv3.DownloadLink) string {
-	return "/" + downloadLink.GetBlobPrefix() + "/$1"
+func getDownloadLinkGroups(links []pdoknlv3.DownloadLink) map[string]struct {
+	index *int
+	files []string
+} {
+	result := make(map[string]struct {
+		index *int
+		files []string
+	})
+
+	counter := 0
+
+	for _, link := range links {
+		prefix := link.GetBlobPrefix()
+		file := link.GetBlobName()
+		val, ok := result[prefix]
+		if ok {
+			if val.index == nil {
+				index := counter
+				val.index = &index
+				counter++
+			}
+			val.files = append(val.files, file)
+			result[prefix] = val
+		} else {
+			index := counter
+			counter++
+			result[prefix] = struct {
+				index *int
+				files []string
+			}{index: &index, files: []string{file}}
+		}
+	}
+
+	return result
 }

@@ -1,19 +1,19 @@
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: minimal-atom-downloads-0
-  namespace: test
+  name: maximum-atom-downloads-1
+  namespace: default
   labels:
     test: test
     app: atom-service
   ownerReferences:
     - apiVersion: pdok.nl/v3
       kind: Atom
-      name: minimal
+      name: maximum
       uid: ""
       blockOwnerDeletion: true
       controller: true
 spec:
   replacePathRegex:
-    regex: ^/path/downloads/(file.ext)
-    replacement: /container/prefix/$1
+    regex: ^/path/downloads/(file-2.ext)
+    replacement: /container/prefix-2/$1
