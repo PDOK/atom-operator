@@ -19,5 +19,5 @@ spec:
       Access-Control-Allow-Headers: Content-Type
       Access-Control-Allow-Method: GET, OPTIONS, HEAD
       Access-Control-Allow-Origin: "*"
-#    contentSecurityPolicy: # TODO
+    contentSecurityPolicy: "default-src 'self';"
     frameDeny: true

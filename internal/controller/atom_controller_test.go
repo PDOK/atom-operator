@@ -335,7 +335,7 @@ func testAtomMutates(name string) {
 
 	It("Should generate a correct Headers Middleware", func() {
 		testMutate("Headers Middleware", getBareHeadersMiddleware(&atom), outputPath+"middleware-headers.yaml", func(m *traefikiov1alpha1.Middleware) error {
-			return reconciler.mutateHeadersMiddleware(&atom, m)
+			return reconciler.mutateHeadersMiddleware(&atom, m, "default-src 'self';")
 		})
 	})
 

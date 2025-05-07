@@ -75,6 +75,7 @@ type AtomReconciler struct {
 	Scheme             *runtime.Scheme
 	AtomGeneratorImage string
 	LighttpdImage      string
+	CSP                string
 }
 
 // +kubebuilder:rbac:groups=pdok.nl,resources=atoms,verbs=get;list;watch;create;update;patch;delete
@@ -195,7 +196,7 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 
 	corsHeadersMiddleware := getBareHeadersMiddleware(atom)
 	operationResults[smoothutil.GetObjectFullName(r.Client, corsHeadersMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, corsHeadersMiddleware, func() error {
-		return r.mutateHeadersMiddleware(atom, corsHeadersMiddleware)
+		return r.mutateHeadersMiddleware(atom, corsHeadersMiddleware, r.CSP)
 	})
 	if err != nil {
 		return operationResults, fmt.Errorf("could not create or update resource %s: %w", smoothutil.GetObjectFullName(c, corsHeadersMiddleware), err)
