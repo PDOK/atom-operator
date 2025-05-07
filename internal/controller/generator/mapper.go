@@ -53,7 +53,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 	atomGeneratorConfig.Feeds = append(atomGeneratorConfig.Feeds, serviceFeed)
 
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		links, err := getDatasetLinks(atom, ownerInfo, datasetFeed)
+		datasetLinks, err := getDatasetLinks(atom, ownerInfo, datasetFeed)
 		if err != nil {
 			return atomfeed.Feeds{}, err
 		}
@@ -62,7 +62,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 			Title:         escapeQuotes(datasetFeed.Title),
 			Subtitle:      escapeQuotes(datasetFeed.Subtitle),
 			Lang:          &atom.Spec.Service.Lang,
-			Link:          links,
+			Link:          datasetLinks,
 			Rights:        atom.Spec.Service.Rights,
 			XMLStylesheet: atom.Spec.Service.Stylesheet,
 			Author:        getAuthor(datasetFeed.Author),

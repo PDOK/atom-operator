@@ -112,7 +112,7 @@ func getDownloadLinkGroups(links []pdoknlv3.DownloadLink) []struct {
 	prefix string
 	files  []string
 } {
-	var temp map[string][]string
+	temp := make(map[string][]string)
 
 	for _, link := range links {
 		temp[link.GetBlobPrefix()] = append(temp[link.GetBlobPrefix()], link.GetBlobName())

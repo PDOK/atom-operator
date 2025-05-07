@@ -33,7 +33,7 @@ import (
 	"os"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
-	yaml2 "sigs.k8s.io/yaml/goyaml.v2"
+	atomyaml "sigs.k8s.io/yaml/goyaml.v3"
 	"testing"
 	"time"
 
@@ -43,7 +43,6 @@ import (
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
-	smoothutil "github.com/pdok/smooth-operator/pkg/util"
 	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -58,16 +57,15 @@ import (
 )
 
 const (
-	namespace      = "default"
 	testImageName1 = "test.test/image:test1"
 	testImageName2 = "test.test/image:test2"
 )
 
 var _ = Describe("Testing Atom Controller", func() {
 
-	//Context("Testing Mutate functions for Minimal Atom", func() {
-	//	testAtomMutates("minimal")
-	//})
+	Context("Testing Mutate functions for Minimal Atom", func() {
+		testAtomMutates("minimal")
+	})
 
 	Context("Testing Mutate functions for Maximal Atom", func() {
 
@@ -79,7 +77,7 @@ var _ = Describe("Testing Atom Controller", func() {
 
 		ctx := context.Background()
 
-		testPath := "test_data/minimal-atom/input/"
+		inputPath := testPath("maximum") + "input/"
 
 		testAtom := pdoknlv3.Atom{}
 		clusterAtom := &pdoknlv3.Atom{}
@@ -99,18 +97,18 @@ var _ = Describe("Testing Atom Controller", func() {
 		It("Should create a Atom and OwnerInfo resource on the cluster", func() {
 
 			By("Creating a new resource for the Kind Atom")
-			data, err := os.ReadFile(testPath + "atom.yaml")
+			data, err := os.ReadFile(inputPath + "atom.yaml")
 			Expect(err).NotTo(HaveOccurred())
 			err = yaml.UnmarshalStrict(data, &testAtom)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(testAtom.Name).Should(Equal("minimal"))
+			Expect(testAtom.Name).Should(Equal("maximum"))
 
 			objectKeyAtom = types.NamespacedName{
 				Namespace: testAtom.GetNamespace(),
 				Name:      testAtom.GetName(),
 			}
 
-			data, err = os.ReadFile(testPath + "ownerinfo.yaml")
+			data, err = os.ReadFile(inputPath + "ownerinfo.yaml")
 			Expect(err).NotTo(HaveOccurred())
 			err = yaml.UnmarshalStrict(data, &testOwner)
 			Expect(err).NotTo(HaveOccurred())
@@ -233,10 +231,19 @@ var _ = Describe("Testing Atom Controller", func() {
 			err := smoothoperatorvalidation.LoadSchemasForCRD(cfg, "default", "atoms.pdok.nl")
 			Expect(err).NotTo(HaveOccurred())
 
-			yamlInput := readTestFile("crd/v3_atom.yaml")
+			filepath := "input/atom.yaml"
+			testCases := []string{
+				testPath("minimal") + filepath,
+				testPath("maximum") + filepath,
+			}
 
-			err = smoothoperatorvalidation.ValidateSchema(yamlInput)
-			Expect(err).NotTo(HaveOccurred())
+			for _, test := range testCases {
+				yamlInput, err := readTestFile(test)
+				Expect(err).NotTo(HaveOccurred())
+
+				err = smoothoperatorvalidation.ValidateSchema(yamlInput)
+				Expect(err).NotTo(HaveOccurred())
+			}
 		})
 	})
 })
@@ -247,8 +254,8 @@ func testAtomMutates(name string) {
 
 	var reconciler AtomReconciler
 
-	testPath := fmt.Sprintf("test_data/%s-atom", name)
-	outputPath := testPath + "/expected-output/"
+	inputPath := testPath(name) + "input/"
+	outputPath := testPath(name) + "expected-output/"
 
 	atom := pdoknlv3.Atom{}
 	owner := smoothoperatorv1.OwnerInfo{}
@@ -264,13 +271,13 @@ func testAtomMutates(name string) {
 
 	It("Should parse the input files correctly", func() {
 
-		data, err := os.ReadFile(testPath + "/input/atom.yaml")
+		data, err := os.ReadFile(inputPath + "atom.yaml")
 		Expect(err).NotTo(HaveOccurred())
 		err = yaml.UnmarshalStrict(data, &atom)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(atom.Name).Should(Equal(name))
 
-		data, err = os.ReadFile(testPath + "/input/ownerinfo.yaml")
+		data, err = os.ReadFile(inputPath + "ownerinfo.yaml")
 		Expect(err).NotTo(HaveOccurred())
 		err = yaml.UnmarshalStrict(data, &owner)
 		Expect(err).NotTo(HaveOccurred())
@@ -290,9 +297,9 @@ func testAtomMutates(name string) {
 		Expect(err).NotTo(HaveOccurred())
 
 		var expectedValues, gottenValues feeds.Feeds
-		err = yaml2.Unmarshal([]byte(expected.Data["values.yaml"]), &expectedValues)
+		err = atomyaml.Unmarshal([]byte(expected.Data["values.yaml"]), &expectedValues)
 		Expect(err).NotTo(HaveOccurred())
-		err = yaml2.Unmarshal([]byte(result.Data["values.yaml"]), &gottenValues)
+		err = atomyaml.Unmarshal([]byte(result.Data["values.yaml"]), &gottenValues)
 		Expect(err).NotTo(HaveOccurred())
 
 		valuesDiff := cmp.Diff(expectedValues, gottenValues)
@@ -351,7 +358,10 @@ func testAtomMutates(name string) {
 
 }
 
-// TODO move to smoothOperator?
+func testPath(name string) string {
+	return fmt.Sprintf("test_data/%s-atom/", name)
+}
+
 func testMutate[T any](kind string, result *T, expectedFile string, mutate func(*T) error) {
 	By(fmt.Sprintf("Testing mutating the %s", kind))
 	err := mutate(result)
@@ -411,19 +421,19 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 		obj client.Object
 		key types.NamespacedName
 	}{
-		{obj: &appsv1.Deployment{}, key: types.NamespacedName{Namespace: namespace, Name: getBareDeployment(atom).GetName()}},
-		{obj: &corev1.ConfigMap{}, key: types.NamespacedName{Namespace: namespace, Name: configMapName}},
-		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareStripPrefixMiddleware(atom).GetName()}},
-		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareHeadersMiddleware(atom).GetName()}},
-		{obj: &corev1.Service{}, key: types.NamespacedName{Namespace: namespace, Name: getBareService(atom).GetName()}},
-		{obj: &traefikiov1alpha1.IngressRoute{}, key: types.NamespacedName{Namespace: namespace, Name: getBareIngressRoute(atom).GetName()}},
-		{obj: &policyv1.PodDisruptionBudget{}, key: types.NamespacedName{Namespace: namespace, Name: getBarePodDisruptionBudget(atom).GetName()}},
+		{obj: &appsv1.Deployment{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBareDeployment(atom).GetName()}},
+		{obj: &corev1.ConfigMap{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: configMapName}},
+		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBareStripPrefixMiddleware(atom).GetName()}},
+		{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBareHeadersMiddleware(atom).GetName()}},
+		{obj: &corev1.Service{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBareService(atom).GetName()}},
+		{obj: &traefikiov1alpha1.IngressRoute{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBareIngressRoute(atom).GetName()}},
+		{obj: &policyv1.PodDisruptionBudget{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBarePodDisruptionBudget(atom).GetName()}},
 	}
-	for index := range atom.GetDownloadLinks() {
+	for index := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
 		extraStruct := struct {
 			obj client.Object
 			key types.NamespacedName
-		}{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: namespace, Name: getBareDownloadLinkMiddleware(atom, index).GetName()}}
+		}{obj: &traefikiov1alpha1.Middleware{}, key: types.NamespacedName{Namespace: atom.Namespace, Name: getBareDownloadLinkMiddleware(atom, index).GetName()}}
 
 		structs = append(structs, extraStruct)
 	}
@@ -432,6 +442,7 @@ func getExpectedBareObjectsForAtom(atom *pdoknlv3.Atom, configMapName string) []
 }
 
 func Test_getGeneratorConfig(t *testing.T) {
+	pdoknlv3.SetBlobEndpoint("http://localazurite.blob.azurite")
 	type args struct {
 		atom      *pdoknlv3.Atom
 		ownerInfo *smoothoperatorv1.OwnerInfo
@@ -455,79 +466,10 @@ func Test_getGeneratorConfig(t *testing.T) {
 		{
 			name: "succesfull_scenario_02",
 			args: args{
-				atom: &pdoknlv3.Atom{
-					Spec: pdoknlv3.AtomSpec{
-						Lifecycle: &smoothoperatormodel.Lifecycle{},
-						Service: pdoknlv3.Service{
-							BaseURL:    "/",
-							Stylesheet: smoothutil.Pointer("/atom/style/style.xsl"),
-							Lang:       "nl",
-							ServiceMetadataLinks: &pdoknlv3.MetadataLink{
-								MetadataIdentifier: "7c5bbc80-d6f1-48d7-ba75-xxxxxxxxxxxx",
-								Templates:          []string{"csw", "opensearch", "html"},
-							},
-							DatasetFeeds: []pdoknlv3.DatasetFeed{
-								{
-									TechnicalName: "brocpt",
-									Title:         "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
-									Subtitle:      "BRO - Geotechnisch sondeeronderzoek (CPT) - Geologie (INSPIRE geharmoniseerd) ATOM",
-									//Links:         []pdoknlv3.Link{},
-									DatasetMetadataLinks: &pdoknlv3.MetadataLink{
-										MetadataIdentifier: "d893c05b-907e-47f2-9cbd-ceb08e68732c",
-										Templates:          []string{"csw", "html"},
-									},
-									Author: smoothoperatormodel.Author{
-										Name:  "owner",
-										Email: "info@test.com",
-									},
-									SpatialDatasetIdentifierCode:      smoothutil.Pointer("d893c05b-907e-47f2-9cbd-ceb08e68732c"),
-									SpatialDatasetIdentifierNamespace: smoothutil.Pointer("http://www.pdok.nl"),
-									Entries: []pdoknlv3.Entry{
-										{
-											TechnicalName: "bro_geotechnisch_sondeeronderzoek_cpt_inspire_geharmoniseerd_geologie",
-											Title:         smoothutil.Pointer("BRO - Geotechnisch sondeeronderzoek (CPT) INSPIRE geharmoniseerd - Geologie"),
-											Content:       smoothutil.Pointer("Gegevens van geotechnisch sondeeronderzoek (kenset) zoals opgeslagen in de Basis Registratie Ondergrond (BRO)."),
-											DownloadLinks: []pdoknlv3.DownloadLink{
-												{
-													Data: "http://localazurite.blob.azurite/bucket/key1/dataset-1-file",
-												},
-											},
-											Polygon: getTestPolygon(),
-											Updated: metav1.Time{Time: getUpdatedDate()},
-											SRS: pdoknlv3.SRS{
-												Name: "Amersfoort / RD New",
-												URI:  "https://www.opengis.net/def/crs/EPSG/0/28992",
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-				ownerInfo: &smoothoperatorv1.OwnerInfo{
-					Spec: smoothoperatorv1.OwnerInfoSpec{
-						MetadataUrls: &smoothoperatorv1.MetadataUrls{
-							CSW: &smoothoperatorv1.MetadataURL{
-								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id={{identifier}}",
-							},
-							OpenSearch: &smoothoperatorv1.MetadataURL{
-								HrefTemplate: "https://www.ngr.nl/geonetwork/opensearch/dut/{{identifier}}/OpenSearchDescription.xml",
-							},
-							HTML: &smoothoperatorv1.MetadataURL{
-								HrefTemplate: "https://www.ngr.nl/geonetwork/srv/dut/catalog.search#/metadata/{{identifier}}",
-							},
-						},
-						Atom: &smoothoperatorv1.Atom{
-							Author: smoothoperatormodel.Author{
-								Name:  "owner",
-								Email: "info@test.com",
-							},
-						},
-					},
-				},
+				atom:      getAtom(testPath("maximum")+"input/atom.yaml", false),
+				ownerInfo: getOwnerInfo(testPath("maximum")+"input/ownerinfo.yaml", false),
 			},
-			wantConfig: readTestFile("generator_config/scenario-2.yaml"),
+			wantConfig: getTestGeneratorConfig(testPath("maximum") + "expected-output/configmap.yaml"),
 			wantErr:    false,
 		},
 	}
@@ -544,10 +486,43 @@ func Test_getGeneratorConfig(t *testing.T) {
 	}
 }
 
-func readTestFile(fileName string) string {
-	dat, _ := os.ReadFile("test_data/" + fileName)
+func readTestFile(fileName string) (string, error) {
+	dat, err := os.ReadFile(fileName)
 
-	return string(dat)
+	return string(dat), err
+}
+
+func getAtom(fileName string, ginkgo bool) *pdoknlv3.Atom {
+	atom := &pdoknlv3.Atom{}
+	data, err := os.ReadFile(fileName)
+	if ginkgo {
+		Expect(err).NotTo(HaveOccurred())
+	}
+	err = yaml.UnmarshalStrict(data, atom)
+	if ginkgo {
+		Expect(err).NotTo(HaveOccurred())
+	}
+	return atom
+}
+
+func getOwnerInfo(fileName string, ginkgo bool) *smoothoperatorv1.OwnerInfo {
+	owner := &smoothoperatorv1.OwnerInfo{}
+	data, err := os.ReadFile(fileName)
+	if ginkgo {
+		Expect(err).NotTo(HaveOccurred())
+	}
+	err = yaml.UnmarshalStrict(data, owner)
+	if ginkgo {
+		Expect(err).NotTo(HaveOccurred())
+	}
+	return owner
+}
+
+func getTestGeneratorConfig(fileName string) string {
+	var configMap corev1.ConfigMap
+	data, _ := os.ReadFile(fileName)
+	_ = yaml.UnmarshalStrict(data, &configMap)
+	return configMap.Data["values.yaml"]
 }
 
 func getTestPolygon() pdoknlv3.Polygon {

@@ -96,6 +96,7 @@ spec:
         entries:
           - technicalName: entry-3
             updated: 2006-01-02T15:04:05Z
+            content: entry-3-content
             downloadlinks:
               - data: container/prefix-3/file-3.ext
               - data: container/prefix-3/file-4.ext

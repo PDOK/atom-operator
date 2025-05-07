@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: maximum-atom-generator-778kbf2c7d
+  name: maximum-atom-generator-9m992fkcfh
   namespace: default
   labels:
     test: test
@@ -199,6 +199,7 @@ data:
         entry:
           - id: https://test.com/path/entry-3.xml
             title: feed-2-title
+            content: entry-3-content
             link:
               - href: https://test.com/path/downloads/file-3.ext
                 data: http://localazurite.blob.azurite/container/prefix-3/file-3.ext
