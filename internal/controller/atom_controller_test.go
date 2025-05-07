@@ -27,29 +27,27 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/pdok/atom-generator/feeds"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"os"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/yaml"
 	atomyaml "sigs.k8s.io/yaml/goyaml.v3"
-	"testing"
-	"time"
 
 	policyv1 "k8s.io/api/policy/v1"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
-	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -216,7 +214,7 @@ var _ = Describe("Testing Atom Controller", func() {
 			By("Cleanup the specific resource instance OwnerInfo")
 			Expect(k8sClient.Delete(ctx, clusterOwner)).To(Succeed())
 
-			//the testEnv does not do garbage collection (https://book.kubebuilder.io/reference/envtest#testing-considerations)
+			// the testEnv does not do garbage collection (https://book.kubebuilder.io/reference/envtest#testing-considerations)
 			By("Cleaning Owned Resources")
 			for _, d := range expectedResources {
 				err := k8sClient.Get(ctx, d.key, d.obj)
@@ -363,7 +361,7 @@ func testPath(name string) string {
 }
 
 func testMutate[T any](kind string, result *T, expectedFile string, mutate func(*T) error) {
-	By(fmt.Sprintf("Testing mutating the %s", kind))
+	By("Testing mutating the " + kind)
 	err := mutate(result)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -523,19 +521,4 @@ func getTestGeneratorConfig(fileName string) string {
 	data, _ := os.ReadFile(fileName)
 	_ = yaml.UnmarshalStrict(data, &configMap)
 	return configMap.Data["values.yaml"]
-}
-
-func getTestPolygon() pdoknlv3.Polygon {
-	return pdoknlv3.Polygon{
-		BBox: smoothoperatormodel.BBox{
-			MinX: "1",
-			MinY: "1",
-			MaxX: "2",
-			MaxY: "2",
-		},
-	}
-}
-
-func getUpdatedDate() time.Time {
-	return metav1.Date(2025, time.March, 5, 5, 5, 5, 0, time.UTC).UTC()
 }
