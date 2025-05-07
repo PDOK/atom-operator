@@ -2,7 +2,7 @@ apiVersion: pdok.nl/v3
 kind: Atom
 metadata:
   name: minimal
-  namespace: test
+  namespace: default
   labels:
     test: test
 spec:

@@ -202,10 +202,10 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	}
 
 	// Create or update extra middleware per downloadLink
-	for index, downloadLink := range atom.GetDownloadLinks() {
-		downloadLinkMiddleware := getBareDownloadLinkMiddleware(atom, index)
+	for prefix, group := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
+		downloadLinkMiddleware := getBareDownloadLinkMiddleware(atom, *group.index)
 		operationResults[smoothutil.GetObjectFullName(r.Client, downloadLinkMiddleware)], err = controllerutil.CreateOrUpdate(ctx, r.Client, downloadLinkMiddleware, func() error {
-			return r.mutateDownloadLinkMiddleware(atom, &downloadLink, downloadLinkMiddleware)
+			return r.mutateDownloadLinkMiddleware(atom, prefix, group.files, downloadLinkMiddleware)
 		})
 		if err != nil {
 			return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothutil.GetObjectFullName(c, downloadLinkMiddleware), err)

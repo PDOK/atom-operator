@@ -1,7 +1,7 @@
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
+apiVersion: v1
+kind: Service
 metadata:
-  name: minimal-atom-prefixstrip
+  name: maximum-atom
   namespace: default
   labels:
     test: test
@@ -9,11 +9,15 @@ metadata:
   ownerReferences:
     - apiVersion: pdok.nl/v3
       kind: Atom
-      name: minimal
+      name: maximum
       uid: ""
       blockOwnerDeletion: true
       controller: true
 spec:
-  stripPrefix:
-    prefixes:
-      - /path/
+  ports:
+    - name: atom-service
+      port: 80
+      protocol: TCP
+  selector:
+    test: test
+    app: atom-service

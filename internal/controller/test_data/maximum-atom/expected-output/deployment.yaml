@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: minimal-atom-service
+  name: maximum-atom-service
   namespace: default
   labels:
     test: test
@@ -9,7 +9,7 @@ metadata:
   ownerReferences:
     - apiVersion: pdok.nl/v3
       kind: Atom
-      name: minimal
+      name: maximum
       uid: ""
       blockOwnerDeletion: true
       controller: true
@@ -89,4 +89,4 @@ spec:
           emptyDir: {}
         - name: config
           configMap:
-            name: minimal-atom-generator
+            name: maximum-atom-generator

@@ -10,7 +10,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
-	yaml "sigs.k8s.io/yaml/goyaml.v3"
+	atomyaml "sigs.k8s.io/yaml/goyaml.v3"
 )
 
 func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
@@ -52,7 +52,7 @@ func getGeneratorConfig(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerIn
 		return "", fmt.Errorf("failed to map the V3 atom to generator config: %w", err)
 	}
 
-	yamlConfig, err := yaml.Marshal(&atomGeneratorConfig)
+	yamlConfig, err := atomyaml.Marshal(&atomGeneratorConfig)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal the generator config to yaml: %w", err)
 	}
