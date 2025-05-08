@@ -69,7 +69,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 			Lang:          &atom.Spec.Service.Lang,
 			Link:          datasetLinks,
 			Rights:        atom.Spec.Service.Rights,
-			XMLStylesheet: atom.Spec.Service.Stylesheet,
+			XMLStylesheet: styleSheet,
 			Author:        getAuthor(datasetFeed.Author),
 			Entry:         getDatasetEntries(atom, datasetFeed),
 		}
