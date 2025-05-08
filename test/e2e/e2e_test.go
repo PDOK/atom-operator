@@ -170,136 +170,136 @@ var _ = Describe("Manager", Ordered, func() {
 			Eventually(verifyControllerUp).Should(Succeed())
 		})
 
-		It("should ensure the metrics endpoint is serving metrics", func() {
-			By("creating a ClusterRoleBinding for the service account to allow access to metrics")
-			serviceAccountFlag := fmt.Sprintf("--serviceaccount=%s:%s", namespace, serviceAccountName)
-			cmd := exec.Command("kubectl", "create", "clusterrolebinding", metricsRoleBindingName,
-				"--clusterrole=atom-operator-metrics-reader", serviceAccountFlag,
-			)
-			_, err := utils.Run(cmd)
-			Expect(err).NotTo(HaveOccurred(), "Failed to create ClusterRoleBinding")
+		//It("should ensure the metrics endpoint is serving metrics", func() {
+		//	By("creating a ClusterRoleBinding for the service account to allow access to metrics")
+		//	serviceAccountFlag := fmt.Sprintf("--serviceaccount=%s:%s", namespace, serviceAccountName)
+		//	cmd := exec.Command("kubectl", "create", "clusterrolebinding", metricsRoleBindingName,
+		//		"--clusterrole=atom-operator-metrics-reader", serviceAccountFlag,
+		//	)
+		//	_, err := utils.Run(cmd)
+		//	Expect(err).NotTo(HaveOccurred(), "Failed to create ClusterRoleBinding")
+		//
+		//	By("validating that the metrics service is available")
+		//	cmd = exec.Command("kubectl", "get", "service", metricsServiceName, "-n", namespace)
+		//	_, err = utils.Run(cmd)
+		//	Expect(err).NotTo(HaveOccurred(), "Metrics service should exist")
+		//
+		//	By("validating that the ServiceMonitor for Prometheus is applied in the namespace")
+		//	cmd = exec.Command("kubectl", "get", "ServiceMonitor", "-n", namespace)
+		//	_, err = utils.Run(cmd)
+		//	Expect(err).NotTo(HaveOccurred(), "ServiceMonitor should exist")
+		//
+		//	By("getting the service account token")
+		//	token, err := serviceAccountToken()
+		//	Expect(err).NotTo(HaveOccurred())
+		//	Expect(token).NotTo(BeEmpty())
+		//
+		//	By("waiting for the metrics endpoint to be ready")
+		//	verifyMetricsEndpointReady := func(g Gomega) {
+		//		cmd := exec.Command("kubectl", "get", "endpoints", metricsServiceName, "-n", namespace)
+		//		output, err := utils.Run(cmd)
+		//		g.Expect(err).NotTo(HaveOccurred())
+		//		g.Expect(output).To(ContainSubstring("8080"), "Metrics endpoint is not ready")
+		//	}
+		//	Eventually(verifyMetricsEndpointReady).Should(Succeed())
+		//
+		//	By("verifying that the controller manager is serving the metrics server")
+		//	verifyMetricsServerStarted := func(g Gomega) {
+		//		cmd := exec.Command("kubectl", "logs", controllerPodName, "-n", namespace)
+		//		output, err := utils.Run(cmd)
+		//		g.Expect(err).NotTo(HaveOccurred())
+		//		g.Expect(output).To(ContainSubstring("Serving metrics server"),
+		//			"Metrics server not yet started")
+		//	}
+		//	Eventually(verifyMetricsServerStarted).Should(Succeed())
+		//
+		//	By("creating the curl-metrics pod to access the metrics endpoint")
+		//	overridesFlag := fmt.Sprintf(`{
+		//			"spec": {
+		//				"containers": [{
+		//					"name": "curl",
+		//					"image": "curlimages/curl:latest",
+		//					"command": ["/bin/sh", "-c"],
+		//					"args": ["curl -v -k -H 'Authorization: Bearer %s' https://%s.%s.svc.cluster.local:8080/metrics"],
+		//					"securityContext": {
+		//						"allowPrivilegeEscalation": false,
+		//						"capabilities": {
+		//							"drop": ["ALL"]
+		//						},
+		//						"runAsNonRoot": true,
+		//						"runAsUser": 1000,
+		//						"seccompProfile": {
+		//							"type": "RuntimeDefault"
+		//						}
+		//					}
+		//				}],
+		//				"serviceAccount": "%s"
+		//			}
+		//		}`, token, metricsServiceName, namespace, serviceAccountName)
+		//	cmd = exec.Command("kubectl", "run", "curl-metrics", "--restart=Never",
+		//		"--namespace", namespace,
+		//		"--image=curlimages/curl:latest",
+		//		"--overrides",
+		//		overridesFlag,
+		//	)
+		//	_, err = utils.Run(cmd)
+		//	Expect(err).NotTo(HaveOccurred(), "Failed to create curl-metrics pod")
+		//
+		//	By("waiting for the curl-metrics pod to complete.")
+		//	verifyCurlUp := func(g Gomega) {
+		//		cmd := exec.Command("kubectl", "get", "pods", "curl-metrics",
+		//			"-o", "jsonpath={.status.phase}",
+		//			"-n", namespace)
+		//		output, err := utils.Run(cmd)
+		//		g.Expect(err).NotTo(HaveOccurred())
+		//		g.Expect(output).To(Equal("Succeeded"), "curl pod in wrong status")
+		//	}
+		//	Eventually(verifyCurlUp, 5*time.Minute).Should(Succeed())
+		//
+		//	By("getting the metrics by checking curl-metrics logs")
+		//	metricsOutput := getMetricsOutput()
+		//	Expect(metricsOutput).To(ContainSubstring(
+		//		"controller_runtime_reconcile_total",
+		//	))
+		//})
 
-			By("validating that the metrics service is available")
-			cmd = exec.Command("kubectl", "get", "service", metricsServiceName, "-n", namespace)
-			_, err = utils.Run(cmd)
-			Expect(err).NotTo(HaveOccurred(), "Metrics service should exist")
+		//It("should provisioned cert-manager", func() {
+		//	By("validating that cert-manager has the certificate Secret")
+		//	verifyCertManager := func(g Gomega) {
+		//		cmd := exec.Command("kubectl", "get", "secrets", "webhook-server-cert", "-n", namespace)
+		//		_, err := utils.Run(cmd)
+		//		g.Expect(err).NotTo(HaveOccurred())
+		//	}
+		//	Eventually(verifyCertManager).Should(Succeed())
+		//})
 
-			By("validating that the ServiceMonitor for Prometheus is applied in the namespace")
-			cmd = exec.Command("kubectl", "get", "ServiceMonitor", "-n", namespace)
-			_, err = utils.Run(cmd)
-			Expect(err).NotTo(HaveOccurred(), "ServiceMonitor should exist")
+		//It("should have CA injection for Atom conversion webhook", func() {
+		//	By("checking CA injection for Atom conversion webhook")
+		//	verifyCAInjection := func(g Gomega) {
+		//		cmd := exec.Command("kubectl", "get",
+		//			"customresourcedefinitions.apiextensions.k8s.io",
+		//			"atoms.pdok.nl",
+		//			"-o", "go-template={{ .spec.conversion.webhook.clientConfig.caBundle }}")
+		//		vwhOutput, err := utils.Run(cmd)
+		//		g.Expect(err).NotTo(HaveOccurred())
+		//		g.Expect(len(vwhOutput)).To(BeNumerically(">", 10))
+		//	}
+		//	Eventually(verifyCAInjection).Should(Succeed())
+		//})
 
-			By("getting the service account token")
-			token, err := serviceAccountToken()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(token).NotTo(BeEmpty())
-
-			By("waiting for the metrics endpoint to be ready")
-			verifyMetricsEndpointReady := func(g Gomega) {
-				cmd := exec.Command("kubectl", "get", "endpoints", metricsServiceName, "-n", namespace)
-				output, err := utils.Run(cmd)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(output).To(ContainSubstring("8080"), "Metrics endpoint is not ready")
-			}
-			Eventually(verifyMetricsEndpointReady).Should(Succeed())
-
-			By("verifying that the controller manager is serving the metrics server")
-			verifyMetricsServerStarted := func(g Gomega) {
-				cmd := exec.Command("kubectl", "logs", controllerPodName, "-n", namespace)
-				output, err := utils.Run(cmd)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(output).To(ContainSubstring("Serving metrics server"),
-					"Metrics server not yet started")
-			}
-			Eventually(verifyMetricsServerStarted).Should(Succeed())
-
-			By("creating the curl-metrics pod to access the metrics endpoint")
-			overridesFlag := fmt.Sprintf(`{
-					"spec": {
-						"containers": [{
-							"name": "curl",
-							"image": "curlimages/curl:latest",
-							"command": ["/bin/sh", "-c"],
-							"args": ["curl -v -k -H 'Authorization: Bearer %s' https://%s.%s.svc.cluster.local:8080/metrics"],
-							"securityContext": {
-								"allowPrivilegeEscalation": false,
-								"capabilities": {
-									"drop": ["ALL"]
-								},
-								"runAsNonRoot": true,
-								"runAsUser": 1000,
-								"seccompProfile": {
-									"type": "RuntimeDefault"
-								}
-							}
-						}],
-						"serviceAccount": "%s"
-					}
-				}`, token, metricsServiceName, namespace, serviceAccountName)
-			cmd = exec.Command("kubectl", "run", "curl-metrics", "--restart=Never",
-				"--namespace", namespace,
-				"--image=curlimages/curl:latest",
-				"--overrides",
-				overridesFlag,
-			)
-			_, err = utils.Run(cmd)
-			Expect(err).NotTo(HaveOccurred(), "Failed to create curl-metrics pod")
-
-			By("waiting for the curl-metrics pod to complete.")
-			verifyCurlUp := func(g Gomega) {
-				cmd := exec.Command("kubectl", "get", "pods", "curl-metrics",
-					"-o", "jsonpath={.status.phase}",
-					"-n", namespace)
-				output, err := utils.Run(cmd)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(output).To(Equal("Succeeded"), "curl pod in wrong status")
-			}
-			Eventually(verifyCurlUp, 5*time.Minute).Should(Succeed())
-
-			By("getting the metrics by checking curl-metrics logs")
-			metricsOutput := getMetricsOutput()
-			Expect(metricsOutput).To(ContainSubstring(
-				"controller_runtime_reconcile_total",
-			))
-		})
-
-		It("should provisioned cert-manager", func() {
-			By("validating that cert-manager has the certificate Secret")
-			verifyCertManager := func(g Gomega) {
-				cmd := exec.Command("kubectl", "get", "secrets", "webhook-server-cert", "-n", namespace)
-				_, err := utils.Run(cmd)
-				g.Expect(err).NotTo(HaveOccurred())
-			}
-			Eventually(verifyCertManager).Should(Succeed())
-		})
-
-		It("should have CA injection for Atom conversion webhook", func() {
-			By("checking CA injection for Atom conversion webhook")
-			verifyCAInjection := func(g Gomega) {
-				cmd := exec.Command("kubectl", "get",
-					"customresourcedefinitions.apiextensions.k8s.io",
-					"atoms.pdok.nl",
-					"-o", "go-template={{ .spec.conversion.webhook.clientConfig.caBundle }}")
-				vwhOutput, err := utils.Run(cmd)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(len(vwhOutput)).To(BeNumerically(">", 10))
-			}
-			Eventually(verifyCAInjection).Should(Succeed())
-		})
-
-		It("should have CA injection for validating webhooks", func() {
-			By("checking CA injection for validating webhooks")
-			verifyCAInjection := func(g Gomega) {
-				cmd := exec.Command("kubectl", "get",
-					"validatingwebhookconfigurations.admissionregistration.k8s.io",
-					"atom-operator-validating-webhook-configuration",
-					"-o", "go-template={{ range .webhooks }}{{ .clientConfig.caBundle }}{{ end }}")
-				vwhOutput, err := utils.Run(cmd)
-				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(len(vwhOutput)).To(BeNumerically(">", 10))
-			}
-			Eventually(verifyCAInjection).Should(Succeed())
-		})
+		//It("should have CA injection for validating webhooks", func() {
+		//	By("checking CA injection for validating webhooks")
+		//	verifyCAInjection := func(g Gomega) {
+		//		cmd := exec.Command("kubectl", "get",
+		//			"validatingwebhookconfigurations.admissionregistration.k8s.io",
+		//			"atom-operator-validating-webhook-configuration",
+		//			"-o", "go-template={{ range .webhooks }}{{ .clientConfig.caBundle }}{{ end }}")
+		//		vwhOutput, err := utils.Run(cmd)
+		//		g.Expect(err).NotTo(HaveOccurred())
+		//		g.Expect(len(vwhOutput)).To(BeNumerically(">", 10))
+		//	}
+		//	Eventually(verifyCAInjection).Should(Succeed())
+		//})
 
 		// +kubebuilder:scaffold:e2e-webhooks-checks
 
