@@ -5,6 +5,11 @@ resources:
 - bases/pdok.nl_atoms.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
+configMapGenerator:
+  - name: atom-operator-config
+    files:
+      - CSP=content-security-policy.txt
+
 patches:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD

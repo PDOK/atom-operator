@@ -22,8 +22,11 @@ import (
 	"flag"
 	"os"
 
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
 	"github.com/go-logr/zapr"
 	"github.com/pdok/smooth-operator/pkg/integrations/logging"
+	"github.com/peterbourgon/ff"
 	"go.uber.org/zap/zapcore"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
@@ -84,6 +87,7 @@ func main() {
 	var tlsOpts []func(*tls.Config)
 	var slackWebhookURL string
 	var logLevel int
+	var csp string
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metrics endpoint binds to. "+
 		"Use :8443 for HTTPS or :8080 for HTTP, or leave as 0 to disable the metrics service.")
@@ -102,8 +106,18 @@ func main() {
 	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
 	flag.StringVar(&slackWebhookURL, "slack-webhook-url", "", "The webhook url for sending slack messages. Disabled if left empty")
 	flag.IntVar(&logLevel, "log-level", 0, "The zapcore loglevel. 0 = info, 1 = warn, 2 = error")
+	flag.StringVar(&csp, "csp", "", "Content-Security-Policy to serve as a HTTP header")
+	opts := zap.Options{
+		Development: true,
+	}
+	opts.BindFlags(flag.CommandLine)
 
-	flag.Parse()
+	if err := ff.Parse(flag.CommandLine, os.Args[1:], ff.WithEnvVarNoPrefix()); err != nil {
+		setupLog.Error(err, "unable to parse flags")
+		os.Exit(1)
+	}
+
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	//nolint:gosec
 	levelEnabler := zapcore.Level(logLevel)
@@ -177,6 +191,7 @@ func main() {
 		Scheme:             mgr.GetScheme(),
 		AtomGeneratorImage: atomGeneratorImage,
 		LighttpdImage:      lighttpdImage,
+		CSP:                csp,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Atom")
 		os.Exit(1)

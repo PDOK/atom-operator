@@ -51,13 +51,17 @@ func getBareHeadersMiddleware(obj metav1.Object) *traefikiov1alpha1.Middleware {
 	}
 }
 
-func (r *AtomReconciler) mutateHeadersMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware) error {
+func (r *AtomReconciler) mutateHeadersMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware, csp string) error {
 	labels := getLabels(atom)
 	if err := smoothutil.SetImmutableLabels(r.Client, middleware, labels); err != nil {
 		return err
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		Headers: &dynamic.Headers{
+			// CSP
+			ContentSecurityPolicy: csp,
+			// Frame-Options
+			FrameDeny: true,
 			CustomResponseHeaders: map[string]string{
 				"Access-Control-Allow-Headers": "Content-Type",
 				"Access-Control-Allow-Method":  "GET, OPTIONS, HEAD",

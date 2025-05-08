@@ -86,6 +86,12 @@ spec:
             cpu: 10m
             memory: 64Mi
         volumeMounts: []
+        env:
+          - name: CSP
+            valueFrom:
+              configMapKeyRef:
+                name: atom-operator-config
+                key: CSP
       volumes: []
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
