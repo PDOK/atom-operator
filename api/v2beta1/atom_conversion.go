@@ -307,8 +307,9 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	return nil
 }
 
-func createBaseURL(host string, general General) (baseURL string) {
+func createBaseURL(host string, general General) (baseURL smoothoperatormodel.URL) {
 	atomURI := fmt.Sprintf("%s/%s", general.DatasetOwner, general.Dataset)
+	atomURI := smoothoperatormodel.ParseURL()
 	if general.Theme != nil {
 		atomURI += "/" + *general.Theme
 	}

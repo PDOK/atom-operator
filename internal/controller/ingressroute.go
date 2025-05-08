@@ -3,7 +3,7 @@ package controller
 import (
 	"crypto/sha1" //nolint:gosec  // sha1 is only used for ID generation here, not crypto
 	"fmt"
-	"net/url"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	"strconv"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
@@ -29,7 +29,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		return err
 	}
 
-	baseURL := atom.GetBaseURL()
+	baseURL := atom.GetBaseUrl()
 
 	// TODO move to smoothoperator function
 	ingressRoute.Annotations = map[string]string{
@@ -110,7 +110,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 	return ctrl.SetControllerReference(atom, ingressRoute, r.Scheme)
 }
 
-func getMatchRule(url url.URL, pathSuffix string, pathPrefix bool) string {
+func getMatchRule(url smoothoperatormodel.URL, pathSuffix string, pathPrefix bool) string {
 	host := fmt.Sprintf("(Host(`localhost`) || Host(`%s`))", url.Hostname())
 	path := fmt.Sprintf("Path(`%s`)", url.Path+pathSuffix)
 	if pathPrefix {

@@ -82,10 +82,4 @@ func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, reasons *[
 			}
 		}
 	}
-
-	service := atom.Spec.Service
-	err := smoothoperatorvalidation.ValidateBaseURL(service.BaseURL)
-	if err != nil {
-		*reasons = append(*reasons, fmt.Sprintf("%v", err))
-	}
 }

@@ -25,7 +25,6 @@ SOFTWARE.
 package v3
 
 import (
-	"net/url"
 	"strings"
 
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
@@ -47,8 +46,7 @@ type AtomSpec struct {
 // Service defines the service configuration for the Atom feed
 type Service struct {
 	// BaseURL of the Atom service. Will be suffixed with index.xml for the index.
-	// +kubebuilder:validation:Pattern:="https?://.*"
-	BaseURL string `json:"baseUrl"` // TODO use URL type
+	BaseURL smoothoperatormodel.URL `json:"baseUrl"` // TODO use URL type
 
 	// Language of the service
 	// +kubebuilder:default:="nl"
@@ -265,13 +263,8 @@ func GetBlobEndpoint() string {
 	return blobEndpoint
 }
 
-func (r *Atom) GetBaseURL() url.URL {
-	baseURL, _ := url.Parse(r.Spec.Service.BaseURL)
-	return *baseURL
-}
-
 //nolint:revive
-func (r *Atom) GetBaseUrl() string {
+func (r *Atom) GetBaseUrl() smoothoperatormodel.URL {
 	return r.Spec.Service.BaseURL
 }
 

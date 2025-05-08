@@ -1,8 +1,7 @@
 package controller
 
 import (
-	"fmt"
-	"net/url"
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	"strconv"
 	"strings"
 
@@ -31,7 +30,7 @@ func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middle
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		StripPrefix: &dynamic.StripPrefix{
-			Prefixes: []string{atom.GetBaseURL().Path}},
+			Prefixes: []string{atom.GetBaseUrl().Path + "/"}},
 	}
 
 	if err := smoothutil.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
@@ -93,7 +92,7 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, prefi
 		return err
 	}
 
-	baseURL := atom.GetBaseURL()
+	baseURL := atom.GetBaseUrl()
 
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		ReplacePathRegex: &dynamic.ReplacePathRegex{
@@ -108,8 +107,8 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, prefi
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
-func getDownloadLinkRegex(baseURL url.URL, files []string) string {
-	return fmt.Sprintf("^%sdownloads/(%s)", baseURL.Path, strings.Join(files, "|"))
+func getDownloadLinkRegex(url smoothoperatormodel.URL, files []string) string {
+	return "^" + url.JoinPath("downloads", "("+strings.Join(files, "|")+")").Path
 }
 
 func getDownloadLinkGroups(links []pdoknlv3.DownloadLink) map[string]struct {

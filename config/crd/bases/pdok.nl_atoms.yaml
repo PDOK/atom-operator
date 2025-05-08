@@ -676,6 +676,10 @@ spec:
                     description: Subtitle of the service
                     minLength: 1
                     type: string
+                  testUrl:
+                    description: Test URL type
+                    pattern: ^https?://.+
+                    type: string
                   title:
                     description: Title of the service
                     minLength: 1
