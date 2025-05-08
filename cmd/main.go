@@ -20,10 +20,11 @@ import (
 	"crypto/tls"
 	"errors"
 	"flag"
+	"os"
+
 	"github.com/go-logr/zapr"
 	"github.com/pdok/smooth-operator/pkg/integrations/logging"
 	"go.uber.org/zap/zapcore"
-	"os"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -68,7 +69,7 @@ func init() {
 	// +kubebuilder:scaffold:scheme
 }
 
-//nolint:cyclop,funlen
+//nolint:funlen
 func main() {
 	var metricsAddr string
 	var certDir string
