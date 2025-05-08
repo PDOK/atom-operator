@@ -17,11 +17,8 @@ limitations under the License.
 package e2e
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
@@ -34,13 +31,13 @@ import (
 const namespace = "services"
 
 // serviceAccountName created for the project
-const serviceAccountName = "atom-operator-controller-manager"
+// const serviceAccountName = "atom-operator-controller-manager"
 
 // metricsServiceName is the name of the metrics service of the project
-const metricsServiceName = "atom-operator-controller-manager-metrics-service"
+// const metricsServiceName = "atom-operator-controller-manager-metrics-service"
 
 // metricsRoleBindingName is the name of the RBAC that will be created to allow get the metrics data
-const metricsRoleBindingName = "atom-operator-metrics-binding"
+// const metricsRoleBindingName = "atom-operator-metrics-binding"
 
 var _ = Describe("Manager", Ordered, func() {
 	var controllerPodName string
@@ -170,7 +167,7 @@ var _ = Describe("Manager", Ordered, func() {
 			Eventually(verifyControllerUp).Should(Succeed())
 		})
 
-		//It("should ensure the metrics endpoint is serving metrics", func() {
+		// It("should ensure the metrics endpoint is serving metrics", func() {
 		//	By("creating a ClusterRoleBinding for the service account to allow access to metrics")
 		//	serviceAccountFlag := fmt.Sprintf("--serviceaccount=%s:%s", namespace, serviceAccountName)
 		//	cmd := exec.Command("kubectl", "create", "clusterrolebinding", metricsRoleBindingName,
@@ -261,9 +258,9 @@ var _ = Describe("Manager", Ordered, func() {
 		//	Expect(metricsOutput).To(ContainSubstring(
 		//		"controller_runtime_reconcile_total",
 		//	))
-		//})
+		// })
 
-		//It("should provisioned cert-manager", func() {
+		// It("should provisioned cert-manager", func() {
 		//	By("validating that cert-manager has the certificate Secret")
 		//	verifyCertManager := func(g Gomega) {
 		//		cmd := exec.Command("kubectl", "get", "secrets", "webhook-server-cert", "-n", namespace)
@@ -271,9 +268,9 @@ var _ = Describe("Manager", Ordered, func() {
 		//		g.Expect(err).NotTo(HaveOccurred())
 		//	}
 		//	Eventually(verifyCertManager).Should(Succeed())
-		//})
+		// })
 
-		//It("should have CA injection for Atom conversion webhook", func() {
+		// It("should have CA injection for Atom conversion webhook", func() {
 		//	By("checking CA injection for Atom conversion webhook")
 		//	verifyCAInjection := func(g Gomega) {
 		//		cmd := exec.Command("kubectl", "get",
@@ -285,9 +282,9 @@ var _ = Describe("Manager", Ordered, func() {
 		//		g.Expect(len(vwhOutput)).To(BeNumerically(">", 10))
 		//	}
 		//	Eventually(verifyCAInjection).Should(Succeed())
-		//})
+		// })
 
-		//It("should have CA injection for validating webhooks", func() {
+		// It("should have CA injection for validating webhooks", func() {
 		//	By("checking CA injection for validating webhooks")
 		//	verifyCAInjection := func(g Gomega) {
 		//		cmd := exec.Command("kubectl", "get",
@@ -299,7 +296,7 @@ var _ = Describe("Manager", Ordered, func() {
 		//		g.Expect(len(vwhOutput)).To(BeNumerically(">", 10))
 		//	}
 		//	Eventually(verifyCAInjection).Should(Succeed())
-		//})
+		// })
 
 		// +kubebuilder:scaffold:e2e-webhooks-checks
 
@@ -317,58 +314,58 @@ var _ = Describe("Manager", Ordered, func() {
 // serviceAccountToken returns a token for the specified service account in the given namespace.
 // It uses the Kubernetes TokenRequest API to generate a token by directly sending a request
 // and parsing the resulting token from the API response.
-func serviceAccountToken() (string, error) {
-	const requestRawString = `{
-		"apiVersion": "authentication.k8s.io/v1",
-		"kind": "TokenRequest"
-	}`
-
-	// Temporary file to store the token request
-	secretName := serviceAccountName + "-token-request"
-	tokenRequestFile := filepath.Join("/tmp", secretName)
-	err := os.WriteFile(tokenRequestFile, []byte(requestRawString), os.FileMode(0o644))
-	if err != nil {
-		return "", err
-	}
-
-	var out string
-	verifyTokenCreation := func(g Gomega) {
-		// Execute kubectl command to create the token
-		tokenURI := fmt.Sprintf("/api/v1/namespaces/%s/serviceaccounts/%s/token",
-			namespace,
-			serviceAccountName,
-		)
-		cmd := exec.Command("kubectl", "create", "--raw", tokenURI, "-f", tokenRequestFile)
-
-		output, err := cmd.CombinedOutput()
-		g.Expect(err).NotTo(HaveOccurred())
-
-		// Parse the JSON output to extract the token
-		var token tokenRequest
-		err = json.Unmarshal(output, &token)
-		g.Expect(err).NotTo(HaveOccurred())
-
-		out = token.Status.Token
-	}
-	Eventually(verifyTokenCreation).Should(Succeed())
-
-	return out, err
-}
+// func serviceAccountToken() (string, error) {
+//	const requestRawString = `{
+//		"apiVersion": "authentication.k8s.io/v1",
+//		"kind": "TokenRequest"
+//	}`
+//
+//	// Temporary file to store the token request
+//	secretName := serviceAccountName + "-token-request"
+//	tokenRequestFile := filepath.Join("/tmp", secretName)
+//	err := os.WriteFile(tokenRequestFile, []byte(requestRawString), os.FileMode(0o644))
+//	if err != nil {
+//		return "", err
+//	}
+//
+//	var out string
+//	verifyTokenCreation := func(g Gomega) {
+//		// Execute kubectl command to create the token
+//		tokenURI := fmt.Sprintf("/api/v1/namespaces/%s/serviceaccounts/%s/token",
+//			namespace,
+//			serviceAccountName,
+//		)
+//		cmd := exec.Command("kubectl", "create", "--raw", tokenURI, "-f", tokenRequestFile)
+//
+//		output, err := cmd.CombinedOutput()
+//		g.Expect(err).NotTo(HaveOccurred())
+//
+//		// Parse the JSON output to extract the token
+//		var token tokenRequest
+//		err = json.Unmarshal(output, &token)
+//		g.Expect(err).NotTo(HaveOccurred())
+//
+//		out = token.Status.Token
+//	}
+//	Eventually(verifyTokenCreation).Should(Succeed())
+//
+//	return out, err
+//}
 
 // getMetricsOutput retrieves and returns the logs from the curl pod used to access the metrics endpoint.
-func getMetricsOutput() string {
-	By("getting the curl-metrics logs")
-	cmd := exec.Command("kubectl", "logs", "curl-metrics", "-n", namespace)
-	metricsOutput, err := utils.Run(cmd)
-	Expect(err).NotTo(HaveOccurred(), "Failed to retrieve logs from curl pod")
-	Expect(metricsOutput).To(ContainSubstring("< HTTP/1.1 200 OK"))
-	return metricsOutput
-}
+// func getMetricsOutput() string {
+//	By("getting the curl-metrics logs")
+//	cmd := exec.Command("kubectl", "logs", "curl-metrics", "-n", namespace)
+//	metricsOutput, err := utils.Run(cmd)
+//	Expect(err).NotTo(HaveOccurred(), "Failed to retrieve logs from curl pod")
+//	Expect(metricsOutput).To(ContainSubstring("< HTTP/1.1 200 OK"))
+//	return metricsOutput
+//}
 
 // tokenRequest is a simplified representation of the Kubernetes TokenRequest API response,
 // containing only the token field that we need to extract.
-type tokenRequest struct {
-	Status struct {
-		Token string `json:"token"`
-	} `json:"status"`
-}
+// type tokenRequest struct {
+//	Status struct {
+//		Token string `json:"token"`
+//	} `json:"status"`
+//}
