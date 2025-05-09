@@ -25,7 +25,6 @@ SOFTWARE.
 package v2beta1
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -60,9 +59,14 @@ func (a *Atom) ToV3(dst *pdoknlv3.Atom) error {
 		}
 	}
 
+	baseURL, err := createBaseURL(pdoknlv3.GetBaseURL(), a.Spec.General)
+	if err != nil {
+		return err
+	}
+
 	// Service
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), a.Spec.General),
+		BaseURL:      *baseURL,
 		Lang:         "nl",
 		Title:        a.Spec.Service.Title,
 		Subtitle:     a.Spec.Service.Subtitle,
@@ -307,20 +311,22 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	return nil
 }
 
-func createBaseURL(host string, general General) (baseURL smoothoperatormodel.URL) {
-	atomURI := fmt.Sprintf("%s/%s", general.DatasetOwner, general.Dataset)
-	atomURI := smoothoperatormodel.ParseURL()
-	if general.Theme != nil {
-		atomURI += "/" + *general.Theme
+func createBaseURL(host string, general General) (*smoothoperatormodel.URL, error) {
+	baseURL, err := smoothoperatormodel.ParseURL(host)
+	if err != nil {
+		return nil, err
 	}
-	atomURI += "/atom"
+	baseURL = baseURL.JoinPath(general.DatasetOwner, general.Dataset)
+	if general.Theme != nil {
+		baseURL = baseURL.JoinPath(*general.Theme)
+	}
+	baseURL = baseURL.JoinPath("atom")
 
 	if general.ServiceVersion != nil {
-		atomURI += "/" + *general.ServiceVersion
+		baseURL = baseURL.JoinPath(*general.ServiceVersion)
 	}
 
-	baseURL = fmt.Sprintf("%s/%s/", host, atomURI)
-	return
+	return &smoothoperatormodel.URL{URL: baseURL}, nil
 }
 
 func GetInt32Pointer(value int32) *int32 {
