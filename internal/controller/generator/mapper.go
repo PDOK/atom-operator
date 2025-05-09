@@ -11,6 +11,7 @@ import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
+	smoothutil "github.com/pdok/smooth-operator/pkg/util"
 )
 
 func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo) (atomGeneratorConfig atomfeed.Feeds, err error) {
@@ -30,9 +31,13 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 	// TODO append custom links to links (requires mapping)
 	// links = append(links, atom.Spec.Service.Links...)
 
-	styleSheet := atom.Spec.Service.Stylesheet
-	if styleSheet == nil {
-		styleSheet = ownerInfo.Spec.Atom.DefaultStylesheet
+	stylesheet := atom.Spec.Service.Stylesheet
+	if atom.Spec.Service.Stylesheet == nil {
+		stylesheet = ownerInfo.Spec.Atom.DefaultStylesheet
+	}
+	var xmlStylesheet *string
+	if stylesheet != nil {
+		xmlStylesheet = smoothutil.Pointer(stylesheet.String())
 	}
 
 	atomGeneratorConfig.Feeds = []atomfeed.Feed{}
@@ -41,7 +46,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 		return atomfeed.Feeds{}, err
 	}
 	serviceFeed := atomfeed.Feed{
-		XMLStylesheet: styleSheet,
+		XMLStylesheet: xmlStylesheet,
 		Xmlns:         "http://www.w3.org/2005/Atom",
 		Georss:        "http://www.georss.org/georss",
 		InspireDls:    "http://inspire.ec.europa.eu/schemas/inspire_dls/1.0",
@@ -69,7 +74,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 			Lang:          &atom.Spec.Service.Lang,
 			Link:          datasetLinks,
 			Rights:        atom.Spec.Service.Rights,
-			XMLStylesheet: styleSheet,
+			XMLStylesheet: xmlStylesheet,
 			Author:        getAuthor(datasetFeed.Author),
 			Entry:         getDatasetEntries(atom, datasetFeed),
 		}
@@ -129,7 +134,7 @@ func getServiceEntries(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo)
 
 func getCategory(srs pdoknlv3.SRS) atomfeed.Category {
 	return atomfeed.Category{
-		Term:  srs.URI,
+		Term:  srs.URI.String(),
 		Label: srs.Name,
 	}
 }
@@ -231,7 +236,7 @@ func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo, d
 	for _, link := range datasetFeed.Links {
 		linkDescribedbyLink := atomfeed.Link{
 			Rel:      link.Rel,
-			Href:     link.Href,
+			Href:     link.Href.String(),
 			Type:     link.Type,
 			Hreflang: link.Hreflang,
 		}

@@ -95,10 +95,14 @@ func (a *Atom) ToV3(dst *pdoknlv3.Atom) error {
 
 		// Map the links
 		for _, srcLink := range srcDataset.Links {
+			href, err := smoothoperatormodel.ParseURL(srcLink.URI)
+			if err != nil {
+				return err
+			}
 			dstLink := pdoknlv3.Link{
 				Rel:   "describedby",
 				Title: &srcLink.Type,
-				Href:  srcLink.URI,
+				Href:  smoothoperatormodel.URL{URL: href},
 			}
 			if srcLink.ContentType != nil {
 				dstLink.Type = *srcLink.ContentType
@@ -112,11 +116,17 @@ func (a *Atom) ToV3(dst *pdoknlv3.Atom) error {
 
 		// Map the entries
 		for _, srcDownload := range srcDataset.Downloads {
+
+			uri, err := smoothoperatormodel.ParseURL(srcDownload.Srs.URI)
+			if err != nil {
+				return err
+			}
+
 			dstEntry := pdoknlv3.Entry{
 				TechnicalName: srcDownload.Name,
 				Content:       srcDownload.Content,
 				SRS: pdoknlv3.SRS{
-					URI:  srcDownload.Srs.URI,
+					URI:  smoothoperatormodel.URL{URL: uri},
 					Name: srcDownload.Srs.Code,
 				},
 				Polygon: pdoknlv3.Polygon{
@@ -238,7 +248,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		for _, srcLink := range srcDatasetFeed.Links {
 			dstDataset.Links = append(dstDataset.Links, OtherLink{
 				Type:        smoothutil.PointerVal(srcLink.Title, ""),
-				URI:         srcLink.Href,
+				URI:         srcLink.Href.String(),
 				ContentType: &srcLink.Type,
 				Language:    srcLink.Hreflang,
 			})
@@ -267,7 +277,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			dstDownload.Updated = &updatedString
 
 			dstDownload.Srs = Srs{
-				URI:  srcEntry.SRS.URI,
+				URI:  srcEntry.SRS.URI.String(),
 				Code: srcEntry.SRS.Name,
 			}
 

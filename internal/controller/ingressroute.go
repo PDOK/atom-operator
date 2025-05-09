@@ -4,6 +4,7 @@ import (
 	"crypto/sha1" //nolint:gosec  // sha1 is only used for ID generation here, not crypto
 	"fmt"
 	"net/url"
+	"sort"
 	"strconv"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
@@ -94,14 +95,23 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 			},
 		},
 	}
+
+	var downloadMiddlewares []traefikiov1alpha1.MiddlewareRef
 	// Set additional Azure storage middleware per download link
 	for _, group := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
 		middlewareRef := traefikiov1alpha1.MiddlewareRef{
 			Name:      atom.Name + downloadsSuffix + strconv.Itoa(*group.index),
 			Namespace: atom.GetNamespace(),
 		}
-		azureStorageRule.Middlewares = append(azureStorageRule.Middlewares, middlewareRef)
+		downloadMiddlewares = append(downloadMiddlewares, middlewareRef)
 	}
+
+	sort.Slice(downloadMiddlewares, func(i, j int) bool {
+		return downloadMiddlewares[i].Name < downloadMiddlewares[j].Name
+	})
+
+	azureStorageRule.Middlewares = append(azureStorageRule.Middlewares, downloadMiddlewares...)
+
 	ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, azureStorageRule)
 
 	if err := smoothutil.EnsureSetGVK(r.Client, ingressRoute, ingressRoute); err != nil {
