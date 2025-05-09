@@ -30,7 +30,7 @@ func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middle
 	}
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		StripPrefix: &dynamic.StripPrefix{
-			Prefixes: []string{atom.GetBaseUrl().Path + "/"}},
+			Prefixes: []string{atom.Spec.Service.BaseURL.Path + "/"}},
 	}
 
 	if err := smoothutil.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
@@ -92,7 +92,7 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, prefi
 		return err
 	}
 
-	baseURL := atom.GetBaseUrl()
+	baseURL := atom.Spec.Service.BaseURL
 
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		ReplacePathRegex: &dynamic.ReplacePathRegex{

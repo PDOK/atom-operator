@@ -264,8 +264,8 @@ func GetBlobEndpoint() string {
 }
 
 //nolint:revive
-func (r *Atom) GetBaseUrl() smoothoperatormodel.URL {
-	return r.Spec.Service.BaseURL
+func (r *Atom) GetBaseUrl() string {
+	return r.Spec.Service.BaseURL.String()
 }
 
 func (r *Atom) GetDownloadLinks() (downloadLinks []DownloadLink) {

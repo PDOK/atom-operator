@@ -3,7 +3,7 @@ package controller
 import (
 	"crypto/sha1" //nolint:gosec  // sha1 is only used for ID generation here, not crypto
 	"fmt"
-	smoothoperatormodel "github.com/pdok/smooth-operator/model"
+	"net/url"
 	"strconv"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
@@ -29,13 +29,13 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		return err
 	}
 
-	baseURL := atom.GetBaseUrl()
+	baseURL := atom.Spec.Service.BaseURL
 
 	// TODO move to smoothoperator function
 	ingressRoute.Annotations = map[string]string{
 		"uptime.pdok.nl/id":   fmt.Sprintf("%x", sha1.Sum([]byte(atom.Name+nameSuffix))), //nolint:gosec  // sha1 is only used for ID generation here, not crypto
 		"uptime.pdok.nl/name": atom.Spec.Service.Title + " ATOM",
-		"uptime.pdok.nl/url":  baseURL.String() + "index.xml",
+		"uptime.pdok.nl/url":  baseURL.JoinPath("index.xml").String(),
 		"uptime.pdok.nl/tags": "public-stats,atom",
 	}
 
@@ -43,7 +43,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		Routes: []traefikiov1alpha1.Route{
 			{
 				Kind:  "Rule",
-				Match: getMatchRule(baseURL, "index.xml", false),
+				Match: getMatchRule(baseURL.JoinPath("index.xml"), false),
 				Services: []traefikiov1alpha1.Service{
 					{
 						LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
@@ -69,14 +69,14 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 
 	// Set additional routes per datasetFeed
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		matchRule := getMatchRule(baseURL, datasetFeed.TechnicalName+".xml", false)
+		matchRule := getMatchRule(baseURL.JoinPath(datasetFeed.TechnicalName+".xml"), false)
 		rule := getDefaultRule(atom, matchRule)
 		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)
 	}
 
 	azureStorageRule := traefikiov1alpha1.Route{
 		Kind:  "Rule",
-		Match: getMatchRule(baseURL, "downloads/", true),
+		Match: getMatchRule(baseURL.JoinPath("downloads/"), true),
 		Services: []traefikiov1alpha1.Service{
 			{
 				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
@@ -95,9 +95,9 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		},
 	}
 	// Set additional Azure storage middleware per download link
-	for index := range atom.GetDownloadLinks() {
+	for _, group := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
 		middlewareRef := traefikiov1alpha1.MiddlewareRef{
-			Name:      atom.Name + downloadsSuffix + strconv.Itoa(index),
+			Name:      atom.Name + downloadsSuffix + strconv.Itoa(*group.index),
 			Namespace: atom.GetNamespace(),
 		}
 		azureStorageRule.Middlewares = append(azureStorageRule.Middlewares, middlewareRef)
@@ -110,12 +110,13 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 	return ctrl.SetControllerReference(atom, ingressRoute, r.Scheme)
 }
 
-func getMatchRule(url smoothoperatormodel.URL, pathSuffix string, pathPrefix bool) string {
+func getMatchRule(url *url.URL, pathPrefix bool) string {
 	host := fmt.Sprintf("(Host(`localhost`) || Host(`%s`))", url.Hostname())
-	path := fmt.Sprintf("Path(`%s`)", url.Path+pathSuffix)
+	pathType := "Path"
 	if pathPrefix {
-		path = fmt.Sprintf("PathPrefix(`%s`)", url.Path+pathSuffix)
+		pathType = "PathPrefix"
 	}
+	path := fmt.Sprintf("%s(`%s`)", pathType, url.Path)
 	return fmt.Sprintf("%s && %s", host, path)
 }
 
