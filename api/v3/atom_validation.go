@@ -2,7 +2,6 @@ package v3
 
 import (
 	"fmt"
-
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
 
@@ -71,14 +70,32 @@ func ValidateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]st
 }
 
 func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, reasons *[]string) {
+	var path string
 	if strings.Contains(atom.GetName(), "atom") {
-		*warnings = append(*warnings, smoothoperatorvalidation.FormatValidationWarning("name should not contain atom", atom.GroupVersionKind(), atom.GetName()))
+		path = "metadata.name"
+		smoothoperatorvalidation.AddWarning(warnings, path, "should not contain atom", atom.GroupVersionKind(), atom.GetName())
 	}
 
-	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		for _, entry := range datasetFeed.Entries {
+	for i, datasetFeed := range atom.Spec.Service.DatasetFeeds {
+		path = fmt.Sprintf("spec.service.datasetFeeds[%d]", i)
+		if datasetFeed.DatasetMetadataLinks != nil && atom.Spec.Service.ServiceMetadataLinks != nil {
+			if datasetFeed.DatasetMetadataLinks.MetadataIdentifier == atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier {
+				smoothoperatorvalidation.AddReason(reasons, path+".datasetMetadataLinks.MetadataIdentifier", "should not be the same as spec.service.serviceMetadataLinks.metadataIdentifier")
+			}
+		}
+
+		if datasetFeed.DatasetMetadataLinks != nil && datasetFeed.SpatialDatasetIdentifierCode == nil {
+			smoothoperatorvalidation.AddReason(reasons, path+".spatialDatasetIdentifierCode", fmt.Sprintf("is required when %s is set", path+".datasetMetadataLinks"))
+		}
+
+		if datasetFeed.SpatialDatasetIdentifierCode != nil && datasetFeed.SpatialDatasetIdentifierNamespace == nil {
+			smoothoperatorvalidation.AddReason(reasons, path+".spatialDatasetIdentifierNamespace", fmt.Sprintf("is required when %s is set", path+".spatialDatasetIdentifierCode"))
+		}
+
+		for in, entry := range datasetFeed.Entries {
+			path = fmt.Sprintf("%s.entries[%d]", path, in)
 			if linkCount := len(entry.DownloadLinks); linkCount > 1 && entry.Content == nil {
-				*reasons = append(*reasons, "content is required for an Entry with more than 1 DownloadLink")
+				smoothoperatorvalidation.AddReason(reasons, path+".spatialDatasetIdentifierNamespace", fmt.Sprintf("is required when there are 2 or more downloadLinks"))
 			}
 		}
 	}
