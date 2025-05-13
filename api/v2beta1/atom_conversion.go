@@ -26,6 +26,7 @@ package v2beta1
 
 import (
 	"log"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -322,7 +323,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 }
 
 func createBaseURL(host string, general General) (*smoothoperatormodel.URL, error) {
-	baseURL, err := smoothoperatormodel.ParseURL(host)
+	baseURL, err := url.Parse(host)
 	if err != nil {
 		return nil, err
 	}
