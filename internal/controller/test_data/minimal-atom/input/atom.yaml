@@ -27,7 +27,7 @@ spec:
               - data: container/prefix/file.ext
             srs:
               name: srs
-              uri: https://srs.test
+              uri: https://srs/test
             polygon:
               bbox:
                 maxx: "10"

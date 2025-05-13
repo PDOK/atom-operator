@@ -25,7 +25,6 @@ SOFTWARE.
 package v2beta1
 
 import (
-	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -60,9 +59,14 @@ func (a *Atom) ToV3(dst *pdoknlv3.Atom) error {
 		}
 	}
 
+	baseURL, err := createBaseURL(pdoknlv3.GetBaseURL(), a.Spec.General)
+	if err != nil {
+		return err
+	}
+
 	// Service
 	dst.Spec.Service = pdoknlv3.Service{
-		BaseURL:      createBaseURL(pdoknlv3.GetBaseURL(), a.Spec.General),
+		BaseURL:      *baseURL,
 		Lang:         "nl",
 		Title:        a.Spec.Service.Title,
 		Subtitle:     a.Spec.Service.Subtitle,
@@ -91,10 +95,14 @@ func (a *Atom) ToV3(dst *pdoknlv3.Atom) error {
 
 		// Map the links
 		for _, srcLink := range srcDataset.Links {
+			href, err := smoothoperatormodel.ParseURL(srcLink.URI)
+			if err != nil {
+				return err
+			}
 			dstLink := pdoknlv3.Link{
 				Rel:   "describedby",
 				Title: &srcLink.Type,
-				Href:  srcLink.URI,
+				Href:  smoothoperatormodel.URL{URL: href},
 			}
 			if srcLink.ContentType != nil {
 				dstLink.Type = *srcLink.ContentType
@@ -108,11 +116,17 @@ func (a *Atom) ToV3(dst *pdoknlv3.Atom) error {
 
 		// Map the entries
 		for _, srcDownload := range srcDataset.Downloads {
+
+			uri, err := smoothoperatormodel.ParseURL(srcDownload.Srs.URI)
+			if err != nil {
+				return err
+			}
+
 			dstEntry := pdoknlv3.Entry{
 				TechnicalName: srcDownload.Name,
 				Content:       srcDownload.Content,
 				SRS: pdoknlv3.SRS{
-					URI:  srcDownload.Srs.URI,
+					URI:  smoothoperatormodel.URL{URL: uri},
 					Name: srcDownload.Srs.Code,
 				},
 				Polygon: pdoknlv3.Polygon{
@@ -234,7 +248,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 		for _, srcLink := range srcDatasetFeed.Links {
 			dstDataset.Links = append(dstDataset.Links, OtherLink{
 				Type:        smoothutil.PointerVal(srcLink.Title, ""),
-				URI:         srcLink.Href,
+				URI:         srcLink.Href.String(),
 				ContentType: &srcLink.Type,
 				Language:    srcLink.Hreflang,
 			})
@@ -263,7 +277,7 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 			dstDownload.Updated = &updatedString
 
 			dstDownload.Srs = Srs{
-				URI:  srcEntry.SRS.URI,
+				URI:  srcEntry.SRS.URI.String(),
 				Code: srcEntry.SRS.Name,
 			}
 
@@ -307,19 +321,22 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 	return nil
 }
 
-func createBaseURL(host string, general General) (baseURL string) {
-	atomURI := fmt.Sprintf("%s/%s", general.DatasetOwner, general.Dataset)
-	if general.Theme != nil {
-		atomURI += "/" + *general.Theme
+func createBaseURL(host string, general General) (*smoothoperatormodel.URL, error) {
+	baseURL, err := smoothoperatormodel.ParseURL(host)
+	if err != nil {
+		return nil, err
 	}
-	atomURI += "/atom"
+	baseURL = baseURL.JoinPath(general.DatasetOwner, general.Dataset)
+	if general.Theme != nil {
+		baseURL = baseURL.JoinPath(*general.Theme)
+	}
+	baseURL = baseURL.JoinPath("atom")
 
 	if general.ServiceVersion != nil {
-		atomURI += "/" + *general.ServiceVersion
+		baseURL = baseURL.JoinPath(*general.ServiceVersion)
 	}
 
-	baseURL = fmt.Sprintf("%s/%s/", host, atomURI)
-	return
+	return &smoothoperatormodel.URL{URL: baseURL}, nil
 }
 
 func GetInt32Pointer(value int32) *int32 {

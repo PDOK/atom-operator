@@ -122,7 +122,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		Namespace: atom.Namespace,
 		Name:      atom.Spec.Service.OwnerInfoRef,
 	}
-	if err := r.Client.Get(ctx, objectKey, ownerInfo); err != nil {
+	if err = r.Client.Get(ctx, objectKey, ownerInfo); err != nil {
 		if apierrors.IsNotFound(err) {
 			lgr.Info("OwnerInfo resource not found", "name", req.NamespacedName)
 		} else {

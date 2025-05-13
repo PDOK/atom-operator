@@ -2,9 +2,13 @@ package v3
 
 import (
 	"fmt"
+	"slices"
 
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 
 	"strings"
 
@@ -13,79 +17,121 @@ import (
 )
 
 func (atom *Atom) ValidateCreate(c client.Client) ([]string, error) {
-	warnings := []string{}
-	reasons := []string{}
+	var warnings []string
+	var allErrs field.ErrorList
 
 	err := smoothoperatorvalidation.ValidateLabelsOnCreate(atom.Labels)
 	if err != nil {
-		reasons = append(reasons, fmt.Sprintf("%v", err))
+		allErrs = append(allErrs, err)
 	}
 
-	ValidateAtom(c, atom, &warnings, &reasons)
+	ValidateAtom(c, atom, &warnings, &allErrs)
 
-	if len(reasons) > 0 {
-		return warnings, fmt.Errorf("%s", strings.Join(reasons, ". "))
+	if len(allErrs) == 0 {
+		return warnings, nil
 	}
 
-	return warnings, nil
+	return warnings, apierrors.NewInvalid(
+		schema.GroupKind{Group: "pdok.nl", Kind: "Atom"},
+		atom.Name, allErrs)
 }
 
 func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, error) {
-	warnings := []string{}
-	reasons := []string{}
+	var warnings []string
+	var allErrs field.ErrorList
+	smoothoperatorvalidation.ValidateLabelsOnUpdate(atomOld.Labels, atom.Labels, &allErrs)
 
-	// Check labels did not change
-	err := smoothoperatorvalidation.ValidateLabelsOnUpdate(atomOld.Labels, atom.Labels)
-	if err != nil {
-		reasons = append(reasons, fmt.Sprintf("%v", err))
+	smoothoperatorvalidation.CheckBaseUrlImmutability(atomOld, atom, &allErrs)
+
+	ValidateAtom(c, atom, &warnings, &allErrs)
+
+	if len(allErrs) == 0 {
+		return warnings, nil
 	}
 
-	smoothoperatorvalidation.CheckBaseUrlImmutability(atomOld, atom, &reasons)
-
-	ValidateAtom(c, atom, &warnings, &reasons)
-
-	if len(reasons) > 0 {
-		return warnings, fmt.Errorf("%s", strings.Join(reasons, ". "))
-	}
-
-	return warnings, nil
+	return warnings, apierrors.NewInvalid(
+		schema.GroupKind{Group: "pdok.nl", Kind: "Atom"},
+		atom.Name, allErrs)
 }
 
-func ValidateAtom(c client.Client, atom *Atom, warnings *[]string, reasons *[]string) {
-	ValidateAtomWithoutClusterChecks(atom, warnings, reasons)
+func ValidateAtom(c client.Client, atom *Atom, warnings *[]string, allErrs *field.ErrorList) {
+	ValidateAtomWithoutClusterChecks(atom, warnings, allErrs)
 
+	ownerInfoRef := atom.Spec.Service.OwnerInfoRef
 	ownerInfo := &smoothoperatorv1.OwnerInfo{}
 	objectKey := client.ObjectKey{
 		Namespace: atom.Namespace,
-		Name:      atom.Spec.Service.OwnerInfoRef,
+		Name:      ownerInfoRef,
 	}
 	ctx := context.Background()
 	err := c.Get(ctx, objectKey, ownerInfo)
+	fieldPath := field.NewPath("spec").Child("service").Child("ownerInfoRef")
 	if err != nil {
-		*reasons = append(*reasons, fmt.Sprintf("%v", err))
+		*allErrs = append(*allErrs, field.NotFound(fieldPath, ownerInfoRef))
+		return
 	}
 
 	if ownerInfo.Spec.Atom == nil {
-		*reasons = append(*reasons, "no atom settings in ownerInfo: "+ownerInfo.Name)
+		*allErrs = append(*allErrs, field.Required(fieldPath, "spec.Atom missing in "+ownerInfo.Name))
 	}
 }
 
-func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, reasons *[]string) {
+func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, allErrs *field.ErrorList) {
+	var fieldPath *field.Path
 	if strings.Contains(atom.GetName(), "atom") {
-		*warnings = append(*warnings, smoothoperatorvalidation.FormatValidationWarning("name should not contain atom", atom.GroupVersionKind(), atom.GetName()))
+		fieldPath = field.NewPath("metadata").Child("name")
+		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "should not contain atom", atom.GroupVersionKind(), atom.GetName())
 	}
+	var feedNames []string
+	for i, datasetFeed := range atom.Spec.Service.DatasetFeeds {
+		fieldPath = field.NewPath("spec").Child("service").Child("datasetFeeds").Index(i)
 
-	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		for _, entry := range datasetFeed.Entries {
-			if linkCount := len(entry.DownloadLinks); linkCount > 1 && entry.Content == nil {
-				*reasons = append(*reasons, "content is required for an Entry with more than 1 DownloadLink")
+		if slices.Contains(feedNames, datasetFeed.TechnicalName) {
+			*allErrs = append(*allErrs, field.Duplicate(fieldPath.Child("technicalName"), datasetFeed.TechnicalName))
+		}
+
+		feedNames = append(feedNames, datasetFeed.TechnicalName)
+
+		if datasetFeed.DatasetMetadataLinks != nil && atom.Spec.Service.ServiceMetadataLinks != nil {
+			if datasetFeed.DatasetMetadataLinks.MetadataIdentifier == atom.Spec.Service.ServiceMetadataLinks.MetadataIdentifier {
+				*allErrs = append(*allErrs, field.Invalid(
+					fieldPath.Child("datasetMetadataLinks").Child("metadataIdentifier"),
+					datasetFeed.DatasetMetadataLinks.MetadataIdentifier,
+					fmt.Sprintf("should not be the same as %s", field.NewPath("spec").
+						Child("service").Child("serviceMetadataLinks").Child("metadataIdentifier")),
+				))
 			}
 		}
-	}
 
-	service := atom.Spec.Service
-	err := smoothoperatorvalidation.ValidateBaseURL(service.BaseURL)
-	if err != nil {
-		*reasons = append(*reasons, fmt.Sprintf("%v", err))
+		if datasetFeed.DatasetMetadataLinks != nil && datasetFeed.SpatialDatasetIdentifierCode == nil {
+			*allErrs = append(*allErrs, field.Required(
+				fieldPath.Child("spatialDatasetIdentifierCode"),
+				fmt.Sprintf("when %s exists", fieldPath.Child("datasetMetadataLinks").String()),
+			))
+		}
+
+		if datasetFeed.SpatialDatasetIdentifierCode != nil && datasetFeed.SpatialDatasetIdentifierNamespace == nil {
+			*allErrs = append(*allErrs, field.Required(
+				fieldPath.Child("spatialDatasetIdentifierNamespace"),
+				fmt.Sprintf("when %s exists", fieldPath.Child("spatialDatasetIdentifierCode").String()),
+			))
+		}
+
+		var entryNames []string
+		for in, entry := range datasetFeed.Entries {
+			fieldPath = fieldPath.Child("entries").Index(in)
+			if linkCount := len(entry.DownloadLinks); linkCount > 1 && entry.Content == nil {
+				*allErrs = append(*allErrs, field.Required(
+					fieldPath.Child("content"),
+					fmt.Sprintf("when %s has 2 or more elements", fieldPath.Child("downloadlinks").String()),
+				))
+			}
+
+			if slices.Contains(entryNames, entry.TechnicalName) {
+				*allErrs = append(*allErrs, field.Duplicate(fieldPath.Child("technicalName"), entry.TechnicalName))
+			}
+
+			entryNames = append(entryNames, entry.TechnicalName)
+		}
 	}
 }

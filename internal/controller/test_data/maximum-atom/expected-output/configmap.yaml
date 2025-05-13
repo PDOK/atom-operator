@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: maximum-atom-generator-9m992fkcfh
+  name: maximum-atom-generator-mg8kmkb7c8
   namespace: default
   labels:
     test: test
@@ -68,9 +68,9 @@ data:
                 title: feed-1-title
             polygon: 50 5 50 10 100 10 100 5 50 5
             category:
-              - term: https://srs-1.test
+              - term: https://srs-1/test
                 label: srs-1
-              - term: https://srs-2.test
+              - term: https://srs-2/test
                 label: srs-2
             spatial_dataset_identifier_code: 00000000-0000-0000-0000-000000000002
             spatial_dataset_identifier_namespace: https://test.com
@@ -89,7 +89,7 @@ data:
                 title: feed-2-title
             polygon: 50 5 50 10 100 10 100 5 50 5
             category:
-              - term: https://srs-3.test
+              - term: https://srs-3/test
                 label: srs-3
             spatial_dataset_identifier_code: 00000000-0000-0000-0000-000000000004
             spatial_dataset_identifier_namespace: https://test-2.com
@@ -149,7 +149,7 @@ data:
             updated: "2006-01-02T15:04:05Z"
             polygon: 50 5 50 10 100 10 100 5 50 5
             category:
-              - term: https://srs-1.test
+              - term: https://srs-1/test
                 label: srs-1
           - id: https://test.com/path/entry-2.xml
             title: entry-2-title
@@ -163,7 +163,7 @@ data:
             updated: "2006-01-02T15:04:05Z"
             polygon: 50 5 50 10 100 10 100 5 50 5
             category:
-              - term: https://srs-2.test
+              - term: https://srs-2/test
                 label: srs-2
       - xmlname:
           space: ""
@@ -213,5 +213,5 @@ data:
             updated: "2006-01-02T15:04:05Z"
             polygon: 50 5 50 10 100 10 100 5 50 5
             category:
-              - term: https://srs-3.test
+              - term: https://srs-3/test
                 label: srs-3

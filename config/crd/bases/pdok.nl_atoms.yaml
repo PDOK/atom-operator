@@ -361,7 +361,7 @@ spec:
                   baseUrl:
                     description: BaseURL of the Atom service. Will be suffixed with
                       index.xml for the index.
-                    pattern: https?://.*
+                    pattern: ^https?://.+/.+
                     type: string
                   datasetFeeds:
                     description: DatasetFeeds in this service
@@ -374,8 +374,12 @@ spec:
                             the same as the author of the service.
                           properties:
                             email:
+                              description: Email of the author
+                              format: email
                               type: string
                             name:
+                              description: Name of the author
+                              minLength: 1
                               type: string
                           required:
                           - email
@@ -391,6 +395,10 @@ spec:
                             templates:
                               description: Metadata templates to use
                               items:
+                                enum:
+                                - csw
+                                - opensearch
+                                - html
                                 type: string
                               minItems: 1
                               type: array
@@ -423,19 +431,19 @@ spec:
                                       properties:
                                         maxx:
                                           description: Rechtsonder X coördinaat
-                                          pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                          pattern: ^-?[0-9]+([.][0-9]*)?$
                                           type: string
                                         maxy:
                                           description: Rechtsonder Y coördinaat
-                                          pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                          pattern: ^-?[0-9]+([.][0-9]*)?$
                                           type: string
                                         minx:
                                           description: Linksboven X coördinaat
-                                          pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                          pattern: ^-?[0-9]+([.][0-9]*)?$
                                           type: string
                                         miny:
                                           description: Linksboven Y coördinaat
-                                          pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                          pattern: ^-?[0-9]+([.][0-9]*)?$
                                           type: string
                                       required:
                                       - maxx
@@ -445,7 +453,7 @@ spec:
                                       type: object
                                     data:
                                       description: URL to the data
-                                      minLength: 1
+                                      pattern: ^[^\/]+\/.+\/.+
                                       type: string
                                     rel:
                                       description: 'Optional relation if the link,
@@ -472,19 +480,19 @@ spec:
                                     properties:
                                       maxx:
                                         description: Rechtsonder X coördinaat
-                                        pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                        pattern: ^-?[0-9]+([.][0-9]*)?$
                                         type: string
                                       maxy:
                                         description: Rechtsonder Y coördinaat
-                                        pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                        pattern: ^-?[0-9]+([.][0-9]*)?$
                                         type: string
                                       minx:
                                         description: Linksboven X coördinaat
-                                        pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                        pattern: ^-?[0-9]+([.][0-9]*)?$
                                         type: string
                                       miny:
                                         description: Linksboven Y coördinaat
-                                        pattern: ^[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)$
+                                        pattern: ^-?[0-9]+([.][0-9]*)?$
                                         type: string
                                     required:
                                     - maxx
@@ -504,7 +512,7 @@ spec:
                                     type: string
                                   uri:
                                     description: URI of the SRS
-                                    pattern: https?://.*
+                                    pattern: ^https?://.+/.+
                                     type: string
                                 required:
                                 - name
@@ -545,7 +553,7 @@ spec:
                             properties:
                               href:
                                 description: Actual href of the link
-                                pattern: https?://.*
+                                pattern: ^https?://.+/.+
                                 type: string
                               hreflang:
                                 description: Optional language of the link. If omitted
@@ -616,7 +624,7 @@ spec:
                       properties:
                         href:
                           description: Actual href of the link
-                          pattern: https?://.*
+                          pattern: ^https?://.+/.+
                           type: string
                         hreflang:
                           description: Optional language of the link. If omitted the
@@ -661,6 +669,10 @@ spec:
                       templates:
                         description: Metadata templates to use
                         items:
+                          enum:
+                          - csw
+                          - opensearch
+                          - html
                           type: string
                         minItems: 1
                         type: array
@@ -671,6 +683,7 @@ spec:
                   stylesheet:
                     description: Optional link to a stylesheet used in pages generated
                       by the service.
+                    pattern: ^https?://.+/.+
                     type: string
                   subtitle:
                     description: Subtitle of the service
@@ -683,7 +696,6 @@ spec:
                 required:
                 - baseUrl
                 - datasetFeeds
-                - lang
                 - ownerInfoRef
                 - rights
                 - subtitle

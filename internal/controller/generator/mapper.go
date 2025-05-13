@@ -11,6 +11,7 @@ import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
+	smoothutil "github.com/pdok/smooth-operator/pkg/util"
 )
 
 func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo) (atomGeneratorConfig atomfeed.Feeds, err error) {
@@ -30,9 +31,13 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 	// TODO append custom links to links (requires mapping)
 	// links = append(links, atom.Spec.Service.Links...)
 
-	styleSheet := atom.Spec.Service.Stylesheet
-	if styleSheet == nil {
-		styleSheet = ownerInfo.Spec.Atom.DefaultStylesheet
+	stylesheet := atom.Spec.Service.Stylesheet
+	if atom.Spec.Service.Stylesheet == nil {
+		stylesheet = ownerInfo.Spec.Atom.DefaultStylesheet
+	}
+	var xmlStylesheet *string
+	if stylesheet != nil {
+		xmlStylesheet = smoothutil.Pointer(stylesheet.String())
 	}
 
 	atomGeneratorConfig.Feeds = []atomfeed.Feed{}
@@ -41,12 +46,12 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 		return atomfeed.Feeds{}, err
 	}
 	serviceFeed := atomfeed.Feed{
-		XMLStylesheet: styleSheet,
+		XMLStylesheet: xmlStylesheet,
 		Xmlns:         "http://www.w3.org/2005/Atom",
 		Georss:        "http://www.georss.org/georss",
 		InspireDls:    "http://inspire.ec.europa.eu/schemas/inspire_dls/1.0",
 		Lang:          &atom.Spec.Service.Lang,
-		ID:            atom.Spec.Service.BaseURL + "index.xml",
+		ID:            atom.Spec.Service.BaseURL.JoinPath("index.xml").String(),
 		Title:         escapeQuotes(atom.Spec.Service.Title),
 		Subtitle:      escapeQuotes(atom.Spec.Service.Subtitle),
 		// Index Feed Links
@@ -63,13 +68,13 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 			return atomfeed.Feeds{}, err
 		}
 		dsFeed := atomfeed.Feed{
-			ID:            atom.Spec.Service.BaseURL + datasetFeed.TechnicalName + ".xml",
+			ID:            atom.Spec.Service.BaseURL.JoinPath(datasetFeed.TechnicalName + ".xml").String(),
 			Title:         escapeQuotes(datasetFeed.Title),
 			Subtitle:      escapeQuotes(datasetFeed.Subtitle),
 			Lang:          &atom.Spec.Service.Lang,
 			Link:          datasetLinks,
 			Rights:        atom.Spec.Service.Rights,
-			XMLStylesheet: styleSheet,
+			XMLStylesheet: xmlStylesheet,
 			Author:        getAuthor(datasetFeed.Author),
 			Entry:         getDatasetEntries(atom, datasetFeed),
 		}
@@ -81,7 +86,7 @@ func MapAtomV3ToAtomGeneratorConfig(atom pdoknlv3.Atom, ownerInfo smoothoperator
 func getServiceEntries(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo) ([]atomfeed.Entry, error) {
 	var retEntriesArray []atomfeed.Entry
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		id := atom.Spec.Service.BaseURL + datasetFeed.TechnicalName + ".xml"
+		id := atom.Spec.Service.BaseURL.JoinPath(datasetFeed.TechnicalName + ".xml").String()
 		var links []atomfeed.Link
 		if datasetFeed.DatasetMetadataLinks != nil {
 			err := addMetadataLinks(*datasetFeed.DatasetMetadataLinks, ownerInfo, &links, "", true)
@@ -129,7 +134,7 @@ func getServiceEntries(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo)
 
 func getCategory(srs pdoknlv3.SRS) atomfeed.Category {
 	return atomfeed.Category{
-		Term:  srs.URI,
+		Term:  srs.URI.String(),
 		Label: srs.Name,
 	}
 }
@@ -144,7 +149,7 @@ func getAuthor(author smoothoperatormodel.Author) atomfeed.Author {
 func getSelfLink(atom pdoknlv3.Atom) atomfeed.Link {
 	return atomfeed.Link{
 		Rel:   "self",
-		Href:  atom.Spec.Service.BaseURL + "index.xml",
+		Href:  atom.Spec.Service.BaseURL.JoinPath("index.xml").String(),
 		Title: escapeQuotes(atom.Spec.Service.Title),
 		Type:  "application/atom+xml",
 	}
@@ -207,11 +212,11 @@ func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo, d
 
 	selfLink := atomfeed.Link{
 		Rel:  "self",
-		Href: atom.Spec.Service.BaseURL + datasetFeed.TechnicalName + ".xml",
+		Href: atom.Spec.Service.BaseURL.JoinPath(datasetFeed.TechnicalName + ".xml").String(),
 	}
 	upLink := atomfeed.Link{
 		Rel:   "up",
-		Href:  atom.Spec.Service.BaseURL + "index.xml",
+		Href:  atom.Spec.Service.BaseURL.JoinPath("index.xml").String(),
 		Type:  "application/atom+xml",
 		Title: "Top Atom Download Service Feed",
 	}
@@ -231,7 +236,7 @@ func getDatasetLinks(atom pdoknlv3.Atom, ownerInfo smoothoperatorv1.OwnerInfo, d
 	for _, link := range datasetFeed.Links {
 		linkDescribedbyLink := atomfeed.Link{
 			Rel:      link.Rel,
-			Href:     link.Href,
+			Href:     link.Href.String(),
 			Type:     link.Type,
 			Hreflang: link.Hreflang,
 		}
@@ -249,7 +254,7 @@ func getDatasetEntries(atom pdoknlv3.Atom, datasetFeed pdoknlv3.DatasetFeed) []a
 	for _, entry := range datasetFeed.Entries {
 
 		datasetEntry := atomfeed.Entry{
-			ID:       atom.Spec.Service.BaseURL + entry.TechnicalName + ".xml",
+			ID:       atom.Spec.Service.BaseURL.JoinPath(entry.TechnicalName + ".xml").String(),
 			Link:     []atomfeed.Link{},
 			Rights:   atom.Spec.Service.Rights,
 			Category: []atomfeed.Category{getCategory(entry.SRS)},
@@ -318,7 +323,7 @@ func getDownloadLinkRel(downloadLink pdoknlv3.DownloadLink, emptyRelCount int) (
 }
 
 func getDownloadLinkHref(downloadLink pdoknlv3.DownloadLink, atom pdoknlv3.Atom) string {
-	return atom.Spec.Service.BaseURL + "downloads" + "/" + downloadLink.GetBlobName()
+	return atom.Spec.Service.BaseURL.JoinPath("downloads", downloadLink.GetBlobName()).String()
 }
 
 // Using internal url, atom generator uses this url to determine content-length and

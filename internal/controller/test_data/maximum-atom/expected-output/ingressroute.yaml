@@ -69,5 +69,3 @@ spec:
           namespace: default
         - name: maximum-atom-downloads-2
           namespace: default
-        - name: maximum-atom-downloads-3
-          namespace: default

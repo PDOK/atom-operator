@@ -58,7 +58,7 @@ spec:
                   miny: "10"
             srs:
               name: srs-1
-              uri: https://srs-1.test
+              uri: https://srs-1/test
             polygon:
               bbox:
                 maxx: "10"
@@ -73,7 +73,7 @@ spec:
               - data: container/prefix-2/file-2.ext
             srs:
               name: srs-2
-              uri: https://srs-2.test
+              uri: https://srs-2/test
             polygon:
               bbox:
                 maxx: "10"
@@ -102,7 +102,7 @@ spec:
               - data: container/prefix-3/file-4.ext
             srs:
               name: srs-3
-              uri: https://srs-3.test
+              uri: https://srs-3/test
             polygon:
               bbox:
                 maxx: "10"
