@@ -1,9 +1,10 @@
 package controller
 
 import (
-	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	"strconv"
 	"strings"
+
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothutil "github.com/pdok/smooth-operator/pkg/util"

@@ -451,6 +451,21 @@ func Test_getGeneratorConfig(t *testing.T) {
 		atom      *pdoknlv3.Atom
 		ownerInfo *smoothoperatorv1.OwnerInfo
 	}
+
+	maxAtom, err := getAtom(testPath("maximum")+"input/atom.yaml", false)
+
+	if err != nil {
+		t.Errorf("getAtom() error = %v", err)
+	}
+	maxOwner, err := getOwnerInfo(testPath("maximum")+"input/ownerinfo.yaml", false)
+	if err != nil {
+		t.Errorf("getOwnerInfo() error = %v", err)
+	}
+	maxScenario := args{
+		atom:      maxAtom,
+		ownerInfo: maxOwner,
+	}
+
 	tests := []struct {
 		name       string
 		args       args
@@ -468,17 +483,15 @@ func Test_getGeneratorConfig(t *testing.T) {
 			wantErr:    true,
 		},
 		{
-			name: "succesfull_scenario_02",
-			args: args{
-				atom:      getAtom(testPath("maximum")+"input/atom.yaml", false),
-				ownerInfo: getOwnerInfo(testPath("maximum")+"input/ownerinfo.yaml", false),
-			},
+			name:       "maximum_scenario",
+			args:       maxScenario,
 			wantConfig: getTestGeneratorConfig(testPath("maximum") + "expected-output/configmap.yaml"),
 			wantErr:    false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			gotConfig, err := getGeneratorConfig(tt.args.atom, tt.args.ownerInfo)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("getGeneratorConfig() error = %v, wantErr %v", err, tt.wantErr)
@@ -496,30 +509,43 @@ func readTestFile(fileName string) (string, error) {
 	return string(dat), err
 }
 
-func getAtom(fileName string, ginkgo bool) *pdoknlv3.Atom {
+func getAtom(fileName string, ginkgo bool) (*pdoknlv3.Atom, error) {
 	atom := &pdoknlv3.Atom{}
 	data, err := os.ReadFile(fileName)
 	if ginkgo {
 		Expect(err).NotTo(HaveOccurred())
 	}
+	if err != nil {
+		return nil, err
+	}
+
 	err = yaml.UnmarshalStrict(data, atom)
 	if ginkgo {
 		Expect(err).NotTo(HaveOccurred())
 	}
-	return atom
+	if err != nil {
+		return nil, err
+	}
+	return atom, nil
 }
 
-func getOwnerInfo(fileName string, ginkgo bool) *smoothoperatorv1.OwnerInfo {
+func getOwnerInfo(fileName string, ginkgo bool) (*smoothoperatorv1.OwnerInfo, error) {
 	owner := &smoothoperatorv1.OwnerInfo{}
 	data, err := os.ReadFile(fileName)
 	if ginkgo {
 		Expect(err).NotTo(HaveOccurred())
 	}
+	if err != nil {
+		return nil, err
+	}
 	err = yaml.UnmarshalStrict(data, owner)
 	if ginkgo {
 		Expect(err).NotTo(HaveOccurred())
 	}
-	return owner
+	if err != nil {
+		return nil, err
+	}
+	return owner, nil
 }
 
 func getTestGeneratorConfig(fileName string) string {

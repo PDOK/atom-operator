@@ -14,7 +14,7 @@ func TestAtom_ConvertTo(t *testing.T) {
 	convertFromAtom := getTestAtomV2()
 	convertToAtom := &pdoknlv3.Atom{}
 	dstRaw := conversion.Hub(convertToAtom)
-	pdoknlv3.SetBaseURL("https://test.com")
+	pdoknlv3.SetBaseURL("https://test.com/test")
 	err := convertFromAtom.ConvertTo(dstRaw)
 	if err != nil {
 		t.Errorf("ConvertTo() error = %v", err)
