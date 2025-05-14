@@ -56,12 +56,10 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 				},
 				Middlewares: []traefikiov1alpha1.MiddlewareRef{
 					{
-						Name:      atom.Name + headersSuffix,
-						Namespace: atom.GetNamespace(),
+						Name: atom.Name + headersSuffix,
 					},
 					{
-						Name:      atom.Name + stripPrefixSuffix,
-						Namespace: atom.GetNamespace(),
+						Name: atom.Name + stripPrefixSuffix,
 					},
 				},
 			},
@@ -90,8 +88,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		},
 		Middlewares: []traefikiov1alpha1.MiddlewareRef{
 			{
-				Name:      atom.Name + headersSuffix,
-				Namespace: atom.GetNamespace(),
+				Name: atom.Name + headersSuffix,
 			},
 		},
 	}
@@ -100,8 +97,7 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 	// Set additional Azure storage middleware per download link
 	for _, group := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
 		middlewareRef := traefikiov1alpha1.MiddlewareRef{
-			Name:      atom.Name + downloadsSuffix + strconv.Itoa(*group.index),
-			Namespace: atom.GetNamespace(),
+			Name: atom.Name + downloadsSuffix + strconv.Itoa(*group.index),
 		}
 		downloadMiddlewares = append(downloadMiddlewares, middlewareRef)
 	}
@@ -113,6 +109,9 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 	azureStorageRule.Middlewares = append(azureStorageRule.Middlewares, downloadMiddlewares...)
 
 	ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, azureStorageRule)
+
+	// Add finalizers
+	ingressRoute.Finalizers = []string{"uptime.pdok.nl/finalizer"}
 
 	if err := smoothutil.EnsureSetGVK(r.Client, ingressRoute, ingressRoute); err != nil {
 		return err
@@ -145,12 +144,10 @@ func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Rou
 		},
 		Middlewares: []traefikiov1alpha1.MiddlewareRef{
 			{
-				Name:      atom.Name + headersSuffix,
-				Namespace: atom.GetNamespace(),
+				Name: atom.Name + headersSuffix,
 			},
 			{
-				Name:      atom.Name + stripPrefixSuffix,
-				Namespace: atom.GetNamespace(),
+				Name: atom.Name + stripPrefixSuffix,
 			},
 		},
 	}

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: maximum-atom-generator-mg8kmkb7c8
+  name: maximum-atom-generator-f9tftfg7bh
   namespace: default
   labels:
     test: test

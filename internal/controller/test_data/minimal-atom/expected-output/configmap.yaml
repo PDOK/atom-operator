@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: minimal-atom-generator-tmk22c7fm9
+  name: minimal-atom-generator-fd8bdfdkh6
   namespace: default
   labels:
     test: test
