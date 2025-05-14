@@ -30,7 +30,6 @@ data:
           subtitle: service-subtitle
           link:
             - href: https://test.com/path/index.xml
-              data: null
               rel: self
               type: application/atom+xml
               title: service-title
@@ -44,7 +43,6 @@ data:
               summary: feed-subtitle
               link:
                 - href: https://test.com/path/feed.xml
-                  data: null
                   rel: alternate
                   type: application/atom+xml
                   title: feed-title
@@ -63,10 +61,8 @@ data:
           subtitle: feed-subtitle
           link:
             - href: https://test.com/path/feed.xml
-              data: null
               rel: self
             - href: https://test.com/path/index.xml
-              data: null
               rel: up
               type: application/atom+xml
               title: Top Atom Download Service Feed
