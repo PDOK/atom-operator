@@ -41,7 +41,12 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 	var allErrs field.ErrorList
 	smoothoperatorvalidation.ValidateLabelsOnUpdate(atomOld.Labels, atom.Labels, &allErrs)
 
-	smoothoperatorvalidation.CheckBaseUrlImmutability(atomOld, atom, &allErrs)
+	smoothoperatorvalidation.CheckUrlImmutability(
+		atomOld.Spec.Service.BaseURL,
+		atom.Spec.Service.BaseURL,
+		&allErrs,
+		field.NewPath("spec").Child("service").Child("baseUrl"),
+	)
 
 	ValidateAtom(c, atom, &warnings, &allErrs)
 
