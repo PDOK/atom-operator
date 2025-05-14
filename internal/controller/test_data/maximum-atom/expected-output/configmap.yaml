@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: maximum-atom-generator-mg8kmkb7c8
+  name: maximum-atom-generator-f9tftfg7bh
   namespace: default
   labels:
     test: test
@@ -30,21 +30,17 @@ data:
         subtitle: service-subtitle
         link:
           - href: https://test.com/path/index.xml
-            data: null
             rel: self
             type: application/atom+xml
             title: service-title
           - href: https://test.com/csw?uuid=00000000-0000-0000-0000-000000000000
-            data: null
             rel: describedby
             type: application/xml
           - href: https://test.com/html/00000000-0000-0000-0000-000000000000
-            data: null
             rel: related
             type: text/html
             title: NGR pagina voor deze download service
           - href: https://test.com/open/00000000-0000-0000-0000-000000000000.xml
-            data: null
             rel: search
             type: application/opensearchdescription+xml
             title: Open Search document voor INSPIRE Download service PDOK
@@ -58,11 +54,9 @@ data:
             summary: feed-1-subtitle
             link:
               - href: https://test.com/csw?uuid=00000000-0000-0000-0000-000000000001
-                data: null
                 rel: describedby
                 type: application/xml
               - href: https://test.com/path/feed-1.xml
-                data: null
                 rel: alternate
                 type: application/atom+xml
                 title: feed-1-title
@@ -79,11 +73,9 @@ data:
             summary: feed-2-subtitle
             link:
               - href: https://test.com/csw?uuid=00000000-0000-0000-0000-000000000003
-                data: null
                 rel: describedby
                 type: application/xml
               - href: https://test.com/path/feed-2.xml
-                data: null
                 rel: alternate
                 type: application/atom+xml
                 title: feed-2-title
@@ -104,24 +96,19 @@ data:
         subtitle: feed-1-subtitle
         link:
           - href: https://test.com/path/feed-1.xml
-            data: null
             rel: self
           - href: https://test.com/path/index.xml
-            data: null
             rel: up
             type: application/atom+xml
             title: Top Atom Download Service Feed
           - href: https://test.com/csw?uuid=00000000-0000-0000-0000-000000000001
-            data: null
             rel: describedby
             type: application/xml
           - href: https://test.com/html/00000000-0000-0000-0000-000000000001
-            data: null
             rel: related
             type: text/html
             title: NGR pagina voor deze dataset
           - href: https://test.com/encodingrule.pdf
-            data: null
             rel: encodingRule
             type: application/pdf
             hreflang: en
@@ -176,19 +163,15 @@ data:
         subtitle: feed-2-subtitle
         link:
           - href: https://test.com/path/feed-2.xml
-            data: null
             rel: self
           - href: https://test.com/path/index.xml
-            data: null
             rel: up
             type: application/atom+xml
             title: Top Atom Download Service Feed
           - href: https://test.com/csw?uuid=00000000-0000-0000-0000-000000000003
-            data: null
             rel: describedby
             type: application/xml
           - href: https://test.com/html/00000000-0000-0000-0000-000000000003
-            data: null
             rel: related
             type: text/html
             title: NGR pagina voor deze dataset

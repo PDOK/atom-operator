@@ -18,6 +18,8 @@ metadata:
       uid: ""
       blockOwnerDeletion: true
       controller: true
+  finalizers:
+    - uptime.pdok.nl/finalizer
 spec:
   routes:
     - kind: Rule
@@ -28,9 +30,7 @@ spec:
           port: 80
       middlewares:
         - name: minimal-atom-headers
-          namespace: default
         - name: minimal-atom-prefixstrip
-          namespace: default
     - kind: Rule
       match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/feed.xml`)
       services:
@@ -39,9 +39,7 @@ spec:
           port: 80
       middlewares:
         - name: minimal-atom-headers
-          namespace: default
         - name: minimal-atom-prefixstrip
-          namespace: default
     - kind: Rule
       match: (Host(`localhost`) || Host(`test.com`)) && PathPrefix(`/path/downloads/`)
       services:
@@ -51,6 +49,4 @@ spec:
           passHostHeader: false
       middlewares:
         - name: minimal-atom-headers
-          namespace: default
         - name: minimal-atom-downloads-0
-          namespace: default
