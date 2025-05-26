@@ -1,50 +1,18 @@
 package v3
 
 import (
-	//nolint:revive // ginkgo bdd
-	smoothoperatormodel "github.com/pdok/smooth-operator/model"
+	"fmt"
+	"sigs.k8s.io/yaml"
+
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	//"golang.org/x/net/context"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/rest"
+	"os"
 	"testing"
 )
-
-var (
-	cfg          *rest.Config
-	testTheme          = "TEST_THEME"
-	TestTTLInt32 int32 = 30
-)
-
-func getFilledAtomv3() *Atom {
-
-	return &Atom{
-		TypeMeta: metav1.TypeMeta{
-			Kind:       "Atom",
-			APIVersion: "v1",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "v3-asis-no-error-no-warning",
-			Labels: map[string]string{
-				"dataset-owner": "test_datasetowner",
-				"dataset":       "test_dataset",
-				"theme":         testTheme,
-				"service-type":  "test_servicetype",
-			},
-		},
-		Spec: AtomSpec{
-			Lifecycle: &smoothoperatormodel.Lifecycle{
-				TTLInDays: &TestTTLInt32,
-			},
-		},
-	}
-}
 
 func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 	myWarnings := []string{}
 	myAllErrors := field.ErrorList{}
 	type args struct {
-		atom     *Atom
 		warnings *[]string
 		allErrs  *field.ErrorList
 	}
@@ -54,17 +22,28 @@ func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 		{
-			name: "MyFirstTest",
+			name: "v3-asis-no-error-no-warning",
 			args: args{
-				atom:     getFilledAtomv3(),
 				warnings: &myWarnings,
 				allErrs:  &myAllErrors,
 			},
 		},
 	}
 	for _, tt := range tests {
+		input, err := os.ReadFile("test_data/input/" + tt.name + ".yaml")
+		if err != nil {
+			t.Errorf("os.ReadFile() error = %v ", err)
+		}
+		atom := &Atom{}
+		if err := yaml.Unmarshal(input, atom); err != nil {
+			t.Errorf("yaml.Unmarshal() error = %v", err)
+		}
+
 		t.Run(tt.name, func(t *testing.T) {
-			ValidateAtomWithoutClusterChecks(tt.args.atom, tt.args.warnings, tt.args.allErrs)
+			ValidateAtomWithoutClusterChecks(atom, tt.args.warnings, tt.args.allErrs)
+			if tt.args.warnings != nil {
+				fmt.Printf("tt.args.warnings: \n%v\n", tt.args.warnings)
+			}
 		})
 	}
 }
