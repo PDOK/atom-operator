@@ -34,17 +34,17 @@ func TestAtom_ConvertTo(t *testing.T) {
 	if len(testAtomV3.ObjectMeta.Labels) != len(convertToAtom.ObjectMeta.Labels) {
 		t.Errorf("ConvertTo() error = len(testAtomV3.ObjectMeta.Labels) ")
 	}
-	if testAtomV3.ObjectMeta.Labels["dataset-owner"] != convertToAtom.ObjectMeta.Labels["dataset-owner"] {
-		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label dataset-owner: ", testAtomV3.ObjectMeta.Labels["dataset-owner"], convertToAtom.ObjectMeta.Labels["dataset-owner"])
+	if testAtomV3.ObjectMeta.Labels["pdok.nl/owner-id"] != convertToAtom.ObjectMeta.Labels["pdok.nl/owner-id"] {
+		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label pdok.nl/owner-id: ", testAtomV3.ObjectMeta.Labels["pdok.nl/owner-id"], convertToAtom.ObjectMeta.Labels["pdok.nl/owner-id"])
 	}
-	if testAtomV3.ObjectMeta.Labels["dataset"] != convertToAtom.ObjectMeta.Labels["dataset"] {
-		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label dataset: ", testAtomV3.ObjectMeta.Labels["dataset"], convertToAtom.ObjectMeta.Labels["dataset"])
+	if testAtomV3.ObjectMeta.Labels["pdok.nl/dataset-id"] != convertToAtom.ObjectMeta.Labels["pdok.nl/dataset-id"] {
+		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label pdok.nl/dataset-id: ", testAtomV3.ObjectMeta.Labels["pdok.nl/dataset-id"], convertToAtom.ObjectMeta.Labels["pdok.nl/dataset-id"])
 	}
-	if testAtomV3.ObjectMeta.Labels["theme"] != convertToAtom.ObjectMeta.Labels["theme"] {
-		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label theme: ", testAtomV3.ObjectMeta.Labels["theme"], convertToAtom.ObjectMeta.Labels["theme"])
+	if testAtomV3.ObjectMeta.Labels["pdok.nl/tag"] != convertToAtom.ObjectMeta.Labels["pdok.nl/tag"] {
+		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label pdok.nl/tag: ", testAtomV3.ObjectMeta.Labels["pdok.nl/tag"], convertToAtom.ObjectMeta.Labels["pdok.nl/tag"])
 	}
-	if testAtomV3.ObjectMeta.Labels["service-type"] != convertToAtom.ObjectMeta.Labels["service-type"] {
-		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label service-type: ", testAtomV3.ObjectMeta.Labels["service-type"], convertToAtom.ObjectMeta.Labels["service-type"])
+	if testAtomV3.ObjectMeta.Labels["pdok.nl/service-type"] != convertToAtom.ObjectMeta.Labels["pdok.nl/service-type"] {
+		t.Errorf("ConvertTo() error = %v, expected: %v, got: %v", "label pdok.nl/service-type: ", testAtomV3.ObjectMeta.Labels["pdok.nl/service-type"], convertToAtom.ObjectMeta.Labels["pdok.nl/service-type"])
 	}
 	if atomic.LoadInt32(testAtomV3.Spec.Lifecycle.TTLInDays) != atomic.LoadInt32(convertToAtom.Spec.Lifecycle.TTLInDays) {
 		t.Errorf("ConvertTo() error = %v, expected: %d, got: %d", "TTLInDays: ", atomic.LoadInt32(testAtomV3.Spec.Lifecycle.TTLInDays), atomic.LoadInt32(convertToAtom.Spec.Lifecycle.TTLInDays))
@@ -73,10 +73,10 @@ func getTestAtomV2() *Atom {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test_me",
 			Labels: map[string]string{
-				"dataset-owner": "test_datasetowner",
-				"dataset":       "test_dataset",
-				"theme":         testTheme,
-				"service-type":  "test_servicetype",
+				"pdok.nl/owner-id":     "test_datasetowner",
+				"pdok.nl/dataset-id":   "test_dataset",
+				"pdok.nl/tag":          testTheme,
+				"pdok.nl/service-type": "test_servicetype",
 			},
 		},
 		Spec: AtomSpec{
@@ -162,10 +162,10 @@ func getFilledAtomv3() *pdoknlv3.Atom {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test_me",
 			Labels: map[string]string{
-				"dataset-owner": "test_datasetowner",
-				"dataset":       "test_dataset",
-				"theme":         testTheme,
-				"service-type":  "test_servicetype",
+				"pdok.nl/owner-id":     "test_datasetowner",
+				"pdok.nl/dataset-id":   "test_dataset",
+				"pdok.nl/tag":          testTheme,
+				"pdok.nl/service-type": "test_servicetype",
 			},
 		},
 		Spec: pdoknlv3.AtomSpec{

@@ -87,6 +87,12 @@ func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, allErrs *f
 		fieldPath = field.NewPath("metadata").Child("name")
 		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "should not contain atom", atom.GroupVersionKind(), atom.GetName())
 	}
+
+	if atom.ObjectMeta.Labels["pdok.nl/tag"] != "" {
+		fieldPath = field.NewPath("metadata").Child("labels").Child("pdok.nl/tag")
+		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "general.theme field is not supposed to be set", atom.GroupVersionKind(), atom.GetName())
+	}
+
 	var feedNames []string
 	for i, datasetFeed := range atom.Spec.Service.DatasetFeeds {
 		fieldPath = field.NewPath("spec").Child("service").Child("datasetFeeds").Index(i)
