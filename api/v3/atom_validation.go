@@ -90,7 +90,22 @@ func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, allErrs *f
 
 	if atom.ObjectMeta.Labels["pdok.nl/tag"] != "" {
 		fieldPath = field.NewPath("metadata").Child("labels").Child("pdok.nl/tag")
-		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "general.theme field is not supposed to be set", atom.GroupVersionKind(), atom.GetName())
+		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "field is not supposed to be set", atom.GroupVersionKind(), atom.GetName())
+	}
+
+	if atom.ObjectMeta.Labels["pdok.nl/dataset-id"] == "" {
+		fieldPath = field.NewPath("metadata").Child("labels").Child("pdok.nl/dataset-id")
+		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "label is missing.", atom.GroupVersionKind(), atom.GetName())
+	}
+
+	if atom.ObjectMeta.Labels["pdok.nl/owner-id"] == "" {
+		fieldPath = field.NewPath("metadata").Child("labels").Child("pdok.nl/owner-id")
+		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "label is missing.", atom.GroupVersionKind(), atom.GetName())
+	}
+
+	if atom.ObjectMeta.Labels["pdok.nl/service-type"] == "" {
+		fieldPath = field.NewPath("metadata").Child("labels").Child("pdok.nl/service-type")
+		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "label is missing.", atom.GroupVersionKind(), atom.GetName())
 	}
 
 	var feedNames []string

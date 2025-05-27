@@ -28,8 +28,16 @@ func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 		},
 		{
 			name:             "no-error-tag-warning",
-			expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/with-theme-warning: metadata.labels.pdok.nl/tag: general.theme field is not supposed to be set"},
+			expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/with-theme-warning: metadata.labels.pdok.nl/tag: field is not supposed to be set"},
 			expectedErrors:   &field.ErrorList{},
+		},
+		{
+			name: "no-error-missing-labels-warning",
+			expectedWarnings: &[]string{
+				"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/dataset-id: label is missing.",
+				"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/owner-id: label is missing.",
+				"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/service-type: label is missing."},
+			expectedErrors: &field.ErrorList{},
 		},
 	}
 	for _, tt := range tests {
