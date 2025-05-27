@@ -85,12 +85,12 @@ func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, allErrs *f
 	var fieldPath *field.Path
 	if strings.Contains(atom.GetName(), "atom") {
 		fieldPath = field.NewPath("metadata").Child("name")
-		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "should not contain atom", atom.GroupVersionKind(), atom.GetName())
+		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "should not contain atom.", atom.GroupVersionKind(), atom.GetName())
 	}
 
 	if atom.ObjectMeta.Labels["pdok.nl/tag"] != "" {
 		fieldPath = field.NewPath("metadata").Child("labels").Child("pdok.nl/tag")
-		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "field is not supposed to be set", atom.GroupVersionKind(), atom.GetName())
+		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "field is not supposed to be set.", atom.GroupVersionKind(), atom.GetName())
 	}
 
 	if atom.ObjectMeta.Labels["pdok.nl/dataset-id"] == "" {
@@ -106,6 +106,12 @@ func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, allErrs *f
 	if atom.ObjectMeta.Labels["pdok.nl/service-type"] == "" {
 		fieldPath = field.NewPath("metadata").Child("labels").Child("pdok.nl/service-type")
 		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "label is missing.", atom.GroupVersionKind(), atom.GetName())
+	}
+
+	versionLabel, ok := atom.ObjectMeta.Labels["pdok.nl/service-version"]
+	if ok && versionLabel != "" {
+		fieldPath = field.NewPath("metadata").Child("labels").Child("pdok.nl/service-version")
+		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "field is not supposed to be set.", atom.GroupVersionKind(), atom.GetName())
 	}
 
 	var feedNames []string
