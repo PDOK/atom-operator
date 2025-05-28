@@ -17,33 +17,25 @@ func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 	}{
 		// Lijst van testcases
 		{
-			name:             "no-error-no-warning",
+			name:             "1-no-error-no-warning",
 			expectedWarnings: &[]string{},
 			expectedErrors:   &field.ErrorList{},
 		},
 		{
-			name:             "no-error-atom-name-warning",
+			name:             "2-warning-atom-name",
 			expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/asis-readonly-prod-atom: metadata.name: should not contain atom"},
 			expectedErrors:   &field.ErrorList{},
 		},
-		//{
-		//	name:             "no-error-tag-warning",
-		//	expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/with-theme-warning: metadata.labels.pdok.nl/tag: field is not supposed to be set."},
-		//	expectedErrors:   &field.ErrorList{},
-		//},
-		//{
-		//	name: "no-error-missing-labels-warning",
-		//	expectedWarnings: &[]string{
-		//		"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/dataset-id: label is missing.",
-		//		"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/owner-id: label is missing.",
-		//		"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/service-type: label is missing."},
-		//	expectedErrors: &field.ErrorList{},
-		//},
-		//{
-		//	name:             "no-error-service-version-warning",
-		//	expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/with-service-version: metadata.labels.pdok.nl/service-version: field is not supposed to be set."},
-		//	expectedErrors:   &field.ErrorList{},
-		//},
+		{
+			name:             "3-error-dataset-metadata-id",
+			expectedWarnings: &[]string{},
+			expectedErrors: &field.ErrorList{&field.Error{
+				Type:     "FieldValueInvalid",
+				Field:    "spec.service.datasetFeeds[0].datasetMetadataLinks.metadataIdentifier",
+				BadValue: "2751ba40-5100-4186-81be-b7fdee95b49c",
+				Detail:   "should not be the same as spec.service.serviceMetadataLinks.metadataIdentifier",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		actualWarnings := []string{}
