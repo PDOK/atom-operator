@@ -36,6 +36,16 @@ func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 				Detail:   "should not be the same as spec.service.serviceMetadataLinks.metadataIdentifier",
 			}},
 		},
+		{
+			name:             "4-spatialDatasetIdentifierCode-error",
+			expectedWarnings: &[]string{},
+			expectedErrors: &field.ErrorList{&field.Error{
+				Type:     "FieldValueRequired",
+				Field:    "spec.service.datasetFeeds[0].spatialDatasetIdentifierCode",
+				BadValue: "",
+				Detail:   "when spec.service.datasetFeeds[0].datasetMetadataLinks exists",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		actualWarnings := []string{}
