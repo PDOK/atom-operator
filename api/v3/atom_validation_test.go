@@ -37,13 +37,23 @@ func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 			}},
 		},
 		{
-			name:             "4-spatialDatasetIdentifierCode-error",
+			name:             "4-spatialDatasetIdentifierCode-missing-error",
 			expectedWarnings: &[]string{},
 			expectedErrors: &field.ErrorList{&field.Error{
 				Type:     "FieldValueRequired",
 				Field:    "spec.service.datasetFeeds[0].spatialDatasetIdentifierCode",
 				BadValue: "",
 				Detail:   "when spec.service.datasetFeeds[0].datasetMetadataLinks exists",
+			}},
+		},
+		{
+			name:             "5-spatialDatasetIdentifierNamespace-missing-error",
+			expectedWarnings: &[]string{},
+			expectedErrors: &field.ErrorList{&field.Error{
+				Type:     "FieldValueRequired",
+				Field:    "spec.service.datasetFeeds[0].spatialDatasetIdentifierNamespace",
+				BadValue: "",
+				Detail:   "when spec.service.datasetFeeds[0].spatialDatasetIdentifierCode exists",
 			}},
 		},
 	}
