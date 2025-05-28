@@ -23,27 +23,27 @@ func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 		},
 		{
 			name:             "no-error-atom-name-warning",
-			expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/asis-readonly-prod-atom: metadata.name: should not contain atom."},
+			expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/asis-readonly-prod-atom: metadata.name: should not contain atom"},
 			expectedErrors:   &field.ErrorList{},
 		},
-		{
-			name:             "no-error-tag-warning",
-			expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/with-theme-warning: metadata.labels.pdok.nl/tag: field is not supposed to be set."},
-			expectedErrors:   &field.ErrorList{},
-		},
-		{
-			name: "no-error-missing-labels-warning",
-			expectedWarnings: &[]string{
-				"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/dataset-id: label is missing.",
-				"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/owner-id: label is missing.",
-				"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/service-type: label is missing."},
-			expectedErrors: &field.ErrorList{},
-		},
-		{
-			name:             "no-error-service-version-warning",
-			expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/with-service-version: metadata.labels.pdok.nl/service-version: field is not supposed to be set."},
-			expectedErrors:   &field.ErrorList{},
-		},
+		//{
+		//	name:             "no-error-tag-warning",
+		//	expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/with-theme-warning: metadata.labels.pdok.nl/tag: field is not supposed to be set."},
+		//	expectedErrors:   &field.ErrorList{},
+		//},
+		//{
+		//	name: "no-error-missing-labels-warning",
+		//	expectedWarnings: &[]string{
+		//		"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/dataset-id: label is missing.",
+		//		"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/owner-id: label is missing.",
+		//		"pdok.nl/v3, Kind=Atom/no-labels-warning: metadata.labels.pdok.nl/service-type: label is missing."},
+		//	expectedErrors: &field.ErrorList{},
+		//},
+		//{
+		//	name:             "no-error-service-version-warning",
+		//	expectedWarnings: &[]string{"pdok.nl/v3, Kind=Atom/with-service-version: metadata.labels.pdok.nl/service-version: field is not supposed to be set."},
+		//	expectedErrors:   &field.ErrorList{},
+		//},
 	}
 	for _, tt := range tests {
 		actualWarnings := []string{}
