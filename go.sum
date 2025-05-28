@@ -152,8 +152,8 @@ github.com/patrickmn/go-cache v2.1.0+incompatible h1:HRMgzkcYKYpi3C8ajMPV8OFXaaR
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
 github.com/pdok/atom-generator v0.6.4 h1:UpTTSKskdWLnxTAhSNOlz8dF2tBousD97V03kWzCV2k=
 github.com/pdok/atom-generator v0.6.4/go.mod h1:IlPwti5ocXDTjB4xmz0ZpHCOW/suuW5gQMfjfwPX6uM=
-github.com/pdok/smooth-operator v0.1.1 h1:rmsup4HmzJsxt4ZT9GWfj498dKLRfDhyuILeEkjju/A=
-github.com/pdok/smooth-operator v0.1.1/go.mod h1:przwM7mBGmNPqabyhImKVZ15WL4zbqLqH4ExbuWKhWE=
+github.com/pdok/smooth-operator v0.1.2 h1:ibGRgFjKysu665IUToQhs34hHhptftI+7RBFrGNw4nQ=
+github.com/pdok/smooth-operator v0.1.2/go.mod h1:przwM7mBGmNPqabyhImKVZ15WL4zbqLqH4ExbuWKhWE=
 github.com/pelletier/go-toml v1.6.0/go.mod h1:5N711Q9dKgbdkxHL+MEfF31hpT7l0S0s/t2kKREewys=
 github.com/peterbourgon/ff v1.7.1 h1:xt1lxTG+Nr2+tFtysY7abFgPoH3Lug8CwYJMOmJRXhk=
 github.com/peterbourgon/ff v1.7.1/go.mod h1:fYI5YA+3RDqQRExmFbHnBjEeWzh9TrS8rnRpEq7XIg0=

@@ -348,6 +348,21 @@ spec:
           spec:
             description: AtomSpec defines the desired state of Atom.
             properties:
+              ingressRouteUrls:
+                description: |-
+                  Optional list of URLs where the service can be reached
+                  By default only the spec.service.baseUrl is used
+                items:
+                  properties:
+                    url:
+                      pattern: ^https?://.+/.+
+                      type: string
+                  required:
+                  - url
+                  type: object
+                maxItems: 30
+                minItems: 1
+                type: array
               lifecycle:
                 description: Optional lifecycle settings
                 properties:
@@ -704,6 +719,11 @@ spec:
             required:
             - service
             type: object
+            x-kubernetes-validations:
+            - messageExpression: '''ingressRouteUrls should include service.baseUrl
+                ''+self.service.baseUrl'
+              rule: '!has(self.ingressRouteUrls) || self.ingressRouteUrls.exists_one(x,
+                x.url == self.service.baseUrl)'
           status:
             description: OperatorStatus defines the observed state of an Atom/WFS/WMS/....
             properties:

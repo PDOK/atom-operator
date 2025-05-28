@@ -18,8 +18,6 @@ metadata:
       uid: ""
       blockOwnerDeletion: true
       controller: true
-  finalizers:
-    - uptime.pdok.nl/finalizer
 spec:
   routes:
     - kind: Rule
@@ -51,6 +49,45 @@ spec:
         - name: maximum-atom-prefixstrip
     - kind: Rule
       match: (Host(`localhost`) || Host(`test.com`)) && PathPrefix(`/path/downloads/`)
+      services:
+        - kind: Service
+          name: azure-storage
+          port: azure-storage
+          passHostHeader: false
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-downloads-0
+        - name: maximum-atom-downloads-1
+        - name: maximum-atom-downloads-2
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/other/index.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/other/feed-1.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/other/feed-2.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && PathPrefix(`/path/other/downloads/`)
       services:
         - kind: Service
           name: azure-storage

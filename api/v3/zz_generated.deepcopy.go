@@ -104,6 +104,13 @@ func (in *AtomSpec) DeepCopyInto(out *AtomSpec) {
 		*out = new(model.Lifecycle)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.IngressRouteURLs != nil {
+		in, out := &in.IngressRouteURLs, &out.IngressRouteURLs
+		*out = make(model.IngressRouteURLs, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
+		}
+	}
 	in.Service.DeepCopyInto(&out.Service)
 }
 

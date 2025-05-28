@@ -6,6 +6,9 @@ metadata:
   labels:
     test: test
 spec:
+  ingressRouteUrls:
+    - url: https://test.com/path/
+    - url: https://test.com/path/other/
   service:
     baseUrl: https://test.com/path/
     stylesheet: https://test.com/stylesheet

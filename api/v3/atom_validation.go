@@ -48,6 +48,8 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 		field.NewPath("spec").Child("service").Child("baseUrl"),
 	)
 
+	smoothoperatorvalidation.ValidateIngressRouteURLsNotRemoved(atomOld.Spec.IngressRouteURLs, atom.Spec.IngressRouteURLs, &allErrs, nil)
+
 	ValidateAtom(c, atom, &warnings, &allErrs)
 
 	if len(allErrs) == 0 {
@@ -87,9 +89,19 @@ func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, allErrs *f
 		fieldPath = field.NewPath("metadata").Child("name")
 		smoothoperatorvalidation.AddWarning(warnings, *fieldPath, "should not contain atom", atom.GroupVersionKind(), atom.GetName())
 	}
+
+	validateDatasetFeeds(atom, allErrs)
+
+	err := smoothoperatorvalidation.ValidateIngressRouteURLsContainsBaseURL(atom.Spec.IngressRouteURLs, atom.Spec.Service.BaseURL, nil)
+	if err != nil {
+		*allErrs = append(*allErrs, err)
+	}
+}
+
+func validateDatasetFeeds(atom *Atom, allErrs *field.ErrorList) {
 	var feedNames []string
 	for i, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		fieldPath = field.NewPath("spec").Child("service").Child("datasetFeeds").Index(i)
+		fieldPath := field.NewPath("spec").Child("service").Child("datasetFeeds").Index(i)
 
 		if slices.Contains(feedNames, datasetFeed.TechnicalName) {
 			*allErrs = append(*allErrs, field.Duplicate(fieldPath.Child("technicalName"), datasetFeed.TechnicalName))
