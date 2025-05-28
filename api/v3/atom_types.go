@@ -35,9 +35,14 @@ var baseURL string
 var blobEndpoint string
 
 // AtomSpec defines the desired state of Atom.
+// +kubebuilder:validation:XValidation:rule="!has(self.ingressRouteUrls) || self.ingressRouteUrls.exists_one(x, x.url == self.service.baseUrl)",messageExpression="'ingressRouteUrls should include service.baseUrl '+self.service.baseUrl"
 type AtomSpec struct {
 	// Optional lifecycle settings
 	Lifecycle *smoothoperatormodel.Lifecycle `json:"lifecycle,omitempty"`
+
+	// Optional list of URLs where the service can be reached
+	// By default only the spec.service.baseUrl is used
+	IngressRouteURLs smoothoperatormodel.IngressRouteURLs `json:"ingressRouteUrls,omitempty"`
 
 	// Service specification
 	Service Service `json:"service"`

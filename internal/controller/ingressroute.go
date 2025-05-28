@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strconv"
 
+	smoothoperatormodel "github.com/pdok/smooth-operator/model"
+
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothutil "github.com/pdok/smooth-operator/pkg/util"
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
@@ -40,61 +42,8 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		"uptime.pdok.nl/tags": "public-stats,atom",
 	}
 
-	ingressRoute.Spec = traefikiov1alpha1.IngressRouteSpec{
-		Routes: []traefikiov1alpha1.Route{
-			{
-				Kind:  "Rule",
-				Match: getMatchRule(baseURL.JoinPath("index.xml"), false),
-				Services: []traefikiov1alpha1.Service{
-					{
-						LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
-							Name: getBareService(atom).GetName(),
-							Kind: "Service",
-							Port: intstr.FromInt32(atomPortNr),
-						},
-					},
-				},
-				Middlewares: []traefikiov1alpha1.MiddlewareRef{
-					{
-						Name: atom.Name + headersSuffix,
-					},
-					{
-						Name: atom.Name + stripPrefixSuffix,
-					},
-				},
-			},
-		},
-	}
-
-	// Set additional routes per datasetFeed
-	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
-		matchRule := getMatchRule(baseURL.JoinPath(datasetFeed.TechnicalName+".xml"), false)
-		rule := getDefaultRule(atom, matchRule)
-		ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, rule)
-	}
-
-	azureStorageRule := traefikiov1alpha1.Route{
-		Kind:  "Rule",
-		Match: getMatchRule(baseURL.JoinPath("downloads/"), true),
-		Services: []traefikiov1alpha1.Service{
-			{
-				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
-					Name:           "azure-storage",
-					Port:           intstr.IntOrString{Type: intstr.String, StrVal: "azure-storage"},
-					PassHostHeader: smoothutil.Pointer(false),
-					Kind:           "Service",
-				},
-			},
-		},
-		Middlewares: []traefikiov1alpha1.MiddlewareRef{
-			{
-				Name: atom.Name + headersSuffix,
-			},
-		},
-	}
-
-	var downloadMiddlewares []traefikiov1alpha1.MiddlewareRef
 	// Set additional Azure storage middleware per download link
+	var downloadMiddlewares []traefikiov1alpha1.MiddlewareRef
 	for _, group := range getDownloadLinkGroups(atom.GetDownloadLinks()) {
 		middlewareRef := traefikiov1alpha1.MiddlewareRef{
 			Name: atom.Name + downloadsSuffix + strconv.Itoa(*group.index),
@@ -106,12 +55,14 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 		return downloadMiddlewares[i].Name < downloadMiddlewares[j].Name
 	})
 
-	azureStorageRule.Middlewares = append(azureStorageRule.Middlewares, downloadMiddlewares...)
-
-	ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, azureStorageRule)
-
-	// Add finalizers
-	ingressRoute.Finalizers = []string{"uptime.pdok.nl/finalizer"}
+	ingressRoute.Spec.Routes = []traefikiov1alpha1.Route{}
+	if len(atom.Spec.IngressRouteURLs) > 0 {
+		for _, ingressRouteURL := range atom.Spec.IngressRouteURLs {
+			ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, getRoutesForURL(atom, ingressRouteURL.URL, downloadMiddlewares)...)
+		}
+	} else {
+		ingressRoute.Spec.Routes = getRoutesForURL(atom, atom.Spec.Service.BaseURL, downloadMiddlewares)
+	}
 
 	if err := smoothutil.EnsureSetGVK(r.Client, ingressRoute, ingressRoute); err != nil {
 		return err
@@ -151,4 +102,42 @@ func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Rou
 			},
 		},
 	}
+}
+
+func getRoutesForURL(atom *pdoknlv3.Atom, url smoothoperatormodel.URL, downloadMiddlewares []traefikiov1alpha1.MiddlewareRef) []traefikiov1alpha1.Route {
+	routes := []traefikiov1alpha1.Route{
+		getDefaultRule(atom, getMatchRule(url.JoinPath("index.xml"), false)),
+	}
+
+	// Set additional routes per datasetFeed
+	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
+		matchRule := getMatchRule(url.JoinPath(datasetFeed.TechnicalName+".xml"), false)
+		rule := getDefaultRule(atom, matchRule)
+		routes = append(routes, rule)
+	}
+
+	// Add Azure storage rule
+	azureStorageRule := traefikiov1alpha1.Route{
+		Kind:  "Rule",
+		Match: getMatchRule(url.JoinPath("downloads/"), true),
+		Services: []traefikiov1alpha1.Service{
+			{
+				LoadBalancerSpec: traefikiov1alpha1.LoadBalancerSpec{
+					Name:           "azure-storage",
+					Port:           intstr.IntOrString{Type: intstr.String, StrVal: "azure-storage"},
+					PassHostHeader: smoothutil.Pointer(false),
+					Kind:           "Service",
+				},
+			},
+		},
+		Middlewares: append([]traefikiov1alpha1.MiddlewareRef{
+			{
+				Name: atom.Name + headersSuffix,
+			}},
+			downloadMiddlewares...,
+		),
+	}
+	routes = append(routes, azureStorageRule)
+
+	return routes
 }
