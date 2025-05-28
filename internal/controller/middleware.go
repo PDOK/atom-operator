@@ -93,11 +93,14 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, prefi
 		return err
 	}
 
-	baseURL := atom.Spec.Service.BaseURL
+	ingressRouteURLs := atom.Spec.IngressRouteURLs
+	if len(ingressRouteURLs) == 0 {
+		ingressRouteURLs = smoothoperatormodel.IngressRouteURLs{{URL: atom.Spec.Service.BaseURL}}
+	}
 
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		ReplacePathRegex: &dynamic.ReplacePathRegex{
-			Regex:       getDownloadLinkRegex(baseURL, files),
+			Regex:       getDownloadLinkRegex(ingressRouteURLs, files),
 			Replacement: "/" + prefix + "/$1",
 		},
 	}
@@ -108,8 +111,18 @@ func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, prefi
 	return ctrl.SetControllerReference(atom, middleware, r.Scheme)
 }
 
-func getDownloadLinkRegex(url smoothoperatormodel.URL, files []string) string {
-	return "^" + url.JoinPath("downloads", "("+strings.Join(files, "|")+")").Path
+func getDownloadLinkRegex(ingressRouteURLs smoothoperatormodel.IngressRouteURLs, files []string) string {
+	if len(ingressRouteURLs) == 1 {
+		return "^" + ingressRouteURLs[0].URL.JoinPath("downloads", "("+strings.Join(files, "|")+")").Path
+	}
+
+	paths := []string{}
+	for _, ingressRouteURL := range ingressRouteURLs {
+		paths = append(paths, ingressRouteURL.URL.Path)
+	}
+
+	return "^(" + strings.Join(paths, "|") + ")/downloads/" + "(" + strings.Join(files, "|") + ")"
+
 }
 
 func getDownloadLinkGroups(links []pdoknlv3.DownloadLink) map[string]struct {
