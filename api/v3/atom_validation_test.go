@@ -66,6 +66,16 @@ func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 				Detail:   "when spec.service.datasetFeeds[0].entries[0].downloadlinks has 2 or more elements",
 			}},
 		},
+		{
+			name:             "7-duplicate-entry-tech-name-error",
+			expectedWarnings: &[]string{},
+			expectedErrors: &field.ErrorList{&field.Error{
+				Type:     "FieldValueDuplicate",
+				Field:    "spec.service.datasetFeeds[0].entries[0].entries[1].technicalName",
+				BadValue: "wetlands",
+				Detail:   "",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		actualWarnings := []string{}
