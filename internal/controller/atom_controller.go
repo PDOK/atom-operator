@@ -28,6 +28,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"time"
 
 	policyv1 "k8s.io/api/policy/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -129,6 +130,13 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 			lgr.Error(err, "unable to fetch OwnerInfo resource", "error", err)
 		}
 		return result, client.IgnoreNotFound(err)
+	}
+
+	// Check TTL expiry
+	if ttlExpired(atom) {
+		err = r.Client.Delete(ctx, atom)
+
+		return result, err
 	}
 
 	lgr.Info("creating resources for atom", "atom", atom)
@@ -257,4 +265,14 @@ func getLabels(atom *pdoknlv3.Atom) map[string]string {
 	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
 	labels[appLabelKey] = appName
 	return labels
+}
+
+func ttlExpired(atom *pdoknlv3.Atom) bool {
+	if lifecycle := atom.Spec.Lifecycle; lifecycle != nil && lifecycle.TTLInDays != nil {
+		expiresAt := atom.GetCreationTimestamp().Add(time.Duration(*lifecycle.TTLInDays) * 24 * time.Hour)
+
+		return expiresAt.Before(time.Now())
+	}
+
+	return false
 }
