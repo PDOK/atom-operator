@@ -56,6 +56,16 @@ func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 				Detail:   "when spec.service.datasetFeeds[0].spatialDatasetIdentifierCode exists",
 			}},
 		},
+		{
+			name:             "6-entry-content-missing-error",
+			expectedWarnings: &[]string{},
+			expectedErrors: &field.ErrorList{&field.Error{
+				Type:     "FieldValueRequired",
+				Field:    "spec.service.datasetFeeds[0].entries[0].content",
+				BadValue: "",
+				Detail:   "when spec.service.datasetFeeds[0].entries[0].downloadlinks has 2 or more elements",
+			}},
+		},
 	}
 	for _, tt := range tests {
 		actualWarnings := []string{}
