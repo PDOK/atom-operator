@@ -30,6 +30,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/pdok/smooth-operator/model"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/pdok/atom-generator/feeds"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -42,6 +44,7 @@ import (
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	smoothoperatorutils "github.com/pdok/smooth-operator/pkg/util"
 	smoothoperatorvalidation "github.com/pdok/smooth-operator/pkg/validation"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -199,6 +202,40 @@ var _ = Describe("Testing Atom Controller", func() {
 				return Expect(err).NotTo(HaveOccurred()) &&
 					Expect(deployment.Spec.MinReadySeconds).To(BeEquivalentTo(originalMinReadySeconds))
 			}, "10s", "1s").Should(BeTrue())
+		})
+
+		It("Respects the TTL of the WMS", func() {
+			By("Creating a new resource for the Kind WMS")
+			controllerReconciler := &AtomReconciler{
+				Client:             k8sClient,
+				Scheme:             k8sClient.Scheme(),
+				AtomGeneratorImage: testImageName1,
+				LighttpdImage:      testImageName2,
+			}
+
+			ttlName := testAtom.GetName() + "-ttl"
+			ttlAtom := testAtom.DeepCopy()
+			ttlAtom.Name = ttlName
+			ttlAtom.Spec.Lifecycle = &model.Lifecycle{TTLInDays: smoothoperatorutils.Pointer(int32(0))}
+			objectKeyTTLAtom := client.ObjectKeyFromObject(ttlAtom)
+
+			err := k8sClient.Get(ctx, objectKeyTTLAtom, ttlAtom)
+			Expect(client.IgnoreNotFound(err)).To(Not(HaveOccurred()))
+			if err != nil && apierrors.IsNotFound(err) {
+				Expect(k8sClient.Create(ctx, ttlAtom)).To(Succeed())
+			}
+
+			// Reconcile
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{NamespacedName: objectKeyTTLAtom})
+			Expect(err).To(Not(HaveOccurred()))
+
+			// Check the WMS cannot be found anymore
+			Eventually(func() bool {
+				err = k8sClient.Get(ctx, objectKeyTTLAtom, ttlAtom)
+				return apierrors.IsNotFound(err)
+			}, "10s", "1s").Should(BeTrue())
+
+			// Not checking owned resources because the test env does not do garbage collection
 		})
 
 		It("Should cleanup the cluster", func() {
