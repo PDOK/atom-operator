@@ -41,12 +41,14 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 	var allErrs field.ErrorList
 	smoothoperatorvalidation.ValidateLabelsOnUpdate(atomOld.Labels, atom.Labels, &allErrs)
 
-	smoothoperatorvalidation.CheckUrlImmutability(
-		atomOld.Spec.Service.BaseURL,
-		atom.Spec.Service.BaseURL,
-		&allErrs,
-		field.NewPath("spec").Child("service").Child("baseUrl"),
-	)
+	if atom.Spec.IngressRouteURLs == nil {
+		smoothoperatorvalidation.CheckURLImmutability(
+			atomOld.Spec.Service.BaseURL,
+			atom.Spec.Service.BaseURL,
+			&allErrs,
+			field.NewPath("spec").Child("service").Child("baseUrl"),
+		)
+	}
 
 	smoothoperatorvalidation.ValidateIngressRouteURLsNotRemoved(atomOld.Spec.IngressRouteURLs, atom.Spec.IngressRouteURLs, &allErrs, nil)
 
