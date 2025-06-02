@@ -143,7 +143,7 @@ var _ = Describe("Atom Webhook", func() {
 			Expect(errors).To(BeNil())
 			Expect(len(warnings)).To(Equal(0))
 
-			By("simulating a valid update scenario")
+			By("simulating an invalid update scenario. Lablels are immutable")
 			input, err = os.ReadFile("test_data/input/5-update-error-labels-immutable.yaml")
 			Expect(err).NotTo(HaveOccurred())
 			atomNew := &pdoknlv3.Atom{}
@@ -152,6 +152,30 @@ var _ = Describe("Atom Webhook", func() {
 			warnings, errors = validator.ValidateUpdate(ctx, atomOld, atomNew)
 
 			expectedError := fmt.Errorf("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels.pdok.nl/dataset-id: Invalid value: \"wetlands-changed\": immutable: should be wetlands")
+			Expect(len(warnings)).To(Equal(0))
+			Expect(expectedError.Error()).To(Equal(errors.Error()))
+		})
+
+		It("Should deny update atom with error URL are immutable", func() {
+			By("simulating a valid creation scenario")
+			input, err := os.ReadFile("test_data/input/1-create-no-error-no-warning.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			atomOld := &pdoknlv3.Atom{}
+			err = yaml.Unmarshal(input, atomOld)
+			Expect(err).NotTo(HaveOccurred())
+			warnings, errors := validator.ValidateCreate(ctx, atomOld)
+			Expect(errors).To(BeNil())
+			Expect(len(warnings)).To(Equal(0))
+
+			By("simulating an invalid update scenario. URL is immutable")
+			input, err = os.ReadFile("test_data/input/6-update-error-url-immutable.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			atomNew := &pdoknlv3.Atom{}
+			err = yaml.Unmarshal(input, atomNew)
+			Expect(err).NotTo(HaveOccurred())
+			warnings, errors = validator.ValidateUpdate(ctx, atomOld, atomNew)
+
+			expectedError := fmt.Errorf("Atom.pdok.nl \"asis-readonly-prod\" is invalid: spec.service.baseUrl: Forbidden: is immutable")
 			Expect(len(warnings)).To(Equal(0))
 			Expect(expectedError.Error()).To(Equal(errors.Error()))
 		})
