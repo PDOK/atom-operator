@@ -71,6 +71,7 @@ var _ = Describe("Atom Webhook", func() {
 			Expect(errors).To(BeNil())
 			Expect(len(warnings)).To(Equal(0))
 		})
+
 		It("Should deny creation if no labels are available", func() {
 			By("simulating an invalid creation scenario")
 			input, err := os.ReadFile("test_data/input/2-create-error-no-lables.yaml")
@@ -106,6 +107,29 @@ var _ = Describe("Atom Webhook", func() {
 			Expect(errors).To(BeNil())
 			Expect(len(warnings)).To(Equal(0))
 		})
-	})
 
+		It("Should deny update atom with error label names are immutable", func() {
+			By("simulating a valid creation scenario")
+			input, err := os.ReadFile("test_data/input/1-create-no-error-no-warning.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			atomOld := &pdoknlv3.Atom{}
+			err = yaml.Unmarshal(input, atomOld)
+			Expect(err).NotTo(HaveOccurred())
+			warnings, errors := validator.ValidateCreate(ctx, atomOld)
+			Expect(errors).To(BeNil())
+			Expect(len(warnings)).To(Equal(0))
+
+			By("simulating a valid update scenario")
+			input, err = os.ReadFile("test_data/input/4-update-error-labels-immutable.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			atomNew := &pdoknlv3.Atom{}
+			err = yaml.Unmarshal(input, atomNew)
+			Expect(err).NotTo(HaveOccurred())
+			warnings, errors = validator.ValidateUpdate(ctx, atomOld, atomNew)
+
+			expectedError := fmt.Errorf("Atom.pdok.nl \"asis-readonly-prod\" is invalid: [metadata.labels.pdok.nl/dataset-id: Required value: labels cannot be removed, metadata.labels.pdok.nl/dataset-idsssssssss: Forbidden: new labels cannot be added]")
+			Expect(len(warnings)).To(Equal(0))
+			Expect(expectedError.Error()).To(Equal(errors.Error()))
+		})
+	})
 })
