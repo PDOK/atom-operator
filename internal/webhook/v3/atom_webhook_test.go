@@ -27,6 +27,8 @@ package v3
 import (
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
+	"os"
+	"sigs.k8s.io/yaml"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	// TODO (user): Add any additional imports if needed
@@ -42,11 +44,14 @@ var _ = Describe("Atom Webhook", func() {
 	BeforeEach(func() {
 		obj = &pdoknlv3.Atom{}
 		oldObj = &pdoknlv3.Atom{}
-		validator = AtomCustomValidator{}
+		validator = AtomCustomValidator{
+			Client: k8sClient,
+		}
 		Expect(validator).NotTo(BeNil(), "Expected validator to be initialized")
 		Expect(oldObj).NotTo(BeNil(), "Expected oldObj to be initialized")
 		Expect(obj).NotTo(BeNil(), "Expected obj to be initialized")
 		// TODO (user): Add any setup logic common to all tests
+
 	})
 
 	AfterEach(func() {
@@ -56,12 +61,19 @@ var _ = Describe("Atom Webhook", func() {
 	Context("When creating or updating Atom under Validating Webhook", func() {
 		// TODO (user): Add logic for validating webhooks
 		// Example:
-		// It("Should deny creation if a required field is missing", func() {
-		//     By("simulating an invalid creation scenario")
-		//     obj.SomeRequiredField = ""
-		//     Expect(validator.ValidateCreate(ctx, obj)).Error().To(HaveOccurred())
-		// })
-		//
+		It("Should deny creation if a required field is missing", func() {
+			By("simulating an invalid creation scenario")
+			input, err := os.ReadFile("test_data/input/1-no-error-no-warning.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			atom := &pdoknlv3.Atom{}
+			err = yaml.Unmarshal(input, atom)
+			Expect(err).NotTo(HaveOccurred())
+			println(atom.Spec.Service.OwnerInfoRef)
+			warnings, errors := validator.ValidateCreate(ctx, atom)
+			Expect(errors).To(BeNil())
+			Expect(len(warnings)).To(Equal(0))
+		})
+
 		// It("Should admit creation if all required fields are present", func() {
 		//     By("simulating an invalid creation scenario")
 		//     obj.SomeRequiredField = "valid_value"
