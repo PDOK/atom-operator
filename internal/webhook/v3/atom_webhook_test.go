@@ -62,7 +62,7 @@ var _ = Describe("Atom Webhook", func() {
 	Context("When creating or updating Atom under Validating Webhook", func() {
 		It("Should create atom without errors or warnings", func() {
 			By("simulating a valid creation scenario")
-			input, err := os.ReadFile("test_data/input/1-no-error-no-warning.yaml")
+			input, err := os.ReadFile("test_data/input/1-create-no-error-no-warning.yaml")
 			Expect(err).NotTo(HaveOccurred())
 			atom := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atom)
@@ -73,7 +73,7 @@ var _ = Describe("Atom Webhook", func() {
 		})
 		It("Should deny creation if no labels are available", func() {
 			By("simulating an invalid creation scenario")
-			input, err := os.ReadFile("test_data/input/2-error-no-lables.yaml")
+			input, err := os.ReadFile("test_data/input/2-create-error-no-lables.yaml")
 			Expect(err).NotTo(HaveOccurred())
 			atom := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atom)
@@ -83,6 +83,28 @@ var _ = Describe("Atom Webhook", func() {
 			expectedError := fmt.Errorf("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels: Required value: can't be empty")
 			Expect(len(warnings)).To(Equal(0))
 			Expect(expectedError.Error()).To(Equal(errors.Error()))
+		})
+
+		It("Should create and update atom without errors or warnings", func() {
+			By("simulating a valid creation scenario")
+			input, err := os.ReadFile("test_data/input/1-create-no-error-no-warning.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			atomOld := &pdoknlv3.Atom{}
+			err = yaml.Unmarshal(input, atomOld)
+			Expect(err).NotTo(HaveOccurred())
+			warnings, errors := validator.ValidateCreate(ctx, atomOld)
+			Expect(errors).To(BeNil())
+			Expect(len(warnings)).To(Equal(0))
+
+			By("simulating a valid update scenario")
+			input, err = os.ReadFile("test_data/input/3-update-no-error-no-warning.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			atomNew := &pdoknlv3.Atom{}
+			err = yaml.Unmarshal(input, atomNew)
+			Expect(err).NotTo(HaveOccurred())
+			warnings, errors = validator.ValidateUpdate(ctx, atomOld, atomNew)
+			Expect(errors).To(BeNil())
+			Expect(len(warnings)).To(Equal(0))
 		})
 	})
 
