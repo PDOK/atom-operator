@@ -25,6 +25,7 @@ SOFTWARE.
 package v3
 
 import (
+	"fmt"
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 	"os"
@@ -59,33 +60,30 @@ var _ = Describe("Atom Webhook", func() {
 	})
 
 	Context("When creating or updating Atom under Validating Webhook", func() {
-		// TODO (user): Add logic for validating webhooks
-		// Example:
-		It("Should deny creation if a required field is missing", func() {
-			By("simulating an invalid creation scenario")
+		It("Should create atom without errors or warnings", func() {
+			By("simulating a valid creation scenario")
 			input, err := os.ReadFile("test_data/input/1-no-error-no-warning.yaml")
 			Expect(err).NotTo(HaveOccurred())
 			atom := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atom)
 			Expect(err).NotTo(HaveOccurred())
-			println(atom.Spec.Service.OwnerInfoRef)
 			warnings, errors := validator.ValidateCreate(ctx, atom)
 			Expect(errors).To(BeNil())
 			Expect(len(warnings)).To(Equal(0))
 		})
+		It("Should deny creation if no labels are available", func() {
+			By("simulating an invalid creation scenario")
+			input, err := os.ReadFile("test_data/input/2-error-no-lables.yaml")
+			Expect(err).NotTo(HaveOccurred())
+			atom := &pdoknlv3.Atom{}
+			err = yaml.Unmarshal(input, atom)
+			Expect(err).NotTo(HaveOccurred())
+			warnings, errors := validator.ValidateCreate(ctx, atom)
 
-		// It("Should admit creation if all required fields are present", func() {
-		//     By("simulating an invalid creation scenario")
-		//     obj.SomeRequiredField = "valid_value"
-		//     Expect(validator.ValidateCreate(ctx, obj)).To(BeNil())
-		// })
-		//
-		// It("Should validate updates correctly", func() {
-		//     By("simulating a valid update scenario")
-		//     oldObj.SomeRequiredField = "updated_value"
-		//     obj.SomeRequiredField = "updated_value"
-		//     Expect(validator.ValidateUpdate(ctx, oldObj, obj)).To(BeNil())
-		// })
+			expectedError := fmt.Errorf("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels: Required value: can't be empty")
+			Expect(len(warnings)).To(Equal(0))
+			Expect(expectedError.Error()).To(Equal(errors.Error()))
+		})
 	})
 
 })

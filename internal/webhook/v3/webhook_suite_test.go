@@ -134,12 +134,12 @@ var _ = BeforeSuite(func() {
 	By("creating manager namespace")
 
 	clientset, err := kubernetes.NewForConfig(cfg)
-	namespace22 := &corev1.Namespace{
+	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "services",
 		},
 	}
-	clientset.CoreV1().Namespaces().Create(ctx, namespace22, metav1.CreateOptions{})
+	clientset.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
 	ownerInfo, err := samples.OwnerInfoSample()
 	Expect(err).NotTo(HaveOccurred())
