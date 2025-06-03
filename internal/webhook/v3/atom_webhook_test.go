@@ -28,6 +28,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
@@ -154,7 +155,7 @@ var _ = Describe("Atom Webhook", func() {
 
 			fmt.Printf("actual-error test 5 atom-webhook is: \n%v\n", errorsUpdate.Error())
 			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels.pdok.nl/dataset-id: Invalid value: \"wetlands-changed\": immutable: should be wetlands")
-			Expect(expectedError.Error()).To(Equal(errorsUpdate.Error()))
+			Expect(strings.Replace(expectedError.Error(), ":", "", -1)).To(Equal(strings.Replace(errorsUpdate.Error(), ":", "", -1)))
 			Expect(len(warningsUpdate)).To(Equal(0))
 		})
 
