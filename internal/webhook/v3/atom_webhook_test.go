@@ -155,7 +155,7 @@ var _ = Describe("Atom Webhook", func() {
 
 			fmt.Printf("actual-error test 5 atom-webhook is: \n%v\n", errorsUpdate.Error())
 			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels.pdok.nl/dataset-id: Invalid value: \"wetlands-changed\": immutable: should be wetlands")
-			Expect(strings.Replace(expectedError.Error(), ":", "", -1)).To(Equal(strings.Replace(errorsUpdate.Error(), ":", "", -1)))
+			Expect(strings.ReplaceAll(expectedError.Error(), ":", "")).To(Equal(strings.ReplaceAll(errorsUpdate.Error(), ":", "")))
 			Expect(len(warningsUpdate)).To(Equal(0))
 		})
 
