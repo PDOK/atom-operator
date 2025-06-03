@@ -27,19 +27,31 @@ package v3
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
+
+	samples "github.com/pdok/atom-operator/internal/webhook/v3/ownerinfo-test"
+
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	"golang.org/x/tools/go/packages"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/json"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 
 	admissionv1 "k8s.io/api/admission/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -82,16 +94,28 @@ var _ = BeforeSuite(func() {
 
 	err = admissionv1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
+	err = smoothoperatorv1.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
 
 	By("bootstrapping test environment")
+	traefikCRDPath := must(getTraefikCRDPath())
+	ownerInfoCRDPath := must(getOwnerInfoCRDPath())
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: false,
 
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
 			Paths: []string{filepath.Join("..", "..", "..", "config", "webhook")},
+		},
+		CRDInstallOptions: envtest.CRDInstallOptions{
+			Scheme: nil,
+			Paths: []string{
+				filepath.Join("..", "..", "..", "config", "crd", "bases", "pdok.nl_atoms.yaml"),
+				traefikCRDPath,
+				ownerInfoCRDPath,
+			},
+			ErrorIfPathMissing: true,
 		},
 	}
 
@@ -108,6 +132,25 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+
+	By("creating manager namespace")
+
+	clientset, err := kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(clientset).NotTo(BeNil())
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "services",
+		},
+	}
+	_, err = clientset.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
+	ownerInfo, err := samples.OwnerInfoSample()
+	Expect(err).NotTo(HaveOccurred())
+	Expect(ownerInfo).NotTo(BeNil())
+
+	err = k8sClient.Create(ctx, ownerInfo)
+	Expect(err).NotTo(HaveOccurred())
 
 	// start webhook server using Manager.
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
@@ -175,4 +218,43 @@ func getFirstFoundEnvTestBinaryDir() string {
 		}
 	}
 	return ""
+}
+
+func must[T any](t T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
+func getOwnerInfoCRDPath() (string, error) {
+	smoothOperatorModule, err := getModule("github.com/pdok/smooth-operator")
+	if err != nil {
+		return "", err
+	}
+	if smoothOperatorModule.Dir == "" {
+		return "", errors.New("cannot find path for smooth-operator module")
+	}
+	return filepath.Join(smoothOperatorModule.Dir, "config", "crd", "bases", "pdok.nl_ownerinfo.yaml"), nil
+}
+
+func getTraefikCRDPath() (string, error) {
+	traefikModule, err := getModule("github.com/traefik/traefik/v3")
+	if err != nil {
+		return "", err
+	}
+	if traefikModule.Dir == "" {
+		return "", errors.New("cannot find path for traefik module")
+	}
+	return filepath.Join(traefikModule.Dir, "integration", "fixtures", "k8s", "01-traefik-crd.yml"), nil
+}
+
+func getModule(name string) (module *packages.Module, err error) {
+	out, err := exec.Command("go", "list", "-json", "-m", name).Output()
+	if err != nil {
+		return
+	}
+	module = &packages.Module{}
+	err = json.Unmarshal(out, module)
+	return
 }

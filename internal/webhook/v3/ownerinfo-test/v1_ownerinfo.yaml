@@ -1,0 +1,68 @@
+apiVersion: pdok.nl/v1
+kind: OwnerInfo
+metadata:
+  name: pdok
+  namespace: services
+  labels:
+    app.kubernetes.io/name: atom-operator
+    app.kubernetes.io/managed-by: kustomize
+spec:
+  metadataUrls:
+    csw:
+      hrefTemplate: "https://www.nationaalgeoregister.nl/geonetwork/srv/dut/csw?service=CSW&version=2.0.2&request=GetRecordById&outputschema=http://www.isotc211.org/2005/gmd&elementsetname=full&id={{identifier}}"
+      type: alternate
+    opensearch:
+      hrefTemplate: "https://www.nationaalgeoregister.nl/geonetwork/opensearch/dut/{{identifier}}/OpenSearchDescription.xml"
+      type: alternate
+    html:
+      hrefTemplate: "https://www.nationaalgeoregister.nl/geonetwork/srv/dut/catalog.search#/metadata/{{identifier}}"
+      type: alternate
+  namespaceTemplate: "http://{{prefix}}.geonovum.nl"
+  atom:
+    defaultStylesheet: https://service.pdok.nl/atom/style/style.xsl
+    author: # author/owner van de dataset
+      name: pdok
+      email: pdokbeheer@kadaster.nl
+  wfs:
+    serviceprovider:
+      providername: PDOK
+      providersite:
+        type: simple
+        href: https://pdok.nl
+      servicecontact:
+        individualname: KlantContactCenter PDOK
+        positionname: pointOfContact
+        contactinfo:
+          phone:
+            voice:
+            facsmile:
+          text:
+          address:
+            deliverypoint:
+            city: Apeldoorn
+            administrativearea:
+            postalcode:
+            country: Netherlands
+            electronicmailaddress: BeheerPDOK@kadaster.nl
+          onlineresource:
+            type:
+            href:
+          hoursofservice:
+          contactinstructions:
+        role:
+  wms:
+    contactinformation:
+      contactpersonprimary:
+        contactperson: KlantContactCenter PDOK
+        contactorganization: PDOK
+      contactposition: pointOfContact
+      contactaddress:
+        addresstype:
+        address:
+        city: Apeldoorn
+        stateorprovince:
+        postcode:
+        country: Netherlands
+      contactvoicetelephone:
+      contactfacsimiletelephone:
+      contactelectronicmailAddress: BeheerPDOK@kadaster.nl
