@@ -29,13 +29,14 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"github.com/pdok/atom-operator/internal/webhook/v3/test_data/ownerinfo"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
+
+	samples "github.com/pdok/atom-operator/internal/webhook/v3/ownerinfo-test"
 
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	"golang.org/x/tools/go/packages"
