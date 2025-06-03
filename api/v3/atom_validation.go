@@ -48,6 +48,11 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 			&allErrs,
 			field.NewPath("spec").Child("service").Child("baseUrl"),
 		)
+	} else if atom.Spec.Service.BaseURL.String() != atomOld.Spec.Service.BaseURL.String() {
+		err := smoothoperatorvalidation.ValidateIngressRouteURLsContainsBaseURL(atom.Spec.IngressRouteURLs, atomOld.Spec.Service.BaseURL, nil)
+		if err != nil {
+			allErrs = append(allErrs, err)
+		}
 	}
 
 	smoothoperatorvalidation.ValidateIngressRouteURLsNotRemoved(atomOld.Spec.IngressRouteURLs, atom.Spec.IngressRouteURLs, &allErrs, nil)
