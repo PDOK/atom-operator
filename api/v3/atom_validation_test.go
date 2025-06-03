@@ -1,11 +1,12 @@
 package v3
 
 import (
+	"os"
+	"testing"
+
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/apimachinery/pkg/util/validation/field"
-	"os"
 	"sigs.k8s.io/yaml"
-	"testing"
 )
 
 func TestValidateAtomWithoutClusterChecks(t *testing.T) {

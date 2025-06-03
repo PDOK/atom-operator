@@ -29,18 +29,19 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	samples "github.com/pdok/atom-operator/internal/webhook/v3/ownerinfo-test"
-	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
-	"golang.org/x/tools/go/packages"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/json"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
+
+	samples "github.com/pdok/atom-operator/internal/webhook/v3/ownerinfo-test"
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	"golang.org/x/tools/go/packages"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/json"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
@@ -134,12 +135,14 @@ var _ = BeforeSuite(func() {
 	By("creating manager namespace")
 
 	clientset, err := kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(clientset).NotTo(BeNil())
 	namespace := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "services",
 		},
 	}
-	namespace, err = clientset.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
+	_, err = clientset.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
 	ownerInfo, err := samples.OwnerInfoSample()
 	Expect(err).NotTo(HaveOccurred())

@@ -25,14 +25,14 @@ SOFTWARE.
 package v3
 
 import (
-	"fmt"
+	"errors"
+	"os"
+
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
-	"os"
 	"sigs.k8s.io/yaml"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
-	// TODO (user): Add any additional imports if needed
 )
 
 var _ = Describe("Atom Webhook", func() {
@@ -79,11 +79,11 @@ var _ = Describe("Atom Webhook", func() {
 			atom := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atom)
 			Expect(err).NotTo(HaveOccurred())
-			warnings, errors := validator.ValidateCreate(ctx, atom)
+			warnings, errorsCreate := validator.ValidateCreate(ctx, atom)
 
-			expectedError := fmt.Errorf("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels: Required value: can't be empty")
+			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels: Required value: can't be empty")
 			Expect(len(warnings)).To(Equal(0))
-			Expect(expectedError.Error()).To(Equal(errors.Error()))
+			Expect(expectedError.Error()).To(Equal(errorsCreate.Error()))
 		})
 
 		It("Should create and update atom without errors or warnings", func() {
@@ -115,9 +115,9 @@ var _ = Describe("Atom Webhook", func() {
 			atomOld := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atomOld)
 			Expect(err).NotTo(HaveOccurred())
-			warnings, errors := validator.ValidateCreate(ctx, atomOld)
-			Expect(errors).To(BeNil())
-			Expect(len(warnings)).To(Equal(0))
+			warningsCreate, errorsCreate := validator.ValidateCreate(ctx, atomOld)
+			Expect(errorsCreate).To(BeNil())
+			Expect(len(warningsCreate)).To(Equal(0))
 
 			By("simulating an invalid update scenario. error label names cannot be added or deleted")
 			input, err = os.ReadFile("test_data/input/4-update-error-add-or-delete-labels.yaml")
@@ -125,11 +125,11 @@ var _ = Describe("Atom Webhook", func() {
 			atomNew := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atomNew)
 			Expect(err).NotTo(HaveOccurred())
-			warnings, errors = validator.ValidateUpdate(ctx, atomOld, atomNew)
+			warningsUpdate, errorsUpdate := validator.ValidateUpdate(ctx, atomOld, atomNew)
 
-			expectedError := fmt.Errorf("Atom.pdok.nl \"asis-readonly-prod\" is invalid: [metadata.labels.pdok.nl/dataset-id: Required value: labels cannot be removed, metadata.labels.pdok.nl/dataset-idsssssssss: Forbidden: new labels cannot be added]")
-			Expect(len(warnings)).To(Equal(0))
-			Expect(expectedError.Error()).To(Equal(errors.Error()))
+			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: [metadata.labels.pdok.nl/dataset-id: Required value: labels cannot be removed, metadata.labels.pdok.nl/dataset-idsssssssss: Forbidden: new labels cannot be added]")
+			Expect(len(warningsUpdate)).To(Equal(0))
+			Expect(expectedError.Error()).To(Equal(errorsUpdate.Error()))
 		})
 
 		It("Should deny update atom with error label names are immutable", func() {
@@ -139,9 +139,9 @@ var _ = Describe("Atom Webhook", func() {
 			atomOld := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atomOld)
 			Expect(err).NotTo(HaveOccurred())
-			warnings, errors := validator.ValidateCreate(ctx, atomOld)
-			Expect(errors).To(BeNil())
-			Expect(len(warnings)).To(Equal(0))
+			warningsCreate, errorsCreate := validator.ValidateCreate(ctx, atomOld)
+			Expect(errorsCreate).To(BeNil())
+			Expect(len(warningsCreate)).To(Equal(0))
 
 			By("simulating an invalid update scenario. Lablels are immutable")
 			input, err = os.ReadFile("test_data/input/5-update-error-labels-immutable.yaml")
@@ -149,11 +149,11 @@ var _ = Describe("Atom Webhook", func() {
 			atomNew := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atomNew)
 			Expect(err).NotTo(HaveOccurred())
-			warnings, errors = validator.ValidateUpdate(ctx, atomOld, atomNew)
+			warningsUpdate, errorsUpdate := validator.ValidateUpdate(ctx, atomOld, atomNew)
 
-			expectedError := fmt.Errorf("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels.pdok.nl/dataset-id: Invalid value: \"wetlands-changed\": immutable: should be wetlands")
-			Expect(len(warnings)).To(Equal(0))
-			Expect(expectedError.Error()).To(Equal(errors.Error()))
+			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels.pdok.nl/dataset-id: Invalid value: \"wetlands-changed\": immutable: should be wetlands")
+			Expect(len(warningsUpdate)).To(Equal(0))
+			Expect(expectedError.Error()).To(Equal(errorsUpdate.Error()))
 		})
 
 		It("Should deny update atom with error URL are immutable", func() {
@@ -163,8 +163,8 @@ var _ = Describe("Atom Webhook", func() {
 			atomOld := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atomOld)
 			Expect(err).NotTo(HaveOccurred())
-			warnings, errors := validator.ValidateCreate(ctx, atomOld)
-			Expect(errors).To(BeNil())
+			warnings, errorsCreate := validator.ValidateCreate(ctx, atomOld)
+			Expect(errorsCreate).To(BeNil())
 			Expect(len(warnings)).To(Equal(0))
 
 			By("simulating an invalid update scenario. URL is immutable")
@@ -173,11 +173,11 @@ var _ = Describe("Atom Webhook", func() {
 			atomNew := &pdoknlv3.Atom{}
 			err = yaml.Unmarshal(input, atomNew)
 			Expect(err).NotTo(HaveOccurred())
-			warnings, errors = validator.ValidateUpdate(ctx, atomOld, atomNew)
+			warnings, errorsUpdate := validator.ValidateUpdate(ctx, atomOld, atomNew)
 
-			expectedError := fmt.Errorf("Atom.pdok.nl \"asis-readonly-prod\" is invalid: spec.service.baseUrl: Forbidden: is immutable")
+			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: spec.service.baseUrl: Forbidden: is immutable")
 			Expect(len(warnings)).To(Equal(0))
-			Expect(expectedError.Error()).To(Equal(errors.Error()))
+			Expect(expectedError.Error()).To(Equal(errorsUpdate.Error()))
 		})
 	})
 })
