@@ -152,8 +152,8 @@ var _ = Describe("Atom Webhook", func() {
 			warningsUpdate, errorsUpdate := validator.ValidateUpdate(ctx, atomOld, atomNew)
 
 			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels.pdok.nl/dataset-id: Invalid value: \"wetlands-changed\": immutable: should be wetlands")
-			Expect(len(warningsUpdate)).To(Equal(0))
 			Expect(expectedError.Error()).To(Equal(errorsUpdate.Error()))
+			Expect(len(warningsUpdate)).To(Equal(0))
 		})
 
 		It("Should deny update atom with error URL are immutable", func() {
