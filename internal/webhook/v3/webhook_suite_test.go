@@ -139,7 +139,7 @@ var _ = BeforeSuite(func() {
 			Name: "services",
 		},
 	}
-	clientset.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
+	namespace, err = clientset.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
 	Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
 	ownerInfo, err := samples.OwnerInfoSample()
 	Expect(err).NotTo(HaveOccurred())
