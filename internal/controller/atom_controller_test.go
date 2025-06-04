@@ -64,6 +64,12 @@ const (
 
 var _ = Describe("Testing Atom Controller", func() {
 
+	Context("fail", func() {
+		It("fails", func() {
+			Fail("failed")
+		})
+	})
+
 	Context("Testing Mutate functions for Minimal Atom", func() {
 		testAtomMutates("minimal")
 	})
