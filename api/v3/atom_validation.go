@@ -25,7 +25,8 @@ func (atom *Atom) ValidateCreate(c client.Client) ([]string, error) {
 		allErrs = append(allErrs, err)
 	}
 
-	ValidateAtom(c, atom, &warnings, &allErrs)
+	ValidateAtom(atom, &warnings, &allErrs)
+	ValidateOwnerInfo(c, atom, &allErrs)
 
 	if len(allErrs) == 0 {
 		return warnings, nil
@@ -57,7 +58,8 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 
 	smoothoperatorvalidation.ValidateIngressRouteURLsNotRemoved(atomOld.Spec.IngressRouteURLs, atom.Spec.IngressRouteURLs, &allErrs, nil)
 
-	ValidateAtom(c, atom, &warnings, &allErrs)
+	ValidateAtom(atom, &warnings, &allErrs)
+	ValidateOwnerInfo(c, atom, &allErrs)
 
 	if len(allErrs) == 0 {
 		return warnings, nil
@@ -68,9 +70,7 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 		atom.Name, allErrs)
 }
 
-func ValidateAtom(c client.Client, atom *Atom, warnings *[]string, allErrs *field.ErrorList) {
-	ValidateAtomWithoutClusterChecks(atom, warnings, allErrs)
-
+func ValidateOwnerInfo(c client.Client, atom *Atom, allErrs *field.ErrorList) {
 	ownerInfoRef := atom.Spec.Service.OwnerInfoRef
 	ownerInfo := &smoothoperatorv1.OwnerInfo{}
 	objectKey := client.ObjectKey{
@@ -90,7 +90,7 @@ func ValidateAtom(c client.Client, atom *Atom, warnings *[]string, allErrs *fiel
 	}
 }
 
-func ValidateAtomWithoutClusterChecks(atom *Atom, warnings *[]string, allErrs *field.ErrorList) {
+func ValidateAtom(atom *Atom, warnings *[]string, allErrs *field.ErrorList) {
 	var fieldPath *field.Path
 	if strings.Contains(atom.GetName(), "atom") {
 		fieldPath = field.NewPath("metadata").Child("name")

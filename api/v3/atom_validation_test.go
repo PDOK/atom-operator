@@ -9,7 +9,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func TestValidateAtomWithoutClusterChecks(t *testing.T) {
+func TestValidateAtom(t *testing.T) {
 
 	tests := []struct {
 		name             string
@@ -91,7 +91,7 @@ func TestValidateAtomWithoutClusterChecks(t *testing.T) {
 		}
 
 		t.Run(tt.name, func(t *testing.T) {
-			ValidateAtomWithoutClusterChecks(atom, &actualWarnings, &actualAllErrors)
+			ValidateAtom(atom, &actualWarnings, &actualAllErrors)
 			diffWarnings := cmp.Diff(tt.expectedWarnings, &actualWarnings)
 			if diffWarnings != "" {
 				t.Errorf("Testing validation has different warnings: \n%v\n%v\n%v", diffWarnings, tt.expectedWarnings, actualWarnings)
