@@ -26,9 +26,10 @@ package v3
 
 import (
 	"errors"
+	"os"
+
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
-	"os"
 	"sigs.k8s.io/yaml"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
