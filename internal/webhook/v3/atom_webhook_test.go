@@ -26,9 +26,7 @@ package v3
 
 import (
 	"errors"
-	"fmt"
 	"os"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
 	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
@@ -63,124 +61,125 @@ var _ = Describe("Atom Webhook", func() {
 
 	Context("When creating or updating Atom under Validating Webhook", func() {
 		It("Should create atom without errors or warnings", func() {
-			By("simulating a valid creation scenario")
-			input, err := os.ReadFile("test_data/input/1-create-no-error-no-warning.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atom := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atom)
-			Expect(err).NotTo(HaveOccurred())
-			warnings, errors := validator.ValidateCreate(ctx, atom)
-			Expect(errors).To(BeNil())
-			Expect(len(warnings)).To(Equal(0))
+			testCreate(validator, "valid/minimal.yaml", nil)
 		})
 
 		It("Should deny creation if no labels are available", func() {
-			By("simulating an invalid creation scenario")
-			input, err := os.ReadFile("test_data/input/2-create-error-no-lables.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atom := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atom)
-			Expect(err).NotTo(HaveOccurred())
-			warnings, errorsCreate := validator.ValidateCreate(ctx, atom)
+			testCreate(validator, "invalid/no-labels.yaml", errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels: Required value: can't be empty"))
+		})
 
-			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels: Required value: can't be empty")
-			Expect(len(warnings)).To(Equal(0))
-			Expect(expectedError.Error()).To(Equal(errorsCreate.Error()))
+		It("Should create atom with ingressRouteUrls that contains the service baseUrl", func() {
+			testCreate(validator, "valid/ingress-route-urls.yaml", nil)
+		})
+
+		It("Should deny creation if ingressRouteUrls is set but does not contain the service baseUrl", func() {
+			testCreate(
+				validator,
+				"invalid/ingress-route-urls-missing-baseurl.yaml",
+				errors.New("Atom.pdok.nl \"ingress-route-urls\" is invalid: spec.ingressRouteUrls: Invalid value: \"[{http://test.com/path}]\": must contain baseURL: http://localhost:32788/rvo/wetlands/atom"),
+			)
 		})
 
 		It("Should create and update atom without errors or warnings", func() {
-			By("simulating a valid creation scenario")
-			input, err := os.ReadFile("test_data/input/1-create-no-error-no-warning.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atomOld := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atomOld)
-			Expect(err).NotTo(HaveOccurred())
-			warnings, errors := validator.ValidateCreate(ctx, atomOld)
-			Expect(errors).To(BeNil())
-			Expect(len(warnings)).To(Equal(0))
-
-			By("simulating a valid update scenario")
-			input, err = os.ReadFile("test_data/input/3-update-no-error-no-warning.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atomNew := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atomNew)
-			Expect(err).NotTo(HaveOccurred())
-			warnings, errors = validator.ValidateUpdate(ctx, atomOld, atomNew)
-			Expect(errors).To(BeNil())
-			Expect(len(warnings)).To(Equal(0))
+			testUpdate(validator, "valid/minimal.yaml", "valid/minimal-service-title-changed.yaml", nil)
 		})
 
 		It("Should deny update atom with error label names cannot be added or deleted", func() {
-			By("simulating a valid creation scenario")
-			input, err := os.ReadFile("test_data/input/1-create-no-error-no-warning.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atomOld := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atomOld)
-			Expect(err).NotTo(HaveOccurred())
-			warningsCreate, errorsCreate := validator.ValidateCreate(ctx, atomOld)
-			Expect(errorsCreate).To(BeNil())
-			Expect(len(warningsCreate)).To(Equal(0))
-
-			By("simulating an invalid update scenario. error label names cannot be added or deleted")
-			input, err = os.ReadFile("test_data/input/4-update-error-add-or-delete-labels.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atomNew := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atomNew)
-			Expect(err).NotTo(HaveOccurred())
-			warningsUpdate, errorsUpdate := validator.ValidateUpdate(ctx, atomOld, atomNew)
-
-			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: [metadata.labels.pdok.nl/dataset-id: Required value: labels cannot be removed, metadata.labels.pdok.nl/dataset-idsssssssss: Forbidden: new labels cannot be added]")
-			Expect(len(warningsUpdate)).To(Equal(0))
-			Expect(expectedError.Error()).To(Equal(errorsUpdate.Error()))
+			testUpdate(
+				validator,
+				"valid/minimal.yaml",
+				"invalid/minimal-immutable-labels-key-change.yaml",
+				errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: [metadata.labels.pdok.nl/dataset-id: Required value: labels cannot be removed, metadata.labels.pdok.nl/dataset-idsssssssss: Forbidden: new labels cannot be added]"),
+			)
 		})
 
 		It("Should deny update atom with error label names are immutable", func() {
-			By("simulating a valid creation scenario")
-			input, err := os.ReadFile("test_data/input/1-create-no-error-no-warning.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atomOld := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atomOld)
-			Expect(err).NotTo(HaveOccurred())
-			warningsCreate, errorsCreate := validator.ValidateCreate(ctx, atomOld)
-			Expect(errorsCreate).To(BeNil())
-			Expect(len(warningsCreate)).To(Equal(0))
-
-			By("simulating an invalid update scenario. Lablels are immutable")
-			input, err = os.ReadFile("test_data/input/5-update-error-labels-immutable.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atomNew := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atomNew)
-			Expect(err).NotTo(HaveOccurred())
-			warningsUpdate, errorsUpdate := validator.ValidateUpdate(ctx, atomOld, atomNew)
-
-			fmt.Printf("actual-error test 5 atom-webhook is: \n%v\n", errorsUpdate.Error())
-			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels.pdok.nl/dataset-id: Invalid value: \"wetlands-changed\": immutable: should be wetlands")
-			Expect(strings.ReplaceAll(expectedError.Error(), ":", "")).To(Equal(strings.ReplaceAll(errorsUpdate.Error(), ":", "")))
-			Expect(len(warningsUpdate)).To(Equal(0))
+			testUpdate(
+				validator,
+				"valid/minimal.yaml",
+				"invalid/minimal-immutable-labels-value-change.yaml",
+				errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: metadata.labels.pdok.nl/dataset-id: Invalid value: \"wetlands-changed\": immutable: should be: wetlands"),
+			)
 		})
 
 		It("Should deny update atom with error URL are immutable", func() {
-			By("simulating a valid creation scenario")
-			input, err := os.ReadFile("test_data/input/1-create-no-error-no-warning.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atomOld := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atomOld)
-			Expect(err).NotTo(HaveOccurred())
-			warnings, errorsCreate := validator.ValidateCreate(ctx, atomOld)
-			Expect(errorsCreate).To(BeNil())
-			Expect(len(warnings)).To(Equal(0))
+			testUpdate(
+				validator,
+				"valid/minimal.yaml",
+				"invalid/minimal-immutable-url.yaml", errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: spec.service.baseUrl: Forbidden: is immutable"),
+			)
+		})
 
-			By("simulating an invalid update scenario. URL is immutable")
-			input, err = os.ReadFile("test_data/input/6-update-error-url-immutable.yaml")
-			Expect(err).NotTo(HaveOccurred())
-			atomNew := &pdoknlv3.Atom{}
-			err = yaml.Unmarshal(input, atomNew)
-			Expect(err).NotTo(HaveOccurred())
-			warnings, errorsUpdate := validator.ValidateUpdate(ctx, atomOld, atomNew)
+		It("Should deny update atom as ingressRouteURLs cannot be removed", func() {
+			testUpdate(
+				validator,
+				"valid/ingress-route-urls.yaml",
+				"invalid/ingress-route-urls-removed-url.yaml",
+				errors.New("Atom.pdok.nl \"ingress-route-urls\" is invalid: spec.ingressRouteUrls: Invalid value: \"[{http://localhost:32788/rvo/wetlands/atom}]\": urls cannot be removed, missing: {http://localhost:32788/other/path}"),
+			)
+		})
 
-			expectedError := errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: spec.service.baseUrl: Forbidden: is immutable")
-			Expect(len(warnings)).To(Equal(0))
-			Expect(expectedError.Error()).To(Equal(errorsUpdate.Error()))
+		It("Should deny update atom when the service baseUrl is changed and the old value is not added to the ingressRouteUrls", func() {
+			testUpdate(
+				validator,
+				"valid/minimal.yaml",
+				"invalid/minimal-service-url-changed-ingress-route-urls-missing-old.yaml",
+				errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: spec.ingressRouteUrls: Invalid value: \"[{http://localhost:32788/new/path}]\": must contain baseURL: http://localhost:32788/rvo/wetlands/atom"),
+			)
+		})
+
+		It("Should deny update atom when the service baseUrl is changed and the new value is not added to the ingressRouteUrls", func() {
+			testUpdate(
+				validator,
+				"valid/minimal.yaml",
+				"invalid/minimal-service-url-changed-ingress-route-urls-missing-new.yaml",
+				errors.New("Atom.pdok.nl \"asis-readonly-prod\" is invalid: spec.ingressRouteUrls: Invalid value: \"[{http://localhost:32788/rvo/wetlands/atom}]\": must contain baseURL: http://localhost:32788/new/path"),
+			)
+		})
+
+		It("Should create and update atom with changed service url if ingressRouteUrls is filled correctly", func() {
+			testUpdate(validator, "valid/minimal.yaml", "valid/minimal-service-url-changed.yaml", nil)
 		})
 	})
 })
+
+func testUpdate(validator AtomCustomValidator, createFile, updateFile string, expectedError error) {
+	atomOld := testCreate(validator, createFile, nil)
+
+	By("Simulating an (in)valid update scenario")
+	input, err := os.ReadFile("test_data/updates/" + updateFile)
+	Expect(err).NotTo(HaveOccurred())
+	atomNew := &pdoknlv3.Atom{}
+	err = yaml.Unmarshal(input, atomNew)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(atomOld.GetName()).To(Equal(atomNew.GetName()))
+	warnings, errorsUpdate := validator.ValidateUpdate(ctx, atomOld, atomNew)
+
+	Expect(len(warnings)).To(Equal(0))
+
+	if expectedError == nil {
+		Expect(errorsUpdate).To(Not(HaveOccurred()))
+	} else {
+		Expect(errorsUpdate).To(HaveOccurred())
+		Expect(expectedError.Error()).To(Equal(errorsUpdate.Error()))
+	}
+}
+
+func testCreate(validator AtomCustomValidator, createFile string, expectedError error) *pdoknlv3.Atom {
+	By("simulating a (in)valid creation scenario")
+	input, err := os.ReadFile("test_data/creates/" + createFile)
+	Expect(err).NotTo(HaveOccurred())
+	atom := &pdoknlv3.Atom{}
+	err = yaml.Unmarshal(input, atom)
+	Expect(err).NotTo(HaveOccurred())
+	warnings, err := validator.ValidateCreate(ctx, atom)
+	Expect(len(warnings)).To(Equal(0))
+
+	if expectedError == nil {
+		Expect(err).To(Not(HaveOccurred()))
+	} else {
+		Expect(expectedError.Error()).To(Equal(err.Error()))
+	}
+
+	return atom
+}
