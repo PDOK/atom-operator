@@ -12,11 +12,8 @@ metadata:
   name: asis-readonly-prod
   namespace: services
 spec:
-  ingressRouteUrls:
-    # Note that the new service baseUrl is missing here
-    - url: http://localhost:32788/rvo/wetlands/atom
   service:
-    baseUrl: http://localhost:32788/new/path
+    baseUrl: http://localhost:32788/rvo/wetlands/atom
     datasetFeeds:
       - author:
           email: geodatabeheer.giscc@minlnv.nl
@@ -51,7 +48,7 @@ spec:
         technicalName: wetlands
         title: wetlands
     lang: nl
-    ownerInfoRef: pdok
+    ownerInfoRef: random
     rights: https://creativecommons.org/publicdomain/zero/1.0/deed.nl
     serviceMetadataLinks:
       metadataIdentifier: 2751ba40-5100-4186-81be-b7fdee95b49c
