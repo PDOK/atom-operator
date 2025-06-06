@@ -3,36 +3,33 @@ kind: Atom
 metadata:
   annotations:
     kangaroo.pdok.nl/lifecycle-phase: prod
-    kangaroo.pdok.nl/service-bundle-ids: 65daed5f-e9e4-5791-a7c9-7e9effcca520
     kangaroo.pdok.nl/readonly: "true"
   labels:
-    pdok.nl/dataset-id: wetlands
-    pdok.nl/owner-id: rvo
+    pdok.nl/dataset-id: dataset-with-multiple-urls
+    pdok.nl/owner-id: owner
     pdok.nl/service-type: atom
   name: ingress-route-urls
   namespace: services
 spec:
   ingressRouteUrls:
-    - url: http://localhost:32788/rvo/wetlands/atom
+    - url: http://localhost:32788/owner/dataset/atom
     - url: http://localhost:32788/other/path
   service:
-    baseUrl: http://localhost:32788/rvo/wetlands/atom
+    baseUrl: http://localhost:32788/owner/dataset/atom
     datasetFeeds:
       - author:
-          email: geodatabeheer.giscc@minlnv.nl
-          name: Ministerie van EL&I - GIS Competence Center
+          email: author@email.com
+          name: Author
         datasetMetadataLinks:
-          metadataIdentifier: 07d73b60-dfd6-4c54-9c82-9fac70c6c48e
+          metadataIdentifier: 07d73b60-dfd6-4c54-9c82-9fac70c6caf6
           templates:
             - csw
             - html
         entries:
           - content:
-              Wetlands zijn de natte natuurgebieden in Nederland (44 gebieden).
-              Het Wetland verdrag is op 2 februari 1971 te Ramsar in Iran ondertekend.
-              Nederland was een van de zestien landen die het Verdrag toen ondertekende.
+              Deze dataset bevat data over allerlei willekeurige dingen
             downloadlinks:
-              - data: public/rvo/wetlands/65daed5f-e9e4-5791-a7c9-7e9effcca520/3/wetlands.gpkg
+              - data: public/owner/dataset/65daed5f-e9e4-5791-a7c9-7e9effcca585/3/dataset.gpkg
             polygon:
               bbox:
                 maxx: "7.5553527"
@@ -42,22 +39,22 @@ spec:
             srs:
               name: Amersfoort / RD New
               uri: https://www.opengis.net/def/crs/EPSG/0/28992
-            technicalName: wetlands
-            title: wetlands
+            technicalName: dataset
+            title: dataset
             updated: "2025-02-28T09:04:17Z"
-        spatialDatasetIdentifierCode: 07d73b60-dfd6-4c54-9c82-9fac70c6c48e
+        spatialDatasetIdentifierCode: 07d73b60-dfd6-4c54-9c82-9fac70c6caf6
         spatialDatasetIdentifierNamespace: http://www.pdok.nl
-        subtitle: wetlands
-        technicalName: wetlands
-        title: wetlands
+        subtitle: dataset
+        technicalName: dataset
+        title: dataset
     lang: nl
     ownerInfoRef: pdok
     rights: https://creativecommons.org/publicdomain/zero/1.0/deed.nl
     serviceMetadataLinks:
-      metadataIdentifier: 2751ba40-5100-4186-81be-b7fdee95b49c
+      metadataIdentifier: 2751ba40-5100-4186-81be-b7fdee95baf6
       templates:
         - csw
         - opensearch
         - html
-    subtitle: Download Service van wetlands
-    title: Wetlands
+    subtitle: Download Service van dataset
+    title: Dataset
