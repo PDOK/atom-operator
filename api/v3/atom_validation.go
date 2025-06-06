@@ -87,6 +87,33 @@ func ValidateOwnerInfo(c client.Client, atom *Atom, allErrs *field.ErrorList) {
 
 	if ownerInfo.Spec.Atom == nil {
 		*allErrs = append(*allErrs, field.Required(fieldPath, "spec.Atom missing in "+ownerInfo.Name))
+	} else {
+		validateMetadataTemplates(atom, ownerInfo, allErrs)
+	}
+}
+
+func validateMetadataTemplates(atom *Atom, ownerInfo *smoothoperatorv1.OwnerInfo, allErrs *field.ErrorList) {
+	var metadataTemplates []string
+	if atom.Spec.Service.ServiceMetadataLinks != nil {
+		metadataTemplates = atom.Spec.Service.ServiceMetadataLinks.Templates
+	}
+	for _, feed := range atom.Spec.Service.DatasetFeeds {
+		if feed.DatasetMetadataLinks != nil {
+			metadataTemplates = append(metadataTemplates, feed.DatasetMetadataLinks.Templates...)
+		}
+	}
+
+	if len(metadataTemplates) > 0 {
+		fieldPath := field.NewPath("spec").Child("service").Child("ownerInfoRef")
+		if slices.Contains(metadataTemplates, "csw") && (ownerInfo.Spec.MetadataUrls == nil || ownerInfo.Spec.MetadataUrls.CSW == nil) {
+			*allErrs = append(*allErrs, field.Required(fieldPath, "spec.metadataUrls.csw missing in "+ownerInfo.Name))
+		}
+		if slices.Contains(metadataTemplates, "html") && (ownerInfo.Spec.MetadataUrls == nil || ownerInfo.Spec.MetadataUrls.HTML == nil) {
+			*allErrs = append(*allErrs, field.Required(fieldPath, "spec.metadataUrls.html missing in "+ownerInfo.Name))
+		}
+		if slices.Contains(metadataTemplates, "opensearch") && (ownerInfo.Spec.MetadataUrls == nil || ownerInfo.Spec.MetadataUrls.OpenSearch == nil) {
+			*allErrs = append(*allErrs, field.Required(fieldPath, "spec.metadataUrls.opensearch missing in "+ownerInfo.Name))
+		}
 	}
 }
 
