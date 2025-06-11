@@ -136,8 +136,8 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	// Recover from a panic so we can add the error to the status of the Atom
 	defer func() {
-		if err = panicRecoverer(); err != nil {
-			r.logAndUpdateStatusError(ctx, atom, err)
+		if rec := recover(); rec != nil {
+			err = recoveredPanicToError(rec)
 		}
 	}()
 
@@ -285,18 +285,18 @@ func ttlExpired(atom *pdoknlv3.Atom) bool {
 	return false
 }
 
-func panicRecoverer() error {
-	var err error
-	if rec := recover(); rec != nil {
-		switch x := rec.(type) {
-		case string:
-			err = errors.New(x)
-		case error:
-			err = x
-		default:
-			err = errors.New("unknown panic")
-		}
+func recoveredPanicToError(rec any) (err error) {
+	switch x := rec.(type) {
+	case string:
+		err = errors.New(x)
+	case error:
+		err = x
+	default:
+		err = errors.New("unknown panic")
 	}
 
-	return err
+	// Add stack
+	err = errors.WithStack(err)
+
+	return
 }
