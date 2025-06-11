@@ -297,6 +297,7 @@ func recoveredPanicToError(rec any) (err error) {
 	}
 
 	// Add stack
+	// TODO - this doesn't seem to work, see if there is a better method to add the stack
 	err = errors.WithStack(err)
 
 	return
