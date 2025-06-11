@@ -5,7 +5,7 @@ metadata:
   namespace: default
   labels:
     test: test
-    app: atom-service
+    pdok.nl/app: atom-service
   ownerReferences:
     - apiVersion: pdok.nl/v3
       kind: Atom
@@ -23,7 +23,7 @@ spec:
   selector:
     matchLabels:
       test: test
-      app: atom-service
+      pdok.nl/app: atom-service
   revisionHistoryLimit: 1
   template:
     metadata:
@@ -33,7 +33,7 @@ spec:
         priority.version-checker.io/atom-service: "8"
       labels:
         test: test
-        app: atom-service
+        pdok.nl/app: atom-service
     spec:
       containers:
         - name: atom-service

@@ -10,7 +10,7 @@ metadata:
     uptime.pdok.nl/tags: public-stats,atom
   labels:
     test: test
-    app: atom-service
+    pdok.nl/app: atom-service
   ownerReferences:
     - apiVersion: pdok.nl/v3
       kind: Atom
