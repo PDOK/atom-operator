@@ -30,6 +30,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
+
 	policyv1 "k8s.io/api/policy/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -50,13 +52,13 @@ import (
 )
 
 const (
-	reconciledConditionType         = "Reconciled"
-	reconciledConditionReasonSucces = "Succes"
-	reconciledConditionReasonError  = "Error"
+	reconciledConditionType          = "Reconciled"
+	reconciledConditionReasonSuccess = "Success"
+	reconciledConditionReasonError   = "Error"
 )
 
 const (
-	appLabelKey       = "app"
+	appLabelKey       = "pdok.nl/app"
 	appName           = "atom-service"
 	configFileName    = "values.yaml"
 	atomPortName      = "atom-service"
@@ -132,6 +134,14 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return result, client.IgnoreNotFound(err)
 	}
 
+	// Recover from a panic so we can add the error to the status of the Atom
+	defer func() {
+		if rec := recover(); rec != nil {
+			err = recoveredPanicToError(rec)
+			r.logAndUpdateStatusError(ctx, atom, err)
+		}
+	}()
+
 	// Check TTL expiry
 	if ttlExpired(atom) {
 		err = r.Client.Delete(ctx, atom)
@@ -150,7 +160,6 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	r.logAndUpdateStatusFinished(ctx, atom, operationResults)
 
 	return result, err
-
 }
 
 func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo) (operationResults map[string]controllerutil.OperationResult, err error) {
@@ -275,4 +284,21 @@ func ttlExpired(atom *pdoknlv3.Atom) bool {
 	}
 
 	return false
+}
+
+func recoveredPanicToError(rec any) (err error) {
+	switch x := rec.(type) {
+	case string:
+		err = errors.New(x)
+	case error:
+		err = x
+	default:
+		err = errors.New("unknown panic")
+	}
+
+	// Add stack
+	// TODO - this doesn't seem to work, see if there is a better method to add the stack
+	err = errors.WithStack(err)
+
+	return
 }

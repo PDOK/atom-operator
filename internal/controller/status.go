@@ -15,6 +15,9 @@ import (
 )
 
 func (r *AtomReconciler) logAndUpdateStatusError(ctx context.Context, atom *pdoknlv3.Atom, err error) {
+	lgr := logf.FromContext(ctx)
+	lgr.Error(err, "reconcile error")
+
 	r.updateStatus(ctx, atom, []metav1.Condition{{
 		Type:               reconciledConditionType,
 		Status:             metav1.ConditionFalse,
@@ -31,7 +34,7 @@ func (r *AtomReconciler) logAndUpdateStatusFinished(ctx context.Context, atom *p
 	r.updateStatus(ctx, atom, []metav1.Condition{{
 		Type:               reconciledConditionType,
 		Status:             metav1.ConditionTrue,
-		Reason:             reconciledConditionReasonSucces,
+		Reason:             reconciledConditionReasonSuccess,
 		ObservedGeneration: atom.Generation,
 		LastTransitionTime: metav1.NewTime(time.Now()),
 	}}, operationResults)
