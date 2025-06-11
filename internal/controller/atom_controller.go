@@ -52,13 +52,13 @@ import (
 )
 
 const (
-	reconciledConditionType         = "Reconciled"
-	reconciledConditionReasonSucces = "Succes"
-	reconciledConditionReasonError  = "Error"
+	reconciledConditionType          = "Reconciled"
+	reconciledConditionReasonSuccess = "Success"
+	reconciledConditionReasonError   = "Error"
 )
 
 const (
-	appLabelKey       = "app"
+	appLabelKey       = "pdok.nl/app"
 	appName           = "atom-service"
 	configFileName    = "values.yaml"
 	atomPortName      = "atom-service"

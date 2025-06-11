@@ -34,7 +34,7 @@ func (r *AtomReconciler) logAndUpdateStatusFinished(ctx context.Context, atom *p
 	r.updateStatus(ctx, atom, []metav1.Condition{{
 		Type:               reconciledConditionType,
 		Status:             metav1.ConditionTrue,
-		Reason:             reconciledConditionReasonSucces,
+		Reason:             reconciledConditionReasonSuccess,
 		ObservedGeneration: atom.Generation,
 		LastTransitionTime: metav1.NewTime(time.Now()),
 	}}, operationResults)
