@@ -28,6 +28,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 	"time"
 
 	policyv1 "k8s.io/api/policy/v1"
@@ -132,6 +133,13 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		return result, client.IgnoreNotFound(err)
 	}
 
+	// Recover from a panic so we can add the error to the status of the Atom
+	defer func() {
+		if err = panicRecoverer(); err != nil {
+			r.logAndUpdateStatusError(ctx, atom, err)
+		}
+	}()
+
 	// Check TTL expiry
 	if ttlExpired(atom) {
 		err = r.Client.Delete(ctx, atom)
@@ -150,7 +158,6 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	r.logAndUpdateStatusFinished(ctx, atom, operationResults)
 
 	return result, err
-
 }
 
 func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo) (operationResults map[string]controllerutil.OperationResult, err error) {
@@ -275,4 +282,20 @@ func ttlExpired(atom *pdoknlv3.Atom) bool {
 	}
 
 	return false
+}
+
+func panicRecoverer() error {
+	var err error
+	if rec := recover(); rec != nil {
+		switch x := rec.(type) {
+		case string:
+			err = errors.New(x)
+		case error:
+			err = x
+		default:
+			err = errors.New("unknown panic")
+		}
+	}
+
+	return err
 }
