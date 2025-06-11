@@ -138,6 +138,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	defer func() {
 		if rec := recover(); rec != nil {
 			err = recoveredPanicToError(rec)
+			r.logAndUpdateStatusError(ctx, atom, err)
 		}
 	}()
 
