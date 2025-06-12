@@ -10,10 +10,10 @@ configMapGenerator:
     files:
       - CSP=content-security-policy.txt
 
-patches:
+# patches:
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix.
 # patches here are for enabling the conversion webhook for each CRD
-- path: patches/webhook_in_atoms.yaml
+# - path: patches/webhook_in_atoms.yaml
 # +kubebuilder:scaffold:crdkustomizewebhookpatch
 
 # [WEBHOOK] To enable webhook, uncomment the following section
