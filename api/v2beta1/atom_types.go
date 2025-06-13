@@ -59,7 +59,7 @@ type AtomStatus struct {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:subresource:status
+// +kubebuilder:skipversion
 // versionName=v2beta1
 
 // Atom is the Schema for the atoms API.

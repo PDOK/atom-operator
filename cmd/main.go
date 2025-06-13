@@ -43,10 +43,8 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	pdoknlv2beta1 "github.com/pdok/atom-operator/api/v2beta1"
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	"github.com/pdok/atom-operator/internal/controller"
-	webhookpdoknlv2beta1 "github.com/pdok/atom-operator/internal/webhook/v2beta1"
 	webhookpdoknlv3 "github.com/pdok/atom-operator/internal/webhook/v3"
 	// +kubebuilder:scaffold:imports
 )
@@ -65,7 +63,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(pdoknlv3.AddToScheme(scheme))
-	utilruntime.Must(pdoknlv2beta1.AddToScheme(scheme))
 	utilruntime.Must(traefikiov1alpha1.AddToScheme(scheme))
 	utilruntime.Must(smoothoperatorv1.AddToScheme(scheme))
 
@@ -198,10 +195,6 @@ func main() {
 	}
 
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = webhookpdoknlv2beta1.SetupAtomWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")
-			os.Exit(1)
-		}
 
 		if err = webhookpdoknlv3.SetupAtomWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Atom")
