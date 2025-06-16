@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: minimal-atom-generator-fd8bdfdkh6
+  name: minimal-atom-generator-dm828b69ff
   namespace: default
   labels:
     test: test
@@ -77,7 +77,7 @@ data:
                 - href: https://test.com/path/downloads/file.ext
                   data: http://localazurite.blob.azurite/container/prefix/file.ext
                   rel: alternate
-                  title: feed-title-file.ext
+                  title: feed-title - file.ext
               rights: rights
               updated: "2006-01-02T15:04:05Z"
               polygon: 50 5 50 10 100 10 100 5 50 5

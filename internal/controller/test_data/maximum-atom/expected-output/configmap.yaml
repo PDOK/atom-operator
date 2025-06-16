@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: maximum-atom-generator-f9tftfg7bh
+  name: maximum-atom-generator-8gk8292cf2
   namespace: default
   labels:
     test: test
@@ -125,11 +125,11 @@ data:
               - href: https://test.com/path/downloads/index.json
                 data: http://localazurite.blob.azurite/container/prefix-1/index.json
                 rel: index
-                title: entry-1-title-index.json
+                title: entry-1-title - index.json
               - href: https://test.com/path/downloads/file-1.ext
                 data: http://localazurite.blob.azurite/container/prefix-1/file-1.ext
                 rel: alternate
-                title: entry-1-title-file-1.ext
+                title: entry-1-title - file-1.ext
                 time: "2006-01-02T15:04:05Z"
                 bbox: 1 10 10 100
             rights: rights
@@ -137,7 +137,7 @@ data:
             polygon: 50 5 50 10 100 10 100 5 50 5
             category:
               - term: https://srs-1/test
-                label: srs-1
+                label: srs-1 
           - id: https://test.com/path/entry-2.xml
             title: entry-2-title
             content: entry-2-content
@@ -145,7 +145,7 @@ data:
               - href: https://test.com/path/downloads/file-2.ext
                 data: http://localazurite.blob.azurite/container/prefix-2/file-2.ext
                 rel: alternate
-                title: entry-2-title-file-2.ext
+                title: entry-2-title - file-2.ext
             rights: rights
             updated: "2006-01-02T15:04:05Z"
             polygon: 50 5 50 10 100 10 100 5 50 5
@@ -187,11 +187,11 @@ data:
               - href: https://test.com/path/downloads/file-3.ext
                 data: http://localazurite.blob.azurite/container/prefix-3/file-3.ext
                 rel: section
-                title: feed-2-title-file-3.ext
+                title: feed-2-title - file-3.ext
               - href: https://test.com/path/downloads/file-4.ext
                 data: http://localazurite.blob.azurite/container/prefix-3/file-4.ext
                 rel: section
-                title: feed-2-title-file-4.ext
+                title: feed-2-title - file-4.ext
             rights: rights
             updated: "2006-01-02T15:04:05Z"
             polygon: 50 5 50 10 100 10 100 5 50 5
