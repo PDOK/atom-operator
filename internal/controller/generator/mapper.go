@@ -339,7 +339,7 @@ func getDownloadLinkTitle(datasetFeed pdoknlv3.DatasetFeed, entry pdoknlv3.Entry
 	} else {
 		title = escapeQuotes(datasetFeed.Title)
 	}
-	title += "-" + downloadLink.GetBlobName()
+	title += " - " + downloadLink.GetBlobName()
 	return
 }
 
