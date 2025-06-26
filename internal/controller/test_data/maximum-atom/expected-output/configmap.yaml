@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: maximum-atom-generator-8gk8292cf2
+  name: maximum-atom-generator-d9bhh28t99
   namespace: default
   labels:
     test: test
@@ -37,7 +37,7 @@ data:
             rel: describedby
             type: application/xml
           - href: https://test.com/html/00000000-0000-0000-0000-000000000000
-            rel: related
+            rel: describedby
             type: text/html
             title: NGR pagina voor deze download service
           - href: https://test.com/open/00000000-0000-0000-0000-000000000000.xml
@@ -105,7 +105,7 @@ data:
             rel: describedby
             type: application/xml
           - href: https://test.com/html/00000000-0000-0000-0000-000000000001
-            rel: related
+            rel: describedby
             type: text/html
             title: NGR pagina voor deze dataset
           - href: https://test.com/encodingrule.pdf
@@ -172,7 +172,7 @@ data:
             rel: describedby
             type: application/xml
           - href: https://test.com/html/00000000-0000-0000-0000-000000000003
-            rel: related
+            rel: describedby
             type: text/html
             title: NGR pagina voor deze dataset
         rights: rights

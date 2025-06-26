@@ -196,7 +196,7 @@ func addMetadataLinks(metadataLinks pdoknlv3.MetadataLink, ownerInfo smoothopera
 				return err
 			}
 			link := atomfeed.Link{
-				Rel:   "related",
+				Rel:   "describedby",
 				Href:  href,
 				Type:  "text/html",
 				Title: htmlTitle,
