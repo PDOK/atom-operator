@@ -229,14 +229,21 @@ type SRS struct {
 // versionName=v3
 // +kubebuilder:storageversion
 // +kubebuilder:resource:categories=pdok
+// +kubebuilder:printcolumn:name="ReadyPods",type=integer,JSONPath=`.status.podSummary[0].ready`
+// +kubebuilder:printcolumn:name="DesiredPods",type=integer,JSONPath=`.status.podSummary[0].total`
+// +kubebuilder:printcolumn:name="ReconcileStatus",type=string,JSONPath=`.status.conditions[?(@.type == "Reconciled")].reason`
 
 // Atom is the Schema for the atoms API.
 type Atom struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   AtomSpec                            `json:"spec"`
-	Status *smoothoperatormodel.OperatorStatus `json:"status,omitempty"`
+	Spec   AtomSpec                           `json:"spec"`
+	Status smoothoperatormodel.OperatorStatus `json:"status,omitempty"`
+}
+
+func (a *Atom) OperatorStatus() *smoothoperatormodel.OperatorStatus {
+	return &a.Status
 }
 
 // +kubebuilder:object:root=true
@@ -268,8 +275,8 @@ func GetBlobEndpoint() string {
 	return blobEndpoint
 }
 
-func (r *Atom) GetDownloadLinks() (downloadLinks []DownloadLink) {
-	for _, datasetFeed := range r.Spec.Service.DatasetFeeds {
+func (a *Atom) GetDownloadLinks() (downloadLinks []DownloadLink) {
+	for _, datasetFeed := range a.Spec.Service.DatasetFeeds {
 		for _, entry := range datasetFeed.Entries {
 			downloadLinks = append(downloadLinks, entry.DownloadLinks...)
 		}
