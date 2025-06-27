@@ -28,6 +28,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -39,6 +40,7 @@ import (
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	smoothoperatorstatus "github.com/pdok/smooth-operator/pkg/status"
 	smoothutil "github.com/pdok/smooth-operator/pkg/util"
 
 	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
@@ -49,12 +51,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-)
-
-const (
-	reconciledConditionType          = "Reconciled"
-	reconciledConditionReasonSuccess = "Success"
-	reconciledConditionReasonError   = "Error"
 )
 
 const (
@@ -87,6 +83,7 @@ type AtomReconciler struct {
 // +kubebuilder:rbac:groups=pdok.nl,resources=ownerinfo,verbs=get;list;watch
 // +kubebuilder:rbac:groups=pdok.nl,resources=ownerinfo/status,verbs=get
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=apps,resources=replicasets,verbs=get;list;watch;
 // +kubebuilder:rbac:groups=core,resources=configmaps;services,verbs=watch;create;get;update;list;delete
 // +kubebuilder:rbac:groups=traefik.io,resources=ingressroutes;middlewares,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=policy,resources=poddisruptionbudgets,verbs=create;update;delete;list;watch
@@ -138,7 +135,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	defer func() {
 		if rec := recover(); rec != nil {
 			err = recoveredPanicToError(rec)
-			r.logAndUpdateStatusError(ctx, atom, err)
+			smoothoperatorstatus.LogAndUpdateStatusError(ctx, r.Client, atom, err)
 		}
 	}()
 
@@ -153,11 +150,11 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	operationResults, err := r.createOrUpdateAllForAtom(ctx, atom, ownerInfo)
 	if err != nil {
 		lgr.Info("failed creating resources for atom", "atom", atom)
-		r.logAndUpdateStatusError(ctx, atom, err)
+		smoothoperatorstatus.LogAndUpdateStatusError(ctx, r.Client, atom, err)
 		return result, err
 	}
 	lgr.Info("finished creating resources for atom", "atom", atom)
-	r.logAndUpdateStatusFinished(ctx, atom, operationResults)
+	smoothoperatorstatus.LogAndUpdateStatusFinished(ctx, r.Client, atom, operationResults)
 
 	return result, err
 }
@@ -186,7 +183,7 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	operationResults[smoothutil.GetObjectFullName(r.Client, deployment)], err = controllerutil.CreateOrUpdate(ctx, r.Client, deployment, func() error {
 		return r.mutateDeployment(atom, deployment, configMap.GetName())
 	})
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "the object has been modified; please apply your changes to the latest version and try again") {
 		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothutil.GetObjectFullName(c, deployment), err)
 	}
 	// endregion
@@ -267,6 +264,7 @@ func (r *AtomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Owns(&traefikiov1alpha1.IngressRoute{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&policyv1.PodDisruptionBudget{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Owns(&smoothoperatorv1.OwnerInfo{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&appsv1.ReplicaSet{}, smoothoperatorstatus.GetReplicaSetEventHandlerForObj(mgr, "Atom")).
 		Complete(r)
 }
 
