@@ -389,7 +389,7 @@ var _ = Describe("Atom Webhook", func() {
 				},
 				func(_, _ *pdoknlv3.Atom) field.ErrorList {
 					return field.ErrorList{
-						field.Forbidden(servicePath.Child("baseUrl"), "is immutable"),
+						field.Forbidden(servicePath.Child("baseUrl"), "is immutable, add the old and new urls to spec.ingressRouteUrls in order to change this field"),
 					}
 				},
 			)
