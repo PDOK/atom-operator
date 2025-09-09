@@ -16,4 +16,4 @@ metadata:
 spec:
   replacePathRegex:
     regex: ^(/path|/path/other)/downloads/(file-3.ext|file-4.ext)
-    replacement: /container/prefix-3/$1
+    replacement: /container/prefix-3/$2

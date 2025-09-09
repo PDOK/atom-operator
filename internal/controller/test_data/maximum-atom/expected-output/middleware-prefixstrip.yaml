@@ -17,3 +17,5 @@ spec:
   stripPrefix:
     prefixes:
       - /path/
+      - /path/
+      - /path/other/
