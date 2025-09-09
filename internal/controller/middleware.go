@@ -34,8 +34,8 @@ func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middle
 			Prefixes: []string{atom.Spec.Service.BaseURL.Path + "/"}},
 	}
 
-	for _, ingressRouteUrl := range atom.Spec.IngressRouteURLs {
-		middleware.Spec.StripPrefix.Prefixes = append(middleware.Spec.StripPrefix.Prefixes, ingressRouteUrl.URL.Path+"/")
+	for _, ingressRouteURL := range atom.Spec.IngressRouteURLs {
+		middleware.Spec.StripPrefix.Prefixes = append(middleware.Spec.StripPrefix.Prefixes, ingressRouteURL.URL.Path+"/")
 	}
 
 	if err := smoothutil.EnsureSetGVK(r.Client, middleware, middleware); err != nil {
