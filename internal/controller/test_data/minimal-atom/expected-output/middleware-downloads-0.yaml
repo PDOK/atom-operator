@@ -15,5 +15,5 @@ metadata:
       controller: true
 spec:
   replacePathRegex:
-    regex: ^/path/downloads/(file.ext)
-    replacement: /container/prefix/$1
+    regex: ^(/path)/downloads/(file.ext)
+    replacement: /container/prefix/$2
