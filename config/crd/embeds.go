@@ -1,6 +1,5 @@
 package crd
 
-//nolint:goimports
 import (
 	_ "embed"
 
