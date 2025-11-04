@@ -49,11 +49,6 @@ import (
 	// +kubebuilder:scaffold:imports
 )
 
-const (
-	defaultAtomGeneratorImage = "acrpdokprodman.azurecr.io/mirror/docker.io/pdok/atom-generator:0.6.2"
-	defaultLighttpdImage      = "acrpdokprodman.azurecr.io/mirror/docker.io/pdok/lighttpd:1.4.67"
-)
-
 var (
 	scheme   = runtime.NewScheme()
 	setupLog = ctrl.Log.WithName("setup")
@@ -99,8 +94,8 @@ func main() {
 		"If set, HTTP/2 will be enabled for the metrics and webhook servers")
 	flag.StringVar(&baseURL, "atom-baseurl", "", "The base url which is used in the atom service.")
 	flag.StringVar(&blobEndpoint, "blob-endpoint", "", "The blobstore endpoint used for file downloads.")
-	flag.StringVar(&atomGeneratorImage, "atom-generator-image", defaultAtomGeneratorImage, "The image to use in the Atom generator init-container.")
-	flag.StringVar(&lighttpdImage, "lighttpd-image", defaultLighttpdImage, "The image to use in the Atom pod.")
+	flag.StringVar(&atomGeneratorImage, "atom-generator-image", "", "The image to use in the Atom generator init-container.")
+	flag.StringVar(&lighttpdImage, "lighttpd-image", "", "The image to use in the Atom pod.")
 	flag.StringVar(&slackWebhookURL, "slack-webhook-url", "", "The webhook url for sending slack messages. Disabled if left empty")
 	flag.IntVar(&logLevel, "log-level", 0, "The zapcore loglevel. 0 = info, 1 = warn, 2 = error")
 	flag.StringVar(&csp, "csp", "", "Content-Security-Policy to serve as a HTTP header")
@@ -123,16 +118,21 @@ func main() {
 
 	ctrl.SetLogger(logrLogger)
 
-	if baseURL == "" {
-		setupLog.Error(errors.New("baseURL is required"), "A value for baseURL must be specified.")
-		os.Exit(1)
+	reqFlags := make(map[string]string)
+	reqFlags["baseurl"] = baseURL
+	reqFlags["blobEndpoint"] = blobEndpoint
+	reqFlags["atom-generator-image"] = atomGeneratorImage
+	reqFlags["lighttpd-image"] = lighttpdImage
+
+	for reqFlag, val := range reqFlags {
+		if val == "" {
+			setupLog.Error(errors.New(reqFlag+" is a required flag"), "A value for "+reqFlag+" must be specified.")
+			os.Exit(1)
+		}
 	}
+
 	pdoknlv3.SetBaseURL(baseURL)
 
-	if blobEndpoint == "" {
-		setupLog.Error(errors.New("blobEndpoint is required"), "A value for blobEndpoint must be specified.")
-		os.Exit(1)
-	}
 	pdoknlv3.SetBlobEndpoint(blobEndpoint)
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
