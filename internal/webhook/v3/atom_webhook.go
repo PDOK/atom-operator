@@ -43,8 +43,7 @@ func SetupAtomWebhookWithManager(mgr ctrl.Manager) error {
 // TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
-// NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
-// Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
+// NOTE: If you want to customise the 'path', use the flags '--defaulting-path' or '--validation-path'.
 // +kubebuilder:webhook:path=/validate-pdok-nl-v3-atom,mutating=false,failurePolicy=fail,sideEffects=None,groups=pdok.nl,resources=atoms,verbs=create;update,versions=v3,name=vatom-v3.kb.io,admissionReviewVersions=v1
 
 // AtomCustomValidator struct is responsible for validating the Atom resource
