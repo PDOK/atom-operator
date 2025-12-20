@@ -17,7 +17,7 @@ spec:
   - name: v2beta1
     schema:
       openAPIV3Schema:
-        description: Atom is the Schema for the atoms API.
+        description: Atom is the Schema for the atoms API
         properties:
           apiVersion:
             description: |-
@@ -37,16 +37,18 @@ spec:
           metadata:
             type: object
           spec:
-            description: AtomSpec defines the desired state of Atom.
+            description: spec defines the desired state of Atom
             properties:
               foo:
-                description: Foo is an example field of Atom. Edit atom_types.go to
+                description: foo is an example field of Atom. Edit atom_types.go to
                   remove/update
                 type: string
             type: object
           status:
-            description: AtomStatus defines the observed state of Atom.
+            description: status defines the observed state of Atom
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: false
@@ -55,7 +57,7 @@ spec:
   - name: v3
     schema:
       openAPIV3Schema:
-        description: Atom is the Schema for the atoms API.
+        description: Atom is the Schema for the atoms API
         properties:
           apiVersion:
             description: |-
@@ -75,16 +77,18 @@ spec:
           metadata:
             type: object
           spec:
-            description: AtomSpec defines the desired state of Atom.
+            description: spec defines the desired state of Atom
             properties:
               foo:
-                description: Foo is an example field of Atom. Edit atom_types.go to
+                description: foo is an example field of Atom. Edit atom_types.go to
                   remove/update
                 type: string
             type: object
           status:
-            description: AtomStatus defines the observed state of Atom.
+            description: status defines the observed state of Atom
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true
