@@ -59,7 +59,7 @@ type AtomCustomValidator struct {
 var _ webhook.CustomValidator = &AtomCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type Atom.
-func (v *AtomCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *AtomCustomValidator) ValidateCreate(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
 	atom, ok := obj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object but got %T", obj)
@@ -72,7 +72,7 @@ func (v *AtomCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Ob
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Atom.
-func (v *AtomCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
+func (v *AtomCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
 	atom, ok := newObj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object for the newObj but got %T", newObj)
