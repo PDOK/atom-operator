@@ -83,6 +83,10 @@ The project is written in Go and scaffolded with [kubebuilder](https://kubebuild
 Read the manual when you want/need to make changes.
 E.g. run `make test` before committing.
 
+To update the scaffolding:
+- Install the latest version of kubebuilder globally on your machine;
+- Run: `kubebuilder alpha update --from-branch master`
+
 ### Linting
 
 Install [golangci-lint](https://golangci-lint.run/usage/install/) and run `golangci-lint run`
