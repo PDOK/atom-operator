@@ -5,7 +5,7 @@
 domain: pdok.nl
 layout:
 - go.kubebuilder.io/v4
-projectName: atom-operator
+projectName: atom-operator-v3
 repo: github.com/pdok/atom-operator
 resources:
 - api:
