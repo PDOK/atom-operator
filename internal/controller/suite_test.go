@@ -1,29 +1,44 @@
 /*
-Copyright 2025.
+MIT License
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Copyright (c) 2024 Publieke Dienstverlening op de Kaart
 
-    http://www.apache.org/licenses/LICENSE-2.0
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 */
 
 package controller
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	traefikiov1alpha1 "github.com/traefik/traefik/v3/pkg/provider/kubernetes/crd/traefikio/v1alpha1"
+	"golang.org/x/tools/go/packages"
+
+	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
+	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
 
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
@@ -40,7 +55,6 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	ctx       context.Context
 	cancel    context.CancelFunc
 	testEnv   *envtest.Environment
 	cfg       *rest.Config
@@ -56,18 +70,35 @@ func TestControllers(t *testing.T) {
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
-	ctx, cancel = context.WithCancel(context.TODO())
+	_, cancel = context.WithCancel(context.TODO())
 
 	var err error
 	err = pdoknlv3.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = traefikiov1alpha1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = smoothoperatorv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+
 	// +kubebuilder:scaffold:scheme
 
 	By("bootstrapping test environment")
+	traefikCRDPath := must(getTraefikCRDPath())
+	ownerInfoCRDPath := must(getOwnerInfoCRDPath())
+
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
+		CRDInstallOptions: envtest.CRDInstallOptions{
+			Scheme: nil,
+			Paths: []string{
+				filepath.Join("..", "..", "config", "crd", "bases", "pdok.nl_atoms.yaml"),
+				traefikCRDPath,
+				ownerInfoCRDPath,
+			},
+			ErrorIfPathMissing: true,
+		},
 	}
 
 	// Retrieve the first found binary directory to allow running tests from IDEs
@@ -113,4 +144,36 @@ func getFirstFoundEnvTestBinaryDir() string {
 		}
 	}
 	return ""
+}
+
+func getOwnerInfoCRDPath() (string, error) {
+	smoothOperatorModule, err := getModule("github.com/pdok/smooth-operator")
+	if err != nil {
+		return "", err
+	}
+	if smoothOperatorModule.Dir == "" {
+		return "", errors.New("cannot find path for smooth-operator module")
+	}
+	return filepath.Join(smoothOperatorModule.Dir, "config", "crd", "bases", "pdok.nl_ownerinfo.yaml"), nil
+}
+
+func getTraefikCRDPath() (string, error) {
+	traefikModule, err := getModule("github.com/traefik/traefik/v3")
+	if err != nil {
+		return "", err
+	}
+	if traefikModule.Dir == "" {
+		return "", errors.New("cannot find path for traefik module")
+	}
+	return filepath.Join(traefikModule.Dir, "integration", "fixtures", "k8s", "01-traefik-crd.yml"), nil
+}
+
+func getModule(name string) (module *packages.Module, err error) {
+	out, err := exec.Command("go", "list", "-json", "-m", name).Output()
+	if err != nil {
+		return
+	}
+	module = &packages.Module{}
+	err = json.Unmarshal(out, module)
+	return
 }

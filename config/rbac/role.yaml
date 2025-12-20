@@ -5,6 +5,37 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - replicasets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
   - pdok.nl
   resources:
   - atoms
@@ -30,3 +61,52 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - pdok.nl
+  resources:
+  - ownerinfo
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pdok.nl
+  resources:
+  - ownerinfo/status
+  verbs:
+  - get
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets
+  verbs:
+  - create
+  - delete
+  - list
+  - update
+  - watch
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - policy
+  resources:
+  - poddisruptionbudgets/status
+  verbs:
+  - get
+  - update
+- apiGroups:
+  - traefik.io
+  resources:
+  - ingressroutes
+  - middlewares
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch

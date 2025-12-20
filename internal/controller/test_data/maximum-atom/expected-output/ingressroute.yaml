@@ -1,0 +1,100 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: maximum-atom
+  namespace: default
+  annotations:
+    uptime.pdok.nl/id: 29b30c337948f8e145bbf0ceae3f38669a666827
+    uptime.pdok.nl/name: service-title ATOM
+    uptime.pdok.nl/url: https://test.com/path/index.xml
+    uptime.pdok.nl/tags: public-stats,atom
+  labels:
+    test: test
+    pdok.nl/app: atom-service
+  ownerReferences:
+    - apiVersion: pdok.nl/v3
+      kind: Atom
+      name: maximum
+      uid: ""
+      blockOwnerDeletion: true
+      controller: true
+spec:
+  routes:
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/index.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/feed-1.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/feed-2.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && PathPrefix(`/path/downloads/`)
+      services:
+        - kind: Service
+          name: azure-storage
+          port: azure-storage
+          passHostHeader: false
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-downloads-0
+        - name: maximum-atom-downloads-1
+        - name: maximum-atom-downloads-2
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/other/index.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/other/feed-1.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/other/feed-2.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && PathPrefix(`/path/other/downloads/`)
+      services:
+        - kind: Service
+          name: azure-storage
+          port: azure-storage
+          passHostHeader: false
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-downloads-0
+        - name: maximum-atom-downloads-1
+        - name: maximum-atom-downloads-2

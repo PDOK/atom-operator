@@ -1,0 +1,114 @@
+apiVersion: pdok.nl/v3
+kind: Atom
+metadata:
+  name: maximum
+  namespace: default
+  labels:
+    test: test
+spec:
+  ingressRouteUrls:
+    - url: https://test.com/path/
+    - url: https://test.com/path/other/
+  service:
+    baseUrl: https://test.com/path/
+    stylesheet: https://test.com/stylesheet
+    title: service-title
+    subtitle: service-subtitle
+    ownerInfoRef: owner
+    serviceMetadataLinks:
+      metadataIdentifier: 00000000-0000-0000-0000-000000000000
+      templates:
+        - csw
+        - html
+        - opensearch
+#    links: [] # TODO Implement
+    rights: rights
+    lang: nl
+    datasetFeeds:
+      - technicalName: feed-1
+        title: feed-1-title
+        subtitle: feed-1-subtitle
+        datasetMetadataLinks:
+          metadataIdentifier: 00000000-0000-0000-0000-000000000001
+          templates:
+            - csw
+            - html
+        links:
+          - href: https://test.com/encodingrule.pdf
+            rel: encodingRule
+            type: application/pdf
+            hreflang: en
+            title: Encoding Rules
+        spatialDatasetIdentifierCode: 00000000-0000-0000-0000-000000000002
+        spatialDatasetIdentifierNamespace: https://test.com
+        author:
+          email: feed-1@author.com
+          name: feed-1-author
+        entries:
+          - technicalName: entry-1
+            title: entry-1-title
+            content: entry-1-content
+            updated: 2006-01-02T15:04:05Z
+            downloadlinks:
+              - data: container/prefix-1/index.json
+                rel: "index"
+              - data: container/prefix-1/file-1.ext
+                time: 2006-01-02T15:04:05Z
+                bbox:
+                  maxx: "10"
+                  maxy: "100"
+                  minx: "1"
+                  miny: "10"
+            srs:
+              name: srs-1
+              uri: https://srs-1/test
+            polygon:
+              bbox:
+                maxx: "10"
+                maxy: "100"
+                minx: "5"
+                miny: "50"
+          - technicalName: entry-2
+            title: entry-2-title
+            content: entry-2-content
+            updated: 2006-01-02T15:04:05Z
+            downloadlinks:
+              - data: container/prefix-2/file-2.ext
+            srs:
+              name: srs-2
+              uri: https://srs-2/test
+            polygon:
+              bbox:
+                maxx: "10"
+                maxy: "100"
+                minx: "5"
+                miny: "50"
+      - technicalName: feed-2
+        title: feed-2-title
+        subtitle: feed-2-subtitle
+        datasetMetadataLinks:
+          metadataIdentifier: 00000000-0000-0000-0000-000000000003
+          templates:
+            - csw
+            - html
+        spatialDatasetIdentifierCode: 00000000-0000-0000-0000-000000000004
+        spatialDatasetIdentifierNamespace: https://test-2.com
+        author:
+          email: feed-2@author.com
+          name: feed-2-author
+        entries:
+          - technicalName: entry-3
+            updated: 2006-01-02T15:04:05Z
+            content: entry-3-content
+            downloadlinks:
+              - data: container/prefix-3/file-3.ext
+              - data: container/prefix-3/file-4.ext
+            srs:
+              name: srs-3
+              uri: https://srs-3/test
+            polygon:
+              bbox:
+                maxx: "10"
+                maxy: "100"
+                minx: "5"
+                miny: "50"

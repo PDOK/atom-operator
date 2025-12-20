@@ -6,7 +6,7 @@ cliVersion: 4.7.0
 domain: pdok.nl
 layout:
 - go.kubebuilder.io/v4
-projectName: atom-operator-v3
+projectName: atom-operator
 repo: github.com/pdok/atom-operator
 resources:
 - api:
