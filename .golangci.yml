@@ -1,99 +1,49 @@
 version: "2"
 run:
-  tests: true
+  allow-parallel-runners: true
 linters:
+  default: none
   enable:
-    - asasalint
-    - asciicheck
-    - bidichk
-    - bodyclose
     - copyloopvar
-    - cyclop
-    - dogsled
     - dupl
-    - durationcheck
-    - errname
-    - errorlint
-    - exhaustive
-    - exptostd
-    - fatcontext
-    - forbidigo
-    - funlen
-    - gocheckcompilerdirectives
+    - errcheck
+    - ginkgolinter
     - goconst
-    - gocritic
-    - gomoddirectives
-    - gomodguard
-    - goprintffuncname
-    - gosec
-    - loggercheck
-    - makezero
-    - mirror
+    - gocyclo
+    - govet
+    - ineffassign
+    - lll
     - misspell
     - nakedret
-    - nestif
-    - nilerr
-    - nolintlint
-    - nosprintfhostport
-    - perfsprint
-    - predeclared
-    - promlinter
-    - reassign
+    - prealloc
     - revive
-    - rowserrcheck
-    - sloglint
-    - sqlclosecheck
-    - tagliatelle
-    - testableexamples
-    - tparallel
+    - staticcheck
     - unconvert
     - unparam
-    - usestdlibvars
-    - usetesting
-    - wastedassign
+    - unused
   settings:
-    cyclop:
-      max-complexity: 15
-    depguard:
+    revive:
       rules:
-        main:
-          deny:
-            - pkg: github.com/pkg/errors
-              desc: Should be replaced by standard lib errors package
-    forbidigo:
-      forbid:
-        - pattern: http\.NotFound.*
-        - pattern: http\.Error.*
-    funlen:
-      lines: 100
-    gomoddirectives:
-      replace-allow-list:
-        - github.com/abbot/go-http-auth
-    nestif:
-      min-complexity: 6
+        - name: comment-spacings
+        - name: import-shadowing
   exclusions:
     generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
     rules:
       - linters:
-          - bodyclose
-          - dogsled
-          - dupl
-          - funlen
-          - gosec
-        path: _test\.go
+          - lll
+        path: api/*
       - linters:
-          - cyclop
-        path: (.+)_test\.go
+          - dupl
+          - lll
+        path: internal/*
     paths:
       - third_party$
       - builtin$
       - examples$
 formatters:
+  enable:
+    - gofmt
+    - goimports
   exclusions:
     generated: lax
     paths:
