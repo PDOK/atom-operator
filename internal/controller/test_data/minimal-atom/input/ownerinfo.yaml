@@ -1,0 +1,10 @@
+apiVersion: pdok.nl/v1
+kind: OwnerInfo
+metadata:
+  name: owner
+  namespace: default
+spec:
+  atom:
+    author:
+      email: owner@author.com
+      name: owner-author

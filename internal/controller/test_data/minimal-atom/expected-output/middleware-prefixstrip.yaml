@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: minimal-atom-prefixstrip
+  namespace: default
+  labels:
+    test: test
+    pdok.nl/app: atom-service
+  ownerReferences:
+    - apiVersion: pdok.nl/v3
+      kind: Atom
+      name: minimal
+      uid: ""
+      blockOwnerDeletion: true
+      controller: true
+spec:
+  stripPrefix:
+    prefixes:
+      - /path/

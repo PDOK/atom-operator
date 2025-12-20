@@ -1,0 +1,60 @@
+apiVersion: pdok.nl/v3
+kind: Atom
+metadata:
+  annotations:
+    kangaroo.pdok.nl/lifecycle-phase: prod
+    kangaroo.pdok.nl/readonly: "true"
+  labels:
+    pdok.nl/dataset-id: dataset-with-multiple-urls
+    pdok.nl/owner-id: owner
+    pdok.nl/service-type: atom
+  name: ingress-route-urls
+  namespace: services
+spec:
+  ingressRouteUrls:
+    - url: http://localhost:32788/owner/dataset/atom
+    - url: http://localhost:32788/other/path
+  service:
+    baseUrl: http://localhost:32788/owner/dataset/atom
+    datasetFeeds:
+      - author:
+          email: author@email.com
+          name: Author
+        datasetMetadataLinks:
+          metadataIdentifier: 07d73b60-dfd6-4c54-9c82-9fac70c6caf6
+          templates:
+            - csw
+            - html
+        entries:
+          - content:
+              Deze dataset bevat data over allerlei willekeurige dingen
+            downloadlinks:
+              - data: public/owner/dataset/65daed5f-e9e4-5791-a7c9-7e9effcca585/3/dataset.gpkg
+            polygon:
+              bbox:
+                maxx: "7.5553527"
+                maxy: "55.66948"
+                minx: "2.354173"
+                miny: "50.71447"
+            srs:
+              name: Amersfoort / RD New
+              uri: https://www.opengis.net/def/crs/EPSG/0/28992
+            technicalName: dataset
+            title: dataset
+            updated: "2025-02-28T09:04:17Z"
+        spatialDatasetIdentifierCode: 07d73b60-dfd6-4c54-9c82-9fac70c6caf6
+        spatialDatasetIdentifierNamespace: http://www.pdok.nl
+        subtitle: dataset
+        technicalName: dataset
+        title: dataset
+    lang: nl
+    ownerInfoRef: pdok
+    rights: https://creativecommons.org/publicdomain/zero/1.0/deed.nl
+    serviceMetadataLinks:
+      metadataIdentifier: 2751ba40-5100-4186-81be-b7fdee95baf6
+      templates:
+        - csw
+        - opensearch
+        - html
+    subtitle: Download Service van dataset
+    title: Dataset
