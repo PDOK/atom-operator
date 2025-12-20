@@ -1,25 +1,17 @@
 /*
-MIT License
+Copyright 2025.
 
-Copyright (c) 2024 Publieke Dienstverlening op de Kaart
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+    http://www.apache.org/licenses/LICENSE-2.0
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 package v3
@@ -27,8 +19,6 @@ package v3
 import (
 	"context"
 	"fmt"
-
-	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,18 +29,20 @@ import (
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 )
 
+// nolint:unused
 // log is for logging in this package.
-//
-
 var atomlog = logf.Log.WithName("atom-resource")
 
 // SetupAtomWebhookWithManager registers the webhook for Atom in the manager.
 func SetupAtomWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).For(&pdoknlv3.Atom{}).
-		WithValidator(&AtomCustomValidator{mgr.GetClient()}).
+		WithValidator(&AtomCustomValidator{}).
 		Complete()
 }
 
+// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+
+// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 // NOTE: The 'path' attribute must follow a specific pattern and should not be modified directly here.
 // Modifying the path for an invalid path can cause API server errors; failing to locate the webhook.
 // +kubebuilder:webhook:path=/validate-pdok-nl-v3-atom,mutating=false,failurePolicy=fail,sideEffects=None,groups=pdok.nl,resources=atoms,verbs=create;update,versions=v3,name=vatom-v3.kb.io,admissionReviewVersions=v1
@@ -61,7 +53,7 @@ func SetupAtomWebhookWithManager(mgr ctrl.Manager) error {
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
 type AtomCustomValidator struct {
-	Client client.Client
+	// TODO(user): Add more fields as needed for validation
 }
 
 var _ webhook.CustomValidator = &AtomCustomValidator{}
@@ -74,28 +66,26 @@ func (v *AtomCustomValidator) ValidateCreate(_ context.Context, obj runtime.Obje
 	}
 	atomlog.Info("Validation for Atom upon creation", "name", atom.GetName())
 
-	return atom.ValidateCreate(v.Client)
+	// TODO(user): fill in your validation logic upon object creation.
+
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type Atom.
 func (v *AtomCustomValidator) ValidateUpdate(_ context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	atomlog.Info("reading newAtom")
 	atom, ok := newObj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object for the newObj but got %T", newObj)
 	}
-	atomlog.Info("reading oldAtom")
-	atomOld, ok := oldObj.(*pdoknlv3.Atom)
-	if !ok {
-		return nil, fmt.Errorf("expected a Atom object for the oldObj but got %T", oldObj)
-	}
 	atomlog.Info("Validation for Atom upon update", "name", atom.GetName())
 
-	return atom.ValidateUpdate(v.Client, atomOld)
+	// TODO(user): fill in your validation logic upon object update.
+
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type Atom.
-func (v *AtomCustomValidator) ValidateDelete(_ context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v *AtomCustomValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
 	atom, ok := obj.(*pdoknlv3.Atom)
 	if !ok {
 		return nil, fmt.Errorf("expected a Atom object but got %T", obj)
