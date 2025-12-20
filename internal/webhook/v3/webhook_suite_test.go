@@ -1,17 +1,25 @@
 /*
-Copyright 2025.
+MIT License
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+Copyright (c) 2024 Publieke Dienstverlening op de Kaart
 
-    http://www.apache.org/licenses/LICENSE-2.0
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 */
 
 package v3
@@ -19,18 +27,31 @@ package v3
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
 
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
+	samples "github.com/pdok/atom-operator/internal/webhook/v3/ownerinfo-test"
 
-	"k8s.io/client-go/kubernetes/scheme"
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
+	"golang.org/x/tools/go/packages"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/json"
+
+	. "github.com/onsi/ginkgo/v2" //nolint:revive // ginkgo bdd
+	. "github.com/onsi/gomega"    //nolint:revive // ginkgo bdd
+
+	admissionv1 "k8s.io/api/admission/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -63,21 +84,38 @@ func TestAPIs(t *testing.T) {
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
+	//nolint:fatcontext
 	ctx, cancel = context.WithCancel(context.TODO())
 
 	var err error
-	err = pdoknlv3.AddToScheme(scheme.Scheme)
+	scheme := runtime.NewScheme()
+	err = pdoknlv3.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = admissionv1.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = smoothoperatorv1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
 
 	By("bootstrapping test environment")
+	traefikCRDPath := must(getTraefikCRDPath())
+	ownerInfoCRDPath := must(getOwnerInfoCRDPath())
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths:     []string{filepath.Join("..", "..", "..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: false,
 
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
 			Paths: []string{filepath.Join("..", "..", "..", "config", "webhook")},
+		},
+		CRDInstallOptions: envtest.CRDInstallOptions{
+			Scheme: nil,
+			Paths: []string{
+				filepath.Join("..", "..", "..", "config", "crd", "bases", "pdok.nl_atoms.yaml"),
+				traefikCRDPath,
+				ownerInfoCRDPath,
+			},
+			ErrorIfPathMissing: true,
 		},
 	}
 
@@ -91,14 +129,33 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+
+	By("creating manager namespace")
+
+	clientset, err := kubernetes.NewForConfig(cfg)
+	Expect(err).NotTo(HaveOccurred())
+	Expect(clientset).NotTo(BeNil())
+	namespace := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "services",
+		},
+	}
+	_, err = clientset.CoreV1().Namespaces().Create(ctx, namespace, metav1.CreateOptions{})
+	Expect(err).NotTo(HaveOccurred(), "Failed to create namespace")
+	ownerInfo, err := samples.OwnerInfoSample()
+	Expect(err).NotTo(HaveOccurred())
+	Expect(ownerInfo).NotTo(BeNil())
+
+	err = k8sClient.Create(ctx, ownerInfo)
+	Expect(err).NotTo(HaveOccurred())
 
 	// start webhook server using Manager.
 	webhookInstallOptions := &testEnv.WebhookInstallOptions
 	mgr, err := ctrl.NewManager(cfg, ctrl.Options{
-		Scheme: scheme.Scheme,
+		Scheme: scheme,
 		WebhookServer: webhook.NewServer(webhook.Options{
 			Host:    webhookInstallOptions.LocalServingHost,
 			Port:    webhookInstallOptions.LocalServingPort,
@@ -161,4 +218,43 @@ func getFirstFoundEnvTestBinaryDir() string {
 		}
 	}
 	return ""
+}
+
+func must[T any](t T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return t
+}
+
+func getOwnerInfoCRDPath() (string, error) {
+	smoothOperatorModule, err := getModule("github.com/pdok/smooth-operator")
+	if err != nil {
+		return "", err
+	}
+	if smoothOperatorModule.Dir == "" {
+		return "", errors.New("cannot find path for smooth-operator module")
+	}
+	return filepath.Join(smoothOperatorModule.Dir, "config", "crd", "bases", "pdok.nl_ownerinfo.yaml"), nil
+}
+
+func getTraefikCRDPath() (string, error) {
+	traefikModule, err := getModule("github.com/traefik/traefik/v3")
+	if err != nil {
+		return "", err
+	}
+	if traefikModule.Dir == "" {
+		return "", errors.New("cannot find path for traefik module")
+	}
+	return filepath.Join(traefikModule.Dir, "integration", "fixtures", "k8s", "01-traefik-crd.yml"), nil
+}
+
+func getModule(name string) (module *packages.Module, err error) {
+	out, err := exec.Command("go", "list", "-json", "-m", name).Output()
+	if err != nil {
+		return
+	}
+	module = &packages.Module{}
+	err = json.Unmarshal(out, module)
+	return
 }

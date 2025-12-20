@@ -1,0 +1,92 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minimal-atom-service
+  namespace: default
+  labels:
+    test: test
+    pdok.nl/app: atom-service
+  ownerReferences:
+    - apiVersion: pdok.nl/v3
+      kind: Atom
+      name: minimal
+      uid: ""
+      blockOwnerDeletion: true
+      controller: true
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 4
+  selector:
+    matchLabels:
+      test: test
+      pdok.nl/app: atom-service
+  revisionHistoryLimit: 1
+  template:
+    metadata:
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: 'true'
+        kubectl.kubernetes.io/default-container: atom-service
+        priority.version-checker.io/atom-service: "8"
+      labels:
+        test: test
+        pdok.nl/app: atom-service
+    spec:
+      containers:
+        - name: atom-service
+          ports:
+            - containerPort: 80
+          image: test.test/image:test2
+          imagePullPolicy: IfNotPresent
+          livenessProbe:
+            httpGet:
+              path: /index.xml
+              port: 80
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /index.xml
+              port: 80
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          resources:
+            limits:
+              memory: 64M
+            requests:
+              cpu: "0.01"
+          volumeMounts:
+            - name: socket
+              mountPath: /tmp
+              readOnly: false
+            - name: data
+              mountPath: /var/www/
+      initContainers:
+        - name: atom-generator
+          image: test.test/image:test1
+          imagePullPolicy: IfNotPresent
+          command:
+            - "./atom"
+          args:
+            - "-f=/srv/config/values.yaml"
+            - "-o=/srv/data"
+          volumeMounts:
+            - name: data
+              mountPath: /srv/data
+            - name: config
+              mountPath: /srv/config
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: socket
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: minimal-atom-generator
