@@ -106,7 +106,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 	lgr.Info("Fetching atom", "name", req.NamespacedName)
 	// Fetch the Atom instance
 	atom := &pdoknlv3.Atom{}
-	if err = r.Client.Get(ctx, req.NamespacedName, atom); err != nil {
+	if err = r.Get(ctx, req.NamespacedName, atom); err != nil {
 		if apierrors.IsNotFound(err) {
 			lgr.Info("Atom resource not found", "name", req.NamespacedName)
 		} else {
@@ -122,7 +122,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 		Namespace: atom.Namespace,
 		Name:      atom.Spec.Service.OwnerInfoRef,
 	}
-	if err = r.Client.Get(ctx, objectKey, ownerInfo); err != nil {
+	if err = r.Get(ctx, objectKey, ownerInfo); err != nil {
 		if apierrors.IsNotFound(err) {
 			lgr.Info("OwnerInfo resource not found", "name", req.NamespacedName)
 		} else {
@@ -141,7 +141,7 @@ func (r *AtomReconciler) Reconcile(ctx context.Context, req ctrl.Request) (resul
 
 	// Check TTL expiry
 	if ttlExpired(atom) {
-		err = r.Client.Delete(ctx, atom)
+		err = r.Delete(ctx, atom)
 
 		return result, err
 	}

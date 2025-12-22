@@ -207,17 +207,17 @@ func (a *Atom) ConvertFrom(srcRaw conversion.Hub) error {
 
 	// General
 	a.Spec.General = General{
-		Dataset:      src.ObjectMeta.Labels["dataset"],
-		DatasetOwner: src.ObjectMeta.Labels["dataset-owner"],
+		Dataset:      src.Labels["dataset"],
+		DatasetOwner: src.Labels["dataset-owner"],
 		DataVersion:  nil,
 	}
 
-	serviceVersion, ok := src.ObjectMeta.Labels["service-version"]
+	serviceVersion, ok := src.Labels["service-version"]
 	if ok {
 		a.Spec.General.ServiceVersion = &serviceVersion
 	}
 
-	theme, ok := src.ObjectMeta.Labels["theme"]
+	theme, ok := src.Labels["theme"]
 	if ok {
 		a.Spec.General.Theme = &theme
 	}

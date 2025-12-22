@@ -15,7 +15,7 @@ This operator uses a Custom Resource(CR) called _Atom_ as the input for the depl
 ## Getting Started
 
 ### Prerequisites
-- go version v1.24.0+
+- go version v1.25.0+
 - docker version 17.03+.
 - kubectl version v1.11.3+.
 - Access to a Kubernetes v1.11.3+ cluster.
@@ -82,6 +82,10 @@ The project is written in Go and scaffolded with [kubebuilder](https://kubebuild
 
 Read the manual when you want/need to make changes.
 E.g. run `make test` before committing.
+
+To update the scaffolding:
+- Install the latest version of kubebuilder globally on your machine;
+- Run: `kubebuilder alpha update --from-branch master`
 
 ### Linting
 
