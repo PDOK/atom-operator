@@ -35,20 +35,12 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 
 	baseURL := atom.Spec.Service.BaseURL
 
-	otherUptimeTags := []string{
-		"public-stats",
-	}
-	for _, v := range atom.Labels {
-		otherUptimeTags = append(otherUptimeTags, v)
-	}
-	sort.Strings(otherUptimeTags)
-
 	ingressRoute.Annotations = uptimeutils.GetUptimeAnnotations(
 		atom.Annotations,
 		atom.Name+nameSuffix,
 		atom.Spec.Service.Title+" ATOM",
 		baseURL.JoinPath("index.xml").String(),
-		otherUptimeTags,
+		atom.Labels,
 	)
 
 	// Set additional Azure storage middleware per download link
