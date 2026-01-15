@@ -10,9 +10,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 
+	"context"
 	"strings"
 
-	"golang.org/x/net/context"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 

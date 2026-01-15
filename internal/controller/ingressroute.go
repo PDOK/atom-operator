@@ -1,7 +1,6 @@
 package controller
 
 import (
-	//nolint:gosec  // sha1 is only used for ID generation here, not crypto
 	"fmt"
 	"net/url"
 	"sort"
