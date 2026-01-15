@@ -7,7 +7,7 @@ metadata:
     uptime.pdok.nl/id: 3ffebdf07a34c3d11a8396af8398877b41b148f6
     uptime.pdok.nl/name: service-title ATOM
     uptime.pdok.nl/url: https://test.com/path/index.xml
-    uptime.pdok.nl/tags: public-stats,atom
+    uptime.pdok.nl/tags: public-stats,test
   labels:
     test: test
     pdok.nl/app: atom-service

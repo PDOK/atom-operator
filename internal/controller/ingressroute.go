@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"crypto/sha1" //nolint:gosec  // sha1 is only used for ID generation here, not crypto
 	"fmt"
 	"net/url"
 	"sort"
 	"strconv"
 
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
+	uptimeutils "github.com/pdok/smooth-operator/pkg/uptime-utils"
 
 	pdoknlv3 "github.com/pdok/atom-operator/api/v3"
 	smoothutil "github.com/pdok/smooth-operator/pkg/util"
@@ -34,13 +34,13 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 
 	baseURL := atom.Spec.Service.BaseURL
 
-	// TODO move to smoothoperator function
-	ingressRoute.Annotations = map[string]string{
-		"uptime.pdok.nl/id":   fmt.Sprintf("%x", sha1.Sum([]byte(atom.Name+nameSuffix))), //nolint:gosec  // sha1 is only used for ID generation here, not crypto
-		"uptime.pdok.nl/name": atom.Spec.Service.Title + " ATOM",
-		"uptime.pdok.nl/url":  baseURL.JoinPath("index.xml").String(),
-		"uptime.pdok.nl/tags": "public-stats,atom",
-	}
+	ingressRoute.Annotations = uptimeutils.GetUptimeAnnotations(
+		atom.Annotations,
+		atom.Name+nameSuffix,
+		atom.Spec.Service.Title+" ATOM",
+		baseURL.JoinPath("index.xml").String(),
+		atom.Labels,
+	)
 
 	// Set additional Azure storage middleware per download link
 	var downloadMiddlewares []traefikiov1alpha1.MiddlewareRef
