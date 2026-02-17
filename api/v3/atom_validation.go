@@ -111,7 +111,7 @@ func validateCreate(c *client.Client, atom *Atom, warnings *[]string, allErrs *f
 
 	ValidateAtom(atom, warnings, allErrs)
 
-	// Only validate ower info if k8s client is available
+	// Only validate owner info if k8s client is available
 	if c != nil {
 		ValidateOwnerInfo(*c, atom, allErrs)
 	}
@@ -139,7 +139,7 @@ func validateUpdate(c *client.Client, atom *Atom, atomOld *Atom, warnings *[]str
 
 	ValidateAtom(atom, warnings, allErrs)
 
-	// Only validate ower info if k8s client is available
+	// Only validate owner info if k8s client is available
 	if c != nil {
 		ValidateOwnerInfo(*c, atom, allErrs)
 	}
