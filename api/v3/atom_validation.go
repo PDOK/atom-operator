@@ -20,13 +20,7 @@ func (atom *Atom) ValidateCreate(c client.Client) ([]string, error) {
 	var warnings []string
 	var allErrs field.ErrorList
 
-	err := smoothoperatorvalidation.ValidateLabelsOnCreate(atom.Labels)
-	if err != nil {
-		allErrs = append(allErrs, err)
-	}
-
-	ValidateAtom(atom, &warnings, &allErrs)
-	ValidateOwnerInfo(c, atom, &allErrs)
+	validateCreate(&c, atom, &warnings, &allErrs)
 
 	if len(allErrs) == 0 {
 		return warnings, nil
@@ -40,26 +34,8 @@ func (atom *Atom) ValidateCreate(c client.Client) ([]string, error) {
 func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, error) {
 	var warnings []string
 	var allErrs field.ErrorList
-	smoothoperatorvalidation.ValidateLabelsOnUpdate(atomOld.Labels, atom.Labels, &allErrs)
 
-	if atom.Spec.IngressRouteURLs == nil {
-		smoothoperatorvalidation.CheckURLImmutability(
-			atomOld.Spec.Service.BaseURL,
-			atom.Spec.Service.BaseURL,
-			&allErrs,
-			field.NewPath("spec").Child("service").Child("baseUrl"),
-		)
-	} else if atom.Spec.Service.BaseURL.String() != atomOld.Spec.Service.BaseURL.String() {
-		err := smoothoperatorvalidation.ValidateIngressRouteURLsContainsBaseURL(atom.Spec.IngressRouteURLs, atomOld.Spec.Service.BaseURL, nil)
-		if err != nil {
-			allErrs = append(allErrs, err)
-		}
-	}
-
-	smoothoperatorvalidation.ValidateIngressRouteURLsNotRemoved(atomOld.Spec.IngressRouteURLs, atom.Spec.IngressRouteURLs, &allErrs, nil)
-
-	ValidateAtom(atom, &warnings, &allErrs)
-	ValidateOwnerInfo(c, atom, &allErrs)
+	validateUpdate(&c, atom, atomOld, &warnings, &allErrs)
 
 	if len(allErrs) == 0 {
 		return warnings, nil
@@ -68,6 +44,16 @@ func (atom *Atom) ValidateUpdate(c client.Client, atomOld *Atom) ([]string, erro
 	return warnings, apierrors.NewInvalid(
 		schema.GroupKind{Group: "pdok.nl", Kind: "Atom"},
 		atom.Name, allErrs)
+}
+
+// ValidateCreateAtom validates Atom creation without k8s client
+func ValidateCreateAtom(atom *Atom, warnings *[]string, allErrs *field.ErrorList) {
+	validateCreate(nil, atom, warnings, allErrs)
+}
+
+// ValidateUpdateAtom validates Atom update without k8s client
+func ValidateUpdateAtom(atom *Atom, atomOld *Atom, warnings *[]string, allErrs *field.ErrorList) {
+	validateUpdate(nil, atom, atomOld, warnings, allErrs)
 }
 
 func ValidateOwnerInfo(c client.Client, atom *Atom, allErrs *field.ErrorList) {
@@ -114,6 +100,48 @@ func validateMetadataTemplates(atom *Atom, ownerInfo *smoothoperatorv1.OwnerInfo
 		if slices.Contains(metadataTemplates, "opensearch") && (ownerInfo.Spec.MetadataUrls == nil || ownerInfo.Spec.MetadataUrls.OpenSearch == nil) {
 			*allErrs = append(*allErrs, field.Required(fieldPath, "spec.metadataUrls.opensearch missing in "+ownerInfo.Name))
 		}
+	}
+}
+
+func validateCreate(c *client.Client, atom *Atom, warnings *[]string, allErrs *field.ErrorList) {
+	err := smoothoperatorvalidation.ValidateLabelsOnCreate(atom.Labels)
+	if err != nil {
+		*allErrs = append(*allErrs, err)
+	}
+
+	ValidateAtom(atom, warnings, allErrs)
+
+	// Only validate owner info if k8s client is available
+	if c != nil {
+		ValidateOwnerInfo(*c, atom, allErrs)
+	}
+
+}
+
+func validateUpdate(c *client.Client, atom *Atom, atomOld *Atom, warnings *[]string, allErrs *field.ErrorList) {
+	smoothoperatorvalidation.ValidateLabelsOnUpdate(atomOld.Labels, atom.Labels, allErrs)
+
+	if atom.Spec.IngressRouteURLs == nil {
+		smoothoperatorvalidation.CheckURLImmutability(
+			atomOld.Spec.Service.BaseURL,
+			atom.Spec.Service.BaseURL,
+			allErrs,
+			field.NewPath("spec").Child("service").Child("baseUrl"),
+		)
+	} else if atom.Spec.Service.BaseURL.String() != atomOld.Spec.Service.BaseURL.String() {
+		err := smoothoperatorvalidation.ValidateIngressRouteURLsContainsBaseURL(atom.Spec.IngressRouteURLs, atomOld.Spec.Service.BaseURL, nil)
+		if err != nil {
+			*allErrs = append(*allErrs, err)
+		}
+	}
+
+	smoothoperatorvalidation.ValidateIngressRouteURLsNotRemoved(atomOld.Spec.IngressRouteURLs, atom.Spec.IngressRouteURLs, allErrs, nil)
+
+	ValidateAtom(atom, warnings, allErrs)
+
+	// Only validate owner info if k8s client is available
+	if c != nil {
+		ValidateOwnerInfo(*c, atom, allErrs)
 	}
 }
 
