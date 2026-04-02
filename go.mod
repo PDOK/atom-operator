@@ -11,13 +11,12 @@ require (
 	github.com/onsi/ginkgo/v2 v2.22.1
 	github.com/onsi/gomega v1.36.2
 	github.com/pdok/atom-generator v0.6.4
-	github.com/pdok/smooth-operator v1.2.6
+	github.com/pdok/smooth-operator v1.2.7
 	github.com/peterbourgon/ff v1.7.1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.11.1
 	github.com/traefik/traefik/v3 v3.6.3
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.47.0
 	golang.org/x/tools v0.38.0
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
@@ -111,6 +110,7 @@ require (
 	golang.org/x/crypto v0.45.0 // indirect
 	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/mod v0.29.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/oauth2 v0.33.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
