@@ -25,10 +25,8 @@ func getBareStripPrefixMiddleware(obj metav1.Object) *traefikiov1alpha1.Middlewa
 }
 
 func (r *AtomReconciler) mutateStripPrefixMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware) error {
-	labels := getLabels(atom)
-	if err := smoothutil.SetImmutableLabels(r.Client, middleware, labels); err != nil {
-		return err
-	}
+	middleware.Labels = getObjectLabels(atom, middleware.Labels)
+
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		StripPrefix: &dynamic.StripPrefix{
 			Prefixes: []string{atom.Spec.Service.BaseURL.Path + "/"}},
@@ -56,10 +54,8 @@ func getBareHeadersMiddleware(obj metav1.Object) *traefikiov1alpha1.Middleware {
 }
 
 func (r *AtomReconciler) mutateHeadersMiddleware(atom *pdoknlv3.Atom, middleware *traefikiov1alpha1.Middleware, csp string) error {
-	labels := getLabels(atom)
-	if err := smoothutil.SetImmutableLabels(r.Client, middleware, labels); err != nil {
-		return err
-	}
+	middleware.Labels = getObjectLabels(atom, middleware.Labels)
+
 	middleware.Spec = traefikiov1alpha1.MiddlewareSpec{
 		Headers: &dynamic.Headers{
 			// CSP
@@ -92,10 +88,7 @@ func getBareDownloadLinkMiddleware(obj metav1.Object, index int) *traefikiov1alp
 }
 
 func (r *AtomReconciler) mutateDownloadLinkMiddleware(atom *pdoknlv3.Atom, prefix string, files []string, middleware *traefikiov1alpha1.Middleware) error {
-	labels := getLabels(atom)
-	if err := smoothutil.SetImmutableLabels(r.Client, middleware, labels); err != nil {
-		return err
-	}
+	middleware.Labels = getObjectLabels(atom, middleware.Labels)
 
 	ingressRouteURLs := atom.Spec.IngressRouteURLs
 	if len(ingressRouteURLs) == 0 {

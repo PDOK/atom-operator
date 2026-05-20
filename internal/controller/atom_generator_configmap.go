@@ -23,10 +23,7 @@ func getBareConfigMap(obj metav1.Object) *corev1.ConfigMap {
 }
 
 func (r *AtomReconciler) mutateAtomGeneratorConfigMap(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo, configMap *corev1.ConfigMap) error {
-	labels := getLabels(atom)
-	if err := smoothutil.SetImmutableLabels(r.Client, configMap, labels); err != nil {
-		return err
-	}
+	configMap.Labels = getObjectLabels(atom, configMap.Labels)
 
 	if len(configMap.Data) == 0 {
 		generatorConfig, err := getGeneratorConfig(atom, ownerInfo)

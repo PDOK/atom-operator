@@ -28,10 +28,7 @@ func getBareIngressRoute(obj metav1.Object) *traefikiov1alpha1.IngressRoute {
 }
 
 func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *traefikiov1alpha1.IngressRoute) error {
-	labels := getLabels(atom)
-	if err := smoothutil.SetImmutableLabels(r.Client, ingressRoute, labels); err != nil {
-		return err
-	}
+	ingressRoute.Labels = getObjectLabels(atom, ingressRoute.Labels)
 
 	baseURL := atom.Spec.Service.BaseURL
 

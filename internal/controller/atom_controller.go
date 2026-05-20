@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	policyv1 "k8s.io/api/policy/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -268,10 +269,16 @@ func (r *AtomReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func getLabels(atom *pdoknlv3.Atom) map[string]string {
-	labels := smoothutil.CloneOrEmptyMap(atom.GetLabels())
-	labels[appLabelKey] = appName
-	return labels
+var defaultLabels = map[string]string{appLabelKey: appName}
+
+func getLabelSelector(atom *pdoknlv3.Atom) *metav1.LabelSelector {
+	return &metav1.LabelSelector{
+		MatchLabels: smoothutil.CombineLabels(atom.Labels, defaultLabels),
+	}
+}
+
+func getObjectLabels(atom *pdoknlv3.Atom, objLabels map[string]string) map[string]string {
+	return smoothutil.CombineLabels(objLabels, atom.Labels, defaultLabels)
 }
 
 func ttlExpired(atom *pdoknlv3.Atom) bool {

@@ -19,17 +19,11 @@ func getBarePodDisruptionBudget(obj metav1.Object) *policyv1.PodDisruptionBudget
 }
 
 func (r *AtomReconciler) mutatePodDisruptionBudget(atom *pdoknlv3.Atom, podDisruptionBudget *policyv1.PodDisruptionBudget) error {
-	labels := getLabels(atom)
-	if err := smoothutil.SetImmutableLabels(r.Client, podDisruptionBudget, labels); err != nil {
-		return err
-	}
+	podDisruptionBudget.Labels = getObjectLabels(atom, podDisruptionBudget.Labels)
 
-	matchLabels := smoothutil.CloneOrEmptyMap(labels)
 	podDisruptionBudget.Spec = policyv1.PodDisruptionBudgetSpec{
 		MaxUnavailable: &intstr.IntOrString{Type: intstr.Int, IntVal: 1},
-		Selector: &metav1.LabelSelector{
-			MatchLabels: matchLabels,
-		},
+		Selector:       getLabelSelector(atom),
 	}
 
 	if err := smoothutil.EnsureSetGVK(r.Client, podDisruptionBudget, podDisruptionBudget); err != nil {
