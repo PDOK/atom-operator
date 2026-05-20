@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
+	"strings"
 
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	uptimeutils "github.com/pdok/smooth-operator/pkg/uptime-utils"
@@ -34,10 +35,15 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 
 	baseURL := atom.Spec.Service.BaseURL
 
+	title := atom.Spec.Service.Title
+	if !strings.HasSuffix(title, "ATOM") {
+		title += " ATOM"
+	}
+
 	ingressRoute.Annotations = uptimeutils.GetUptimeAnnotations(
 		atom.Annotations,
 		atom.Name+nameSuffix,
-		atom.Spec.Service.Title+" ATOM",
+		title,
 		baseURL.JoinPath("index.xml").String(),
 		atom.Labels,
 	)
