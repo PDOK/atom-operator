@@ -31,19 +31,14 @@ func getBareDeployment(obj metav1.Object) *appsv1.Deployment {
 
 //nolint:funlen
 func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv1.Deployment, configMapName string) error {
-	labels := getLabels(atom)
-	if err := smoothutil.SetImmutableLabels(r.Client, deployment, labels); err != nil {
-		return err
-	}
+	deployment.Labels = getObjectLabels(atom, deployment.Labels)
 
 	podTemplateAnnotations := smoothutil.CloneOrEmptyMap(deployment.Spec.Template.GetAnnotations())
 	podTemplateAnnotations[evictAnnotation] = evictValue
 	podTemplateAnnotations[defaultContainerAnnotation] = "atom-service"
 	podTemplateAnnotations[versionCheckerAnnotation] = versionCheckerPriority
 
-	deployment.Spec.Selector = &metav1.LabelSelector{
-		MatchLabels: labels,
-	}
+	deployment.Spec.Selector = getLabelSelector(atom)
 
 	deployment.Spec.MinReadySeconds = 0
 	deployment.Spec.Strategy = appsv1.DeploymentStrategy{
@@ -58,7 +53,7 @@ func (r *AtomReconciler) mutateDeployment(atom *pdoknlv3.Atom, deployment *appsv
 
 	podTemplateSpec := corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      labels,
+			Labels:      getObjectLabels(atom, deployment.Spec.Template.Labels),
 			Annotations: podTemplateAnnotations,
 		},
 		Spec: corev1.PodSpec{
