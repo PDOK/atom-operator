@@ -30,6 +30,15 @@ spec:
         - name: maximum-atom-headers
         - name: maximum-atom-prefixstrip
     - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/xslt-polyfill.min.js`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
       match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/feed-1.xml`)
       services:
         - kind: Service
@@ -61,6 +70,15 @@ spec:
         - name: maximum-atom-downloads-2
     - kind: Rule
       match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/other/index.xml`)
+      services:
+        - kind: Service
+          name: maximum-atom
+          port: 80
+      middlewares:
+        - name: maximum-atom-headers
+        - name: maximum-atom-prefixstrip
+    - kind: Rule
+      match: (Host(`localhost`) || Host(`test.com`)) && Path(`/path/other/xslt-polyfill.min.js`)
       services:
         - kind: Service
           name: maximum-atom
