@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	smoothoperatorv1 "github.com/pdok/smooth-operator/api/v1"
 	smoothoperatormodel "github.com/pdok/smooth-operator/model"
 	uptimeutils "github.com/pdok/smooth-operator/pkg/uptime-utils"
 
@@ -27,7 +28,7 @@ func getBareIngressRoute(obj metav1.Object) *traefikiov1alpha1.IngressRoute {
 	}
 }
 
-func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *traefikiov1alpha1.IngressRoute) error {
+func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo, ingressRoute *traefikiov1alpha1.IngressRoute) error {
 	ingressRoute.Labels = getObjectLabels(atom, ingressRoute.Labels)
 
 	baseURL := atom.Spec.Service.BaseURL
@@ -61,10 +62,10 @@ func (r *AtomReconciler) mutateIngressRoute(atom *pdoknlv3.Atom, ingressRoute *t
 	ingressRoute.Spec.Routes = []traefikiov1alpha1.Route{}
 	if len(atom.Spec.IngressRouteURLs) > 0 {
 		for _, ingressRouteURL := range atom.Spec.IngressRouteURLs {
-			ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, getRoutesForURL(atom, ingressRouteURL.URL, downloadMiddlewares)...)
+			ingressRoute.Spec.Routes = append(ingressRoute.Spec.Routes, getRoutesForURL(atom, ownerInfo, ingressRouteURL.URL, downloadMiddlewares)...)
 		}
 	} else {
-		ingressRoute.Spec.Routes = getRoutesForURL(atom, atom.Spec.Service.BaseURL, downloadMiddlewares)
+		ingressRoute.Spec.Routes = getRoutesForURL(atom, ownerInfo, atom.Spec.Service.BaseURL, downloadMiddlewares)
 	}
 
 	if err := smoothutil.EnsureSetGVK(r.Client, ingressRoute, ingressRoute); err != nil {
@@ -107,12 +108,17 @@ func getDefaultRule(atom *pdoknlv3.Atom, matchRule string) traefikiov1alpha1.Rou
 	}
 }
 
-func getRoutesForURL(atom *pdoknlv3.Atom, url smoothoperatormodel.URL, downloadMiddlewares []traefikiov1alpha1.MiddlewareRef) []traefikiov1alpha1.Route {
+func getRoutesForURL(atom *pdoknlv3.Atom, ownerInfo *smoothoperatorv1.OwnerInfo, url smoothoperatormodel.URL, downloadMiddlewares []traefikiov1alpha1.MiddlewareRef) []traefikiov1alpha1.Route {
 	routes := []traefikiov1alpha1.Route{
 		getDefaultRule(atom, getMatchRule(url.JoinPath("index.xml"), false)),
 	}
 
-	if atom.Spec.Service.Stylesheet != nil {
+	stylesheet := atom.Spec.Service.Stylesheet
+	if atom.Spec.Service.Stylesheet == nil {
+		stylesheet = ownerInfo.Spec.Atom.DefaultStylesheet
+	}
+
+	if stylesheet != nil {
 		routes = append(routes, getDefaultRule(atom, getMatchRule(url.JoinPath("xslt-polyfill.min.js"), false)))
 	}
 
