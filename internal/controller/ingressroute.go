@@ -112,6 +112,10 @@ func getRoutesForURL(atom *pdoknlv3.Atom, url smoothoperatormodel.URL, downloadM
 		getDefaultRule(atom, getMatchRule(url.JoinPath("index.xml"), false)),
 	}
 
+	if atom.Spec.Service.Stylesheet != nil {
+		routes = append(routes, getDefaultRule(atom, getMatchRule(url.JoinPath("xslt-polyfill.min.js"), false)))
+	}
+
 	// Set additional routes per datasetFeed
 	for _, datasetFeed := range atom.Spec.Service.DatasetFeeds {
 		matchRule := getMatchRule(url.JoinPath(datasetFeed.TechnicalName+".xml"), false)
