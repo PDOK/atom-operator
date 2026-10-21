@@ -233,7 +233,7 @@ func (r *AtomReconciler) createOrUpdateAllForAtom(ctx context.Context, atom *pdo
 	// region Create or update IngressRoute
 	ingressRoute := getBareIngressRoute(atom)
 	operationResults[smoothutil.GetObjectFullName(r.Client, ingressRoute)], err = controllerutil.CreateOrUpdate(ctx, r.Client, ingressRoute, func() error {
-		return r.mutateIngressRoute(atom, ingressRoute)
+		return r.mutateIngressRoute(atom, ownerInfo, ingressRoute)
 	})
 	if err != nil {
 		return operationResults, fmt.Errorf("unable to create/update resource %s: %w", smoothutil.GetObjectFullName(c, ingressRoute), err)

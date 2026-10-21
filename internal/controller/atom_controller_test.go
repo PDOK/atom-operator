@@ -429,7 +429,7 @@ func testAtomMutates(name string) {
 
 	It("Should generate a correct IngressRoute", func() {
 		testMutate("IngressRoute", getBareIngressRoute(&atom), outputPath+"ingressroute.yaml", func(i *traefikiov1alpha1.IngressRoute) error {
-			return reconciler.mutateIngressRoute(&atom, i)
+			return reconciler.mutateIngressRoute(&atom, &owner, i)
 		})
 	})
 
